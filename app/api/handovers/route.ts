@@ -5,7 +5,19 @@ const allowedStatuses = new Set(['pending', 'submitted', 'retrieved', 'not_submi
 
 export async function GET() {
   const supabase = await createClient()
-  const { data, error } = await supabase.from('handovers').select('id:student_id, student_id, status, reason, updated_at').order('updated_at', { ascending: false })
+  const { data: claims } = await supabase.auth.getClaims()
+  const userId = claims?.claims?.sub
+
+  if (!userId) {
+    return NextResponse.json({ error: 'Authentication required' }, { status: 401 })
+  }
+
+  const { data, error } = await supabase
+    .from('handovers')
+    .select('id:student_id, student_id, status, reason, updated_at')
+    .eq('student_id', userId)
+    .order('updated_at', { ascending: false })
+
   if (error) return NextResponse.json({ error: 'Unable to load handovers' }, { status: 500 })
   return NextResponse.json({ handovers: data ?? [] })
 }
@@ -18,12 +30,21 @@ export async function POST(request: Request) {
 
   const supabase = await createClient()
   const { data: claims } = await supabase.auth.getClaims()
-  const userId = claims?.claims?.sub ?? null
+  const userId = claims?.claims?.sub
+
+  if (!userId || body.studentId !== userId) {
+    return NextResponse.json({ error: 'Authentication required' }, { status: 401 })
+  }
+
+  const reason = typeof body.reason === 'string' ? body.reason.trim() : ''
+  if ((body.status === 'not_submitted' || body.status === 'retrieved') && !reason) {
+    return NextResponse.json({ error: 'A reason is required for this status' }, { status: 400 })
+  }
 
   const { error } = await supabase.from('handovers').upsert({
-    student_id: body.studentId,
+    student_id: userId,
     status: body.status,
-    reason: typeof body.reason === 'string' ? body.reason.slice(0, 500) : null,
+    reason: reason ? reason.slice(0, 500) : null,
     updated_by: userId,
   }, { onConflict: 'student_id' })
 
