@@ -22,9 +22,11 @@ export async function POST(request: Request) {
   const body = await request.json().catch(() => null)
   const fullName = typeof body?.fullName === 'string' ? body.fullName.trim() : ''
   const requestedRole = body?.role === 'mentor' ? 'mentor' : 'student'
-  const role = email.toLowerCase().endsWith('@kalvium.com') ? 'mentor' : 'student'
+  const normalizedEmail = email.trim().toLowerCase()
+  const role = normalizedEmail.endsWith('@kalvium.com') ? 'mentor' : normalizedEmail.endsWith('@kalvium.community') ? 'student' : null
   const squad = typeof body?.squad === 'string' ? body.squad : null
   if (!fullName) return NextResponse.json({ error: 'Full name is required' }, { status: 400 })
+  if (!role) return NextResponse.json({ error: 'Use a @kalvium.com mentor email or a @kalvium.community student email' }, { status: 403 })
   if (requestedRole !== role) return NextResponse.json({ error: 'Your email domain determines your account type' }, { status: 403 })
   if (role === 'student' && !squads.has(squad ?? '')) return NextResponse.json({ error: 'Choose squad 138, 139, or 183' }, { status: 400 })
   const { data, error } = await supabase.from('profiles').upsert({ id: userId, full_name: fullName, email, role, squad: role === 'student' ? squad : null }, { onConflict: 'id' }).select('id, full_name, email, role, squad').single()
