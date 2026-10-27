@@ -32,13 +32,22 @@ export async function POST(request: Request) {
   if ((body.status === 'not_submitted' || body.status === 'retrieved') && !reason) {
     return NextResponse.json({ error: 'A reason is required for this status' }, { status: 400 })
   }
-  const { data: activeSession } = await supabase
+  const { data: profile, error: profileError } = await supabase
+    .from('profiles')
+    .select('role, squad')
+    .eq('id', userId)
+    .single()
+  if (profileError || profile?.role !== 'student' || !profile.squad) {
+    return NextResponse.json({ error: 'Only students with a squad can submit handovers' }, { status: 403 })
+  }
+  const { data: activeSession, error: sessionError } = await supabase
     .from('sessions')
     .select('id')
     .eq('status', 'active')
-    .eq('squad', (await supabase.from('profiles').select('squad').eq('id', userId).single()).data?.squad)
+    .eq('squad', profile.squad)
     .limit(1)
-    .single()
+    .maybeSingle()
+  if (sessionError) return NextResponse.json({ error: 'Unable to find an active session' }, { status: 500 })
   if (!activeSession) return NextResponse.json({ error: 'No active session for your squad' }, { status: 409 })
   const { error } = await supabase.from('handovers').upsert({
     session_id: activeSession.id,

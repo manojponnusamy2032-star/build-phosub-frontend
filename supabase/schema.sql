@@ -20,6 +20,21 @@ create table if not exists public.sessions (
   constraint ended_session_has_end_time check ((status = 'active' and ended_at is null) or (status = 'ended' and ended_at is not null))
 );
 
+create or replace function public.validate_session_mentor()
+returns trigger language plpgsql security invoker set search_path = public
+as $$
+begin
+  if not exists (select 1 from public.profiles where id = new.mentor_id and role = 'mentor') then
+    raise exception 'Session owner must be a mentor';
+  end if;
+  return new;
+end;
+$$;
+
+drop trigger if exists session_mentor_guard on public.sessions;
+create trigger session_mentor_guard before insert or update of mentor_id on public.sessions
+for each row execute function public.validate_session_mentor();
+
 create unique index if not exists one_active_session_per_squad on public.sessions (squad) where status = 'active';
 
 create table if not exists public.handovers (
@@ -58,6 +73,27 @@ drop trigger if exists handover_event_after_change on public.handovers;
 create trigger handover_event_after_change after insert or update of status, reason on public.handovers
 for each row execute function public.record_handover_event();
 
+create or replace function public.validate_profile_identity()
+returns trigger language plpgsql security invoker set search_path = public
+as $$
+begin
+  if new.id <> old.id or lower(new.email) <> lower(old.email) or new.role <> old.role then
+    raise exception 'Profile identity and role are immutable';
+  end if;
+  if new.role = 'mentor' and new.squad is not null then
+    raise exception 'Mentors cannot belong to a student squad';
+  end if;
+  if new.role = 'student' and new.squad not in ('138', '139', '183') then
+    raise exception 'Students must belong to squad 138, 139, or 183';
+  end if;
+  return new;
+end;
+$$;
+
+drop trigger if exists profile_identity_guard on public.profiles;
+create trigger profile_identity_guard before update on public.profiles
+for each row execute function public.validate_profile_identity();
+
 alter table public.profiles enable row level security;
 alter table public.sessions enable row level security;
 alter table public.handovers enable row level security;
@@ -66,7 +102,7 @@ alter table public.handover_events enable row level security;
 drop policy if exists "profiles own row" on public.profiles;
 create policy "profiles own row" on public.profiles for select to authenticated using (id = (select auth.uid()));
 drop policy if exists "mentors can view squad students" on public.profiles;
-create policy "mentors can view squad students" on public.profiles for select to authenticated using (role = 'student' and exists (select 1 from public.profiles mentor where mentor.id = (select auth.uid()) and mentor.role = 'mentor'));
+create policy "mentors can view session students" on public.profiles for select to authenticated using (role = 'student' and exists (select 1 from public.profiles mentor join public.sessions s on s.mentor_id = mentor.id where mentor.id = (select auth.uid()) and mentor.role = 'mentor' and s.squad = profiles.squad));
 drop policy if exists "users create own profile" on public.profiles;
 create policy "users create own profile" on public.profiles for insert to authenticated with check (id = (select auth.uid()));
 drop policy if exists "users update own profile" on public.profiles;
