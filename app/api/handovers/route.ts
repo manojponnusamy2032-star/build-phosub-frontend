@@ -3,6 +3,11 @@ import { createClient } from '@/lib/supabase/server'
 
 const allowedStatuses = new Set(['pending', 'submitted', 'retrieved', 'not_submitted'])
 
+async function getUser(supabase: Awaited<ReturnType<typeof createClient>>) {
+  const { data: claims } = await supabase.auth.getClaims()
+  return claims?.claims?.sub ?? null
+}
+
 export async function GET() {
   const supabase = await createClient()
   const { data: claims } = await supabase.auth.getClaims()
