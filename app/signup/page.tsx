@@ -16,6 +16,7 @@ export default function SignupPage() {
   const [fullName, setFullName] = useState('')
   const [squad, setSquad] = useState('')
   const [error, setError] = useState('')
+  const [success, setSuccess] = useState('')
   const [submitting, setSubmitting] = useState(false)
 
   // If already signed in, go to dashboard
@@ -31,6 +32,7 @@ export default function SignupPage() {
     e.preventDefault()
     if (!supabase) return
     setError('')
+    setSuccess('')
     setSubmitting(true)
     try {
       const { data, error: authError } = await supabase.auth.signUp({
@@ -41,14 +43,12 @@ export default function SignupPage() {
       if (authError) throw authError
       if (!data.user) throw new Error('No user returned')
 
-      // Sign in to establish session so profile API can authenticate
-      const { data: signInData, error: signInError } = await supabase.auth.signInWithPassword({
-        email,
-        password,
-      })
-      if (signInError) throw signInError
+      if (!data.session) {
+        setSuccess('Account created. Check your email for a confirmation link, then sign in.')
+        return
+      }
 
-      const accessToken = signInData.session?.access_token
+      const accessToken = data.session.access_token
 
       const profileRole = suggestedRole ?? 'student'
       const profileSquad = profileRole === 'student' ? squad : null
@@ -70,7 +70,12 @@ export default function SignupPage() {
       // Go straight to the role dashboard (bypass /dashboard server redirect)
       router.push(result.profile?.role === 'mentor' ? '/mentor' : '/student')
     } catch (err: any) {
-      setError(err.message || 'Signup failed')
+      const message = err.message || 'Signup failed'
+      setError(
+        /email rate limit exceeded/i.test(message)
+          ? 'Too many confirmation emails have been requested. Please wait before trying again. The project owner can configure custom SMTP in Supabase to raise the email sending limit.'
+          : message,
+      )
     } finally {
       setSubmitting(false)
     }
@@ -92,6 +97,11 @@ export default function SignupPage() {
         {error && (
           <div className="mb-6 rounded-lg border border-[#ffcdd2] bg-[#fff8f8] p-4 text-sm text-[#C62828]">
             {error}
+          </div>
+        )}
+        {success && (
+          <div role="status" className="mb-6 rounded-lg border border-[#bbebca] bg-[#f2fbf5] p-4 text-sm text-[#166534]">
+            {success}
           </div>
         )}
         <form onSubmit={handleSubmit} className="space-y-4">
@@ -152,10 +162,10 @@ export default function SignupPage() {
           )}
           <button
             type="submit"
-            disabled={submitting || !suggestedRole || (suggestedRole === 'student' && !squad)}
+            disabled={submitting || Boolean(success) || !suggestedRole || (suggestedRole === 'student' && !squad)}
             className="w-full flex justify-center py-2.5 rounded-lg bg-[#E53935] text-white font-semibold disabled:opacity-50 disabled:cursor-not-allowed hover:bg-[#C62828] transition-colors"
           >
-            {submitting ? 'Creating account...' : 'Create account'}
+            {submitting ? 'Creating account...' : success ? 'Check your email' : 'Create account'}
           </button>
         </form>
         <p className="mt-8 text-center text-sm text-[#666]">
