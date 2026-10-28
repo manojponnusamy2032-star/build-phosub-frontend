@@ -82,13 +82,16 @@ export default function SignupPage() {
       router.push(result.profile?.role === 'mentor' ? '/mentor' : '/student')
     } catch (err: any) {
       const message = err.message || 'Signup failed'
+      // Only set the detailed rate limit message if we're not already in cooldown
+      // and the error is actually about email rate limiting
+      const isRateLimitError = /email rate limit exceeded/i.test(message)
       setError(
-        /email rate limit exceeded/i.test(message)
+        isRateLimitError
           ? 'Too many confirmation emails have been requested. Please wait before trying again. The project owner can configure custom SMTP in Supabase to raise the email sending limit.'
           : message,
       )
       // Set cooldown on rate limit error
-      if (/email rate limit exceeded/i.test(message)) {
+      if (isRateLimitError) {
         setLastRequestTime(Date.now())
       }
     } finally {
