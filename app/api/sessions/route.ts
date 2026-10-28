@@ -44,7 +44,13 @@ export async function POST(request: Request) {
   const { data: profile } = await admin.from('profiles').select('role').eq('id', userId).single()
   if (profile?.role !== 'mentor') return NextResponse.json({ error: 'Only mentors can start sessions' }, { status: 403 })
   const { data, error } = await admin.from('sessions').insert({ mentor_id: userId, squad, name: `Squad ${squad} phone handover` }).select().single()
-  if (error) return NextResponse.json({ error: 'Unable to start session' }, { status: 500 })
+  if (error?.code === '23505') {
+    return NextResponse.json({ error: `Squad ${squad} already has an active session.` }, { status: 409 })
+  }
+  if (error) {
+    console.error('Unable to start session', { code: error.code, message: error.message })
+    return NextResponse.json({ error: 'Unable to start session' }, { status: 500 })
+  }
   return NextResponse.json({ session: data }, { status: 201 })
 }
 

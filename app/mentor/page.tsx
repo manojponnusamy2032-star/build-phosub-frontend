@@ -8,7 +8,6 @@ import {
   ChartNoAxesColumn,
   ChevronDown,
   ClipboardCheck,
-  House,
   LogOut,
   Play,
   UserRound,
@@ -20,15 +19,14 @@ import { createClient as createSupabaseClient } from '@/lib/supabase/client'
 import { getAccessToken } from '@/lib/supabase/auth-token'
 
 type Session = { id: string; squad: string; name: string; status: string; started_at: string; mentor_id: string }
-type Handover = { id: string; student_id: string; status: string; reason: string | null; updated_at: string; student?: { full_name: string } }
-type View = 'overview' | 'sessions' | 'squads' | 'reports' | 'profile'
+type Handover = { id: string; student_id: string; session_id: string; status: string; reason: string | null; updated_at: string; student?: { full_name: string } }
+type View = 'sessions' | 'reports' | 'squads' | 'profile'
 
 const squads = ['138', '139', '183']
 const navigation: { id: View; label: string; icon: LucideIcon }[] = [
-  { id: 'overview', label: 'Overview', icon: House },
   { id: 'sessions', label: 'Sessions', icon: ClipboardCheck },
-  { id: 'squads', label: 'Squads', icon: UsersRound },
   { id: 'reports', label: 'Reports', icon: ChartNoAxesColumn },
+  { id: 'squads', label: 'Squads', icon: UsersRound },
   { id: 'profile', label: 'Profile', icon: UserRound },
 ]
 
@@ -40,9 +38,11 @@ export default function MentorPage() {
   const [profile, setProfile] = useState<{ role: string; squad: string | null } | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
+  const [notice, setNotice] = useState('')
   const [selectedSquad, setSelectedSquad] = useState('')
+  const [reportSessionId, setReportSessionId] = useState<string | null>(null)
   const [starting, setStarting] = useState(false)
-  const [activeView, setActiveView] = useState<View>('overview')
+  const [activeView, setActiveView] = useState<View>('sessions')
   const [accountMenuOpen, setAccountMenuOpen] = useState(false)
   const [notificationsOpen, setNotificationsOpen] = useState(false)
 
@@ -88,6 +88,7 @@ export default function MentorPage() {
   async function startSession() {
     if (!selectedSquad) return
     setError('')
+    setNotice('')
     setStarting(true)
     try {
       const token = await getAccessToken()
@@ -107,6 +108,7 @@ export default function MentorPage() {
         throw new Error(result.error || 'Unable to start session')
       }
       await loadData(false)
+      setNotice(`Session for Squad ${selectedSquad} started.`)
     } catch (startError) {
       setError(startError instanceof Error ? startError.message : 'Unable to start session')
     } finally {
@@ -116,6 +118,7 @@ export default function MentorPage() {
 
   async function endSession(sessionId: string) {
     setError('')
+    setNotice('')
     try {
       const token = await getAccessToken()
       if (!token) throw new Error('Your sign-in has expired. Please sign in again.')
@@ -131,6 +134,7 @@ export default function MentorPage() {
       const result = await res.json().catch(() => ({}))
       if (!res.ok) throw new Error(result.error || 'Failed to end session')
       await loadData(false)
+      setNotice(result.session?.squad ? `Session for Squad ${result.session.squad} ended.` : 'Session ended.')
     } catch (endError) {
       setError(endError instanceof Error ? endError.message : 'Failed to end session')
     }
@@ -159,56 +163,63 @@ export default function MentorPage() {
   const email = user.email ?? ''
   const displayName = email.split('@')[0]?.replace(/[._-]/g, ' ') || 'Mentor'
   const initials = displayName.split(' ').map((part) => part[0]).join('').slice(0, 2).toUpperCase()
-  const activeTitle = navigation.find((item) => item.id === activeView)?.label ?? 'Overview'
+  const activeTitle = navigation.find((item) => item.id === activeView)?.label ?? 'Sessions'
+  const reportSession = sessions.find((session) => session.id === reportSessionId)
+  const reportHandovers = reportSessionId
+    ? handovers.filter((handover) => handover.session_id === reportSessionId)
+    : handovers.slice(0, 10)
 
   return (
     <div className="min-h-screen bg-[#f6f6f7] text-[#202124]">
-      <aside className="fixed inset-y-0 left-0 z-30 hidden w-44 flex-col border-r border-[#e4e4e7] bg-white px-[18px] py-4 lg:flex">
-        <a href="#overview" onClick={() => setActiveView('overview')} className="mb-7 flex items-center gap-2 px-0.5">
-          <span className="grid size-[22px] place-items-center rounded-md bg-[#e53935] text-white">
-            <svg width="13" height="13" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 12h6m-6 0v7m0-7 4 4m-4-4 4-4m12 4h-6m6 0v-7m0 7-4-4m4 4-4 4" /></svg>
+      <aside className="fixed inset-y-0 left-0 z-30 hidden w-56 flex-col border-r border-[#e4e4e7] bg-white px-5 py-5 lg:flex">
+        <a href="#sessions" onClick={() => setActiveView('sessions')} className="mb-9 flex items-center gap-2.5 px-0.5">
+          <span className="grid size-7 place-items-center rounded-md bg-[#e53935] text-white">
+            <svg width="15" height="15" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 12h6m-6 0v7m0-7 4 4m-4-4 4-4m12 4h-6m6 0v-7m0 7-4-4m4 4-4 4" /></svg>
           </span>
-          <span className="text-[15px] font-bold tracking-tight">phosub</span>
+          <span className="text-lg font-bold tracking-tight">phosub</span>
         </a>
 
-        <p className="mb-2 px-2 text-[9px] font-bold uppercase tracking-[0.16em] text-[#a1a1aa]">Workspace</p>
-        <nav aria-label="Mentor workspace" className="space-y-1">
+        <p className="mb-3 px-2 text-xs font-bold uppercase tracking-[0.16em] text-[#92929b]">Workspace</p>
+        <nav aria-label="Mentor workspace" className="space-y-1.5">
           {navigation.map(({ id, label, icon: Icon }) => (
             <button
               key={id}
               type="button"
-              onClick={() => setActiveView(id)}
+              onClick={() => {
+                setActiveView(id)
+                if (id === 'reports') setReportSessionId(null)
+              }}
               aria-current={activeView === id ? 'page' : undefined}
-              className={`flex h-8 w-full items-center gap-2 rounded-md px-2 text-left text-[11px] transition-colors ${activeView === id ? 'bg-[#fff1f0] font-semibold text-[#d52b27]' : 'text-[#77787d] hover:bg-[#f7f7f8] hover:text-[#242424]'}`}
+              className={`flex h-11 w-full items-center gap-3 rounded-lg px-3 text-left text-sm transition-colors ${activeView === id ? 'bg-[#fff1f0] font-semibold text-[#d52b27]' : 'text-[#77787d] hover:bg-[#f7f7f8] hover:text-[#242424]'}`}
             >
-              <Icon size={13} strokeWidth={1.8} />
+              <Icon size={17} strokeWidth={1.8} />
               {label}
             </button>
           ))}
         </nav>
 
         <div className="mt-auto">
-          <div className="rounded-lg bg-[#f6f6f7] px-2.5 py-2">
-            <p className="text-[9px] font-semibold">Mentor workspace</p>
-            <p className="mt-0.5 truncate text-[9px] text-[#999]">Connected workspace</p>
+          <div className="rounded-lg bg-[#f6f6f7] px-3 py-3">
+            <p className="text-xs font-semibold">Mentor workspace</p>
+            <p className="mt-1 truncate text-xs text-[#77787d]">Connected workspace</p>
           </div>
           <button
             type="button"
             onClick={() => createSupabaseClient().auth.signOut().then(() => router.replace('/login'))}
-            className="mt-3 flex h-7 w-full items-center gap-2 px-2 text-[10px] text-[#77787d] hover:text-[#d52b27]"
+            className="mt-4 flex h-10 w-full items-center gap-2 px-3 text-sm text-[#77787d] hover:text-[#d52b27]"
           >
-            <LogOut size={12} /> Sign out
+            <LogOut size={16} /> Sign out
           </button>
         </div>
       </aside>
 
-      <div className="min-h-screen lg:pl-44">
-        <header className="sticky top-0 z-20 flex h-[52px] items-center justify-between border-b border-[#e4e4e7] bg-white px-4 sm:px-6">
-          <div className="flex items-center gap-2 text-[10px] text-[#8b8b91]">
-            <span className="lg:hidden font-bold text-[#202124]">phosub</span>
+      <div className="min-h-screen lg:pl-56">
+        <header className="sticky top-0 z-20 flex h-14 items-center justify-between border-b border-[#e4e4e7] bg-white px-4 sm:px-6 lg:h-16">
+          <div className="flex items-center gap-2 text-sm text-[#77787d]">
+            <span className="font-bold text-[#202124] lg:hidden">phosub</span>
             <span className="hidden lg:inline">Mentor workspace</span>
             <span aria-hidden="true">/</span>
-            <span className="text-[#333]">{activeTitle}</span>
+            <span className="font-medium text-[#333]">{activeTitle}</span>
           </div>
           <div className="flex items-center gap-3">
             <div className="relative">
@@ -220,13 +231,13 @@ export default function MentorPage() {
                   setNotificationsOpen(!notificationsOpen)
                   setAccountMenuOpen(false)
                 }}
-                className="relative grid size-7 place-items-center text-[#77787d] hover:text-[#222]"
+                className="relative grid size-10 place-items-center rounded-lg text-[#77787d] hover:bg-[#f7f7f8] hover:text-[#222]"
               >
-                <Bell size={14} strokeWidth={1.7} />
-                <span className="absolute right-1 top-1 size-1.5 rounded-full bg-[#e53935]" />
+                <Bell size={18} strokeWidth={1.7} />
+                <span className="absolute right-2 top-2 size-2 rounded-full bg-[#e53935]" />
               </button>
               {notificationsOpen && (
-                <div className="absolute right-0 top-9 z-40 w-52 rounded-lg border border-[#e4e4e7] bg-white p-3 text-xs shadow-lg">
+                <div className="absolute right-0 top-11 z-40 w-64 rounded-lg border border-[#e4e4e7] bg-white p-4 text-sm shadow-lg">
                   <p className="font-semibold">Notifications</p>
                   <p className="mt-1 text-[#77787d]">You’re all caught up.</p>
                 </div>
@@ -242,44 +253,35 @@ export default function MentorPage() {
                 }}
                 className="flex items-center gap-2 text-left"
               >
-                <span className="grid size-6 place-items-center rounded-full bg-[#f8dedd] text-[9px] font-bold text-[#d52b27]">{initials}</span>
+                <span className="grid size-8 place-items-center rounded-full bg-[#f8dedd] text-xs font-bold text-[#d52b27]">{initials}</span>
                 <span className="hidden sm:block">
-                  <span className="block max-w-36 truncate text-[9px] font-semibold">{displayName}</span>
-                  <span className="block text-[8px] text-[#999]">mentor</span>
+                  <span className="block max-w-40 truncate text-xs font-semibold">{displayName}</span>
+                  <span className="block text-[11px] text-[#77787d]">mentor</span>
                 </span>
-                <ChevronDown size={12} className="text-[#888]" />
+                <ChevronDown size={15} className="text-[#888]" />
               </button>
               {accountMenuOpen && (
-                <div className="absolute right-0 top-9 z-40 w-48 rounded-lg border border-[#e4e4e7] bg-white p-2 shadow-lg">
-                  <p className="truncate px-2 py-1 text-[10px] text-[#77787d]">{email}</p>
+                <div className="absolute right-0 top-11 z-40 w-64 rounded-lg border border-[#e4e4e7] bg-white p-3 shadow-lg">
+                  <p className="truncate px-2 py-1 text-xs text-[#77787d]">{email}</p>
                   <button
                     type="button"
                     onClick={() => createSupabaseClient().auth.signOut().then(() => router.replace('/login'))}
-                    className="mt-1 flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-left text-[10px] hover:bg-[#f7f7f8]"
-                  ><LogOut size={12} /> Sign out</button>
+                    className="mt-1 flex min-h-10 w-full items-center gap-2 rounded-md px-2 text-left text-sm hover:bg-[#f7f7f8]"
+                  ><LogOut size={16} /> Sign out</button>
                 </div>
               )}
             </div>
           </div>
         </header>
 
-        <nav aria-label="Mentor workspace" className="sticky top-[52px] z-10 flex gap-1 overflow-x-auto border-b border-[#e4e4e7] bg-white px-3 py-2 lg:hidden">
-          {navigation.map(({ id, label, icon: Icon }) => (
-            <button
-              key={id}
-              type="button"
-              onClick={() => setActiveView(id)}
-              aria-current={activeView === id ? 'page' : undefined}
-              className={`flex h-8 shrink-0 items-center gap-1.5 rounded-md px-2.5 text-[10px] ${activeView === id ? 'bg-[#fff1f0] font-semibold text-[#d52b27]' : 'text-[#77787d] hover:bg-[#f7f7f8]'}`}
-            >
-              <Icon size={12} strokeWidth={1.8} />{label}
-            </button>
-          ))}
-        </nav>
-
-        <main className="mx-auto w-full max-w-[900px] px-5 pb-12 pt-6 sm:px-8">
+        <main className="mx-auto w-full max-w-[1200px] px-4 pb-[calc(6rem+env(safe-area-inset-bottom))] pt-6 sm:px-8 sm:pt-8 lg:px-10 lg:pb-12">
+          {notice && (
+            <div role="status" aria-live="polite" className="mb-5 rounded-lg border border-[#bbebca] bg-[#f2fbf5] px-4 py-3 text-sm text-[#166534]">
+              {notice}
+            </div>
+          )}
           {error && (
-            <div role="alert" className="mb-4 flex items-center justify-between gap-3 rounded-md border border-[#f0c9c7] bg-[#fff8f7] px-3 py-2.5 text-[11px] text-[#c62828]">
+            <div role="alert" className="mb-5 flex items-center justify-between gap-3 rounded-lg border border-[#f0c9c7] bg-[#fff8f7] px-4 py-3 text-sm text-[#c62828]">
               <span>{error}</span>
               {error.toLowerCase().includes('sign in again') && (
                 <button type="button" onClick={() => router.replace('/login')} className="shrink-0 font-semibold underline underline-offset-2">Sign in</button>
@@ -288,19 +290,19 @@ export default function MentorPage() {
           )}
 
           {!isMentor ? (
-            <div className="rounded-lg border border-[#e4e4e7] bg-white p-6 text-sm text-[#666]">Your account is not registered as a mentor.</div>
-          ) : activeView === 'overview' ? (
+            <div className="rounded-lg border border-[#e4e4e7] bg-white p-6 text-base text-[#666]">Your account is not registered as a mentor.</div>
+          ) : activeView === 'sessions' ? (
             <>
               <div className="mb-5">
-                <p className="mb-1.5 text-[9px] font-bold uppercase tracking-[0.18em] text-[#e53935]">Mentor workspace</p>
-                <h1 className="text-[21px] font-bold leading-tight tracking-tight">Phone handover sessions</h1>
-                <p className="mt-1.5 text-[10px] text-[#77787d]">Start a session for one squad. Only students in that squad can submit phones.</p>
+                <p className="mb-2 text-xs font-bold uppercase tracking-[0.16em] text-[#e53935]">Mentor workspace</p>
+                <h1 className="text-3xl font-bold leading-tight tracking-tight">Phone handover sessions</h1>
+                <p className="mt-2 text-sm text-[#77787d]">Start a session for one squad. Only students in that squad can submit phones.</p>
               </div>
 
-              <section aria-labelledby="start-session-title" className="w-full max-w-[478px] rounded-lg border border-[#e4e4e7] bg-white px-4 py-4">
-                <h2 id="start-session-title" className="text-[12px] font-bold">Start a session</h2>
-                <p className="mt-1.5 text-[10px] text-[#77787d]">Choose the squad you are teaching today.</p>
-                <div className="mt-3 flex flex-wrap gap-1.5" role="group" aria-label="Choose squad">
+              <section aria-labelledby="start-session-title" className="w-full max-w-2xl rounded-lg border border-[#e4e4e7] bg-white p-5 sm:p-6">
+                <h2 id="start-session-title" className="text-lg font-bold">Start a session</h2>
+                <p className="mt-1.5 text-sm text-[#77787d]">Choose the squad you are teaching today.</p>
+                <div className="mt-4 flex flex-wrap gap-2" role="group" aria-label="Choose squad">
                   {squads.map((squad) => (
                     <button
                       key={squad}
@@ -310,7 +312,7 @@ export default function MentorPage() {
                         setSelectedSquad(squad)
                         setError('')
                       }}
-                      className={`h-9 rounded-md border px-3 text-[10px] transition-colors ${selectedSquad === squad ? 'border-[#e53935] bg-[#fff2f1] font-semibold text-[#c62828]' : 'border-[#e4e4e7] bg-white text-[#343434] hover:border-[#d4a19f] hover:bg-[#fffafa]'}`}
+                      className={`min-h-11 rounded-md border px-4 text-sm transition-colors ${selectedSquad === squad ? 'border-[#e53935] bg-[#fff2f1] font-semibold text-[#c62828]' : 'border-[#e4e4e7] bg-white text-[#343434] hover:border-[#d4a19f] hover:bg-[#fffafa]'}`}
                     >Squad {squad}</button>
                   ))}
                 </div>
@@ -318,66 +320,126 @@ export default function MentorPage() {
                   type="button"
                   onClick={startSession}
                   disabled={!selectedSquad || starting}
-                  className="mt-3 inline-flex h-7 items-center gap-1.5 rounded-md bg-[#e53935] px-3 text-[10px] font-semibold text-white transition-colors hover:bg-[#c62828] disabled:cursor-not-allowed disabled:opacity-50"
+                  className="mt-4 inline-flex min-h-11 items-center gap-2 rounded-md bg-[#e53935] px-4 text-sm font-semibold text-white transition-colors hover:bg-[#c62828] disabled:cursor-not-allowed disabled:opacity-50"
                 >
-                  <Play size={11} /> {starting ? 'Starting...' : 'Start session'}
+                  <Play size={16} /> {starting ? 'Starting...' : 'Start session'}
                 </button>
               </section>
-            </>
-          ) : activeView === 'sessions' ? (
-            <section>
-              <p className="mb-1.5 text-[9px] font-bold uppercase tracking-[0.18em] text-[#e53935]">Mentor workspace</p>
-              <h1 className="text-[21px] font-bold">Sessions</h1>
-              <p className="mb-5 mt-1.5 text-[10px] text-[#77787d]">Manage phone handover sessions for your squads.</p>
-              <div className="overflow-hidden rounded-lg border border-[#e4e4e7] bg-white">
-                <div className="overflow-x-auto">
-                  <table className="w-full min-w-[560px] text-left text-[10px]">
-                    <thead className="bg-[#fafafa] text-[9px] text-[#77787d]"><tr><th className="px-4 py-3 font-medium">Session</th><th className="px-4 py-3 font-medium">Squad</th><th className="px-4 py-3 font-medium">Status</th><th className="px-4 py-3 font-medium">Started</th><th className="px-4 py-3 font-medium">Action</th></tr></thead>
-                    <tbody>
-                      {sessions.map((session) => (
-                        <tr key={session.id} className="border-t border-[#f0f0f1]">
-                          <td className="px-4 py-3 font-semibold">{session.name || 'Phone Handover'}</td>
-                          <td className="px-4 py-3">{session.squad}</td>
-                          <td className="px-4 py-3"><span className={`rounded-full px-2 py-1 text-[9px] font-semibold ${session.status === 'active' ? 'bg-[#fff2f1] text-[#c62828]' : 'bg-[#f1f1f2] text-[#666]'}`}>{session.status}</span></td>
-                          <td className="px-4 py-3 text-[#77787d]">{new Date(session.started_at).toLocaleString()}</td>
-                          <td className="px-4 py-3">{session.status === 'active' && <button type="button" onClick={() => endSession(session.id)} className="font-medium text-[#d52b27] hover:underline">End session</button>}</td>
-                        </tr>
-                      ))}
-                      {sessions.length === 0 && <tr><td colSpan={5} className="px-4 py-8 text-center text-[#77787d]">No sessions yet.</td></tr>}
-                    </tbody>
-                  </table>
+              <section className="mt-10">
+                <h2 className="mb-1.5 text-xl font-bold">Sessions</h2>
+                <p className="mb-5 text-sm text-[#77787d]">Manage phone handover sessions for your squads.</p>
+                <div className="space-y-3 lg:hidden">
+                  {sessions.map((session) => (
+                    <article key={session.id} className="rounded-lg border border-[#e4e4e7] bg-white p-4 sm:p-5">
+                      <div className="flex items-start justify-between gap-3">
+                        <h3 className="text-base font-semibold">Squad {session.squad}</h3>
+                        <span className={`shrink-0 rounded-full px-2.5 py-1 text-xs font-semibold ${session.status === 'active' ? 'bg-[#fff2f1] text-[#c62828]' : 'bg-[#f1f1f2] text-[#666]'}`}>{session.status}</span>
+                      </div>
+                      <p className="mt-3 text-xs text-[#77787d]">Started {new Date(session.started_at).toLocaleString()}</p>
+                      <div className="mt-4 flex flex-wrap gap-2">
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setReportSessionId(session.id)
+                            setActiveView('reports')
+                          }}
+                          className="inline-flex min-h-11 items-center justify-center rounded-md border border-[#e4e4e7] px-4 text-sm font-medium text-[#444] hover:bg-[#f7f7f8]"
+                        >View report</button>
+                        {session.status === 'active' && (
+                          <button
+                            type="button"
+                            onClick={() => endSession(session.id)}
+                            className="inline-flex min-h-11 items-center justify-center rounded-md border border-[#f0c9c7] px-4 text-sm font-medium text-[#c62828] hover:bg-[#fff8f7]"
+                          >End session</button>
+                        )}
+                      </div>
+                    </article>
+                  ))}
+                  {sessions.length === 0 && <p className="rounded-lg border border-dashed border-[#d8d8dc] px-4 py-8 text-center text-sm text-[#77787d]">No sessions yet.</p>}
                 </div>
-              </div>
-            </section>
+                <div className="hidden overflow-hidden rounded-lg border border-[#e4e4e7] bg-white lg:block">
+                  <div className="overflow-x-auto">
+                    <table className="w-full min-w-[720px] text-left text-sm">
+                      <thead className="bg-[#fafafa] text-xs text-[#77787d]"><tr><th className="px-5 py-4 font-medium">Squad</th><th className="px-5 py-4 font-medium">Status</th><th className="px-5 py-4 font-medium">Started</th><th className="px-5 py-4 font-medium">Report</th><th className="px-5 py-4 font-medium">Session action</th></tr></thead>
+                      <tbody>
+                        {sessions.map((session) => (
+                          <tr key={session.id} className="border-t border-[#f0f0f1]">
+                            <td className="px-5 py-4 font-semibold">Squad {session.squad}</td>
+                            <td className="px-5 py-4"><span className={`rounded-full px-2.5 py-1 text-xs font-semibold ${session.status === 'active' ? 'bg-[#fff2f1] text-[#c62828]' : 'bg-[#f1f1f2] text-[#666]'}`}>{session.status}</span></td>
+                            <td className="px-5 py-4 text-[#77787d]">{new Date(session.started_at).toLocaleString()}</td>
+                            <td className="whitespace-nowrap px-5 py-4">
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  setReportSessionId(session.id)
+                                  setActiveView('reports')
+                                }}
+                                className="inline-flex min-h-10 min-w-28 justify-center font-medium text-[#555] hover:underline"
+                              >View report</button>
+                            </td>
+                            <td className="whitespace-nowrap px-5 py-4">
+                              {session.status === 'active' ? (
+                                <button
+                                  type="button"
+                                  aria-label={`End session for Squad ${session.squad}`}
+                                  onClick={() => endSession(session.id)}
+                                  className="inline-flex min-h-10 items-center font-medium text-[#d52b27] hover:underline"
+                                >End Squad {session.squad}</button>
+                              ) : <span className="text-[#aaa]">—</span>}
+                            </td>
+                          </tr>
+                        ))}
+                        {sessions.length === 0 && <tr><td colSpan={5} className="px-5 py-10 text-center text-sm text-[#77787d]">No sessions yet.</td></tr>}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              </section>
+            </>
           ) : activeView === 'squads' ? (
             <section>
-              <p className="mb-1.5 text-[9px] font-bold uppercase tracking-[0.18em] text-[#e53935]">Mentor workspace</p>
-              <h1 className="text-[21px] font-bold">Squads</h1>
-              <p className="mb-5 mt-1.5 text-[10px] text-[#77787d]">Choose a squad when starting a handover session.</p>
-              <div className="grid gap-2 sm:grid-cols-3">
+              <p className="mb-2 text-xs font-bold uppercase tracking-[0.16em] text-[#e53935]">Mentor workspace</p>
+              <h1 className="text-3xl font-bold">Squads</h1>
+              <p className="mb-6 mt-2 text-sm text-[#77787d]">Choose a squad when starting a handover session.</p>
+              <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
                 {squads.map((squad) => (
-                  <button key={squad} type="button" onClick={() => { setSelectedSquad(squad); setActiveView('overview') }} className="rounded-lg border border-[#e4e4e7] bg-white p-4 text-left transition-colors hover:border-[#e7a5a2]">
-                    <UsersRound size={15} className="mb-3 text-[#e53935]" />
-                    <span className="block text-[12px] font-semibold">Squad {squad}</span>
-                    <span className="mt-1 block text-[9px] text-[#888]">{sessions.filter((session) => session.squad === squad && session.status === 'active').length} active sessions</span>
+                  <button key={squad} type="button" onClick={() => { setSelectedSquad(squad); setActiveView('sessions') }} className="min-h-32 rounded-lg border border-[#e4e4e7] bg-white p-5 text-left transition-colors hover:border-[#e7a5a2]">
+                    <UsersRound size={20} className="mb-4 text-[#e53935]" />
+                    <span className="block text-base font-semibold">Squad {squad}</span>
+                    <span className="mt-1.5 block text-sm text-[#77787d]">{sessions.filter((session) => session.squad === squad && session.status === 'active').length} active sessions</span>
                   </button>
                 ))}
               </div>
             </section>
           ) : activeView === 'reports' ? (
             <section>
-              <p className="mb-1.5 text-[9px] font-bold uppercase tracking-[0.18em] text-[#e53935]">Mentor workspace</p>
-              <h1 className="text-[21px] font-bold">Recent handovers</h1>
-              <p className="mb-5 mt-1.5 text-[10px] text-[#77787d]">A record of recent student phone handovers.</p>
-              <div className="overflow-hidden rounded-lg border border-[#e4e4e7] bg-white">
+              <p className="mb-2 text-xs font-bold uppercase tracking-[0.16em] text-[#e53935]">Mentor workspace</p>
+              <h1 className="text-3xl font-bold">{reportSession ? `${reportSession.name} report` : 'Recent handovers'}</h1>
+              <p className="mb-6 mt-2 text-sm text-[#77787d]">
+                {reportSession ? `Squad ${reportSession.squad} handover statuses for this session.` : 'A record of recent student phone handovers.'}
+              </p>
+              <div className="space-y-3 lg:hidden">
+                {reportHandovers.map((handover) => (
+                  <article key={handover.id} className="rounded-lg border border-[#e4e4e7] bg-white p-4">
+                    <div className="flex items-start justify-between gap-3">
+                      <h2 className="text-base font-semibold">{handover.student?.full_name || 'Student'}</h2>
+                      <span className="shrink-0 rounded-full bg-[#f1f1f2] px-2.5 py-1 text-xs font-semibold capitalize text-[#444]">{handover.status.replace('_', ' ')}</span>
+                    </div>
+                    <p className="mt-3 text-sm text-[#77787d]">{handover.reason || 'No reason provided'}</p>
+                    <p className="mt-2 text-xs text-[#888]">Updated {new Date(handover.updated_at).toLocaleString()}</p>
+                  </article>
+                ))}
+                {reportHandovers.length === 0 && <p className="rounded-lg border border-dashed border-[#d8d8dc] px-4 py-8 text-center text-sm text-[#77787d]">{reportSession ? 'No handovers recorded for this session yet.' : 'No handovers to report yet.'}</p>}
+              </div>
+              <div className="hidden overflow-hidden rounded-lg border border-[#e4e4e7] bg-white lg:block">
                 <div className="overflow-x-auto">
-                  <table className="w-full min-w-[540px] text-left text-[10px]">
-                    <thead className="bg-[#fafafa] text-[9px] text-[#77787d]"><tr><th className="px-4 py-3 font-medium">Student</th><th className="px-4 py-3 font-medium">Status</th><th className="px-4 py-3 font-medium">Reason</th><th className="px-4 py-3 font-medium">Updated</th></tr></thead>
+                  <table className="w-full min-w-[680px] text-left text-sm">
+                    <thead className="bg-[#fafafa] text-xs text-[#77787d]"><tr><th className="px-5 py-4 font-medium">Student</th><th className="px-5 py-4 font-medium">Status</th><th className="px-5 py-4 font-medium">Reason</th><th className="px-5 py-4 font-medium">Updated</th></tr></thead>
                     <tbody>
-                      {handovers.slice(0, 10).map((handover) => (
-                        <tr key={handover.id} className="border-t border-[#f0f0f1]"><td className="px-4 py-3 font-semibold">{handover.student?.full_name || 'Student'}</td><td className="px-4 py-3">{handover.status.replace('_', ' ')}</td><td className="px-4 py-3 text-[#77787d]">{handover.reason || '—'}</td><td className="px-4 py-3 text-[#77787d]">{new Date(handover.updated_at).toLocaleString()}</td></tr>
+                      {reportHandovers.map((handover) => (
+                        <tr key={handover.id} className="border-t border-[#f0f0f1]"><td className="px-5 py-4 font-semibold">{handover.student?.full_name || 'Student'}</td><td className="px-5 py-4 capitalize">{handover.status.replace('_', ' ')}</td><td className="px-5 py-4 text-[#77787d]">{handover.reason || '—'}</td><td className="px-5 py-4 text-[#77787d]">{new Date(handover.updated_at).toLocaleString()}</td></tr>
                       ))}
-                      {handovers.length === 0 && <tr><td colSpan={4} className="px-4 py-8 text-center text-[#77787d]">No handovers to report yet.</td></tr>}
+                      {reportHandovers.length === 0 && <tr><td colSpan={4} className="px-5 py-10 text-center text-sm text-[#77787d]">{reportSession ? 'No handovers recorded for this session yet.' : 'No handovers to report yet.'}</td></tr>}
                     </tbody>
                   </table>
                 </div>
@@ -385,19 +447,39 @@ export default function MentorPage() {
             </section>
           ) : (
             <section>
-              <p className="mb-1.5 text-[9px] font-bold uppercase tracking-[0.18em] text-[#e53935]">Mentor workspace</p>
-              <h1 className="text-[21px] font-bold">Profile</h1>
-              <div className="mt-5 max-w-lg rounded-lg border border-[#e4e4e7] bg-white p-4">
-                <p className="text-[9px] text-[#888]">Name</p>
-                <p className="mt-1 text-[12px] font-semibold capitalize">{displayName}</p>
-                <p className="mt-4 text-[9px] text-[#888]">Email</p>
-                <p className="mt-1 break-all text-[12px] font-medium">{email}</p>
-                <p className="mt-4 text-[9px] text-[#888]">Role</p>
-                <p className="mt-1 text-[12px] font-medium">Mentor</p>
+              <p className="mb-2 text-xs font-bold uppercase tracking-[0.16em] text-[#e53935]">Mentor workspace</p>
+              <h1 className="text-3xl font-bold">Profile</h1>
+              <div className="mt-6 max-w-2xl rounded-lg border border-[#e4e4e7] bg-white p-5 sm:p-6">
+                <p className="text-xs text-[#77787d]">Name</p>
+                <p className="mt-1.5 text-base font-semibold capitalize">{displayName}</p>
+                <p className="mt-5 text-xs text-[#77787d]">Email</p>
+                <p className="mt-1.5 break-all text-base font-medium">{email}</p>
+                <p className="mt-5 text-xs text-[#77787d]">Role</p>
+                <p className="mt-1.5 text-base font-medium">Mentor</p>
               </div>
             </section>
           )}
         </main>
+        <nav aria-label="Mentor workspace" className="fixed inset-x-0 bottom-0 z-40 border-t border-[#e4e4e7] bg-white/95 pb-[env(safe-area-inset-bottom)] shadow-[0_-8px_24px_rgba(20,20,20,0.06)] backdrop-blur lg:hidden">
+          <div className="mx-auto grid h-16 max-w-md grid-cols-4 items-center gap-2 px-4">
+            {navigation.map(({ id, label, icon: Icon }) => (
+              <button
+                key={id}
+                type="button"
+                title={label}
+                aria-label={label}
+                aria-current={activeView === id ? 'page' : undefined}
+                onClick={() => {
+                  setActiveView(id)
+                  if (id === 'reports') setReportSessionId(null)
+                }}
+                className={`mx-auto grid size-12 place-items-center rounded-xl transition-colors ${activeView === id ? 'bg-[#fff1f0] text-[#d52b27]' : 'text-[#77787d] hover:bg-[#f7f7f8]'}`}
+              >
+                <Icon size={21} strokeWidth={1.9} />
+              </button>
+            ))}
+          </div>
+        </nav>
       </div>
     </div>
   )

@@ -7,20 +7,20 @@ import { getAccessToken } from '@/lib/supabase/auth-token'
 const SQUADS = ['138', '139', '183']
 
 export default function ProfileSetup({
-  email,
-  fullName: initialFullName,
-  squad: initialSquad,
+  email = '',
+  fullName: initialFullName = '',
+  squad: initialSquad = '',
 }: {
-  email: string
-  fullName: string
-  squad: string
+  email?: string | null
+  fullName?: string | null
+  squad?: string | null
 }) {
   const router = useRouter()
-  const [fullName, setFullName] = useState(initialFullName)
-  const [squad, setSquad] = useState(SQUADS.includes(initialSquad) ? initialSquad : '')
+  const [fullName, setFullName] = useState(initialFullName ?? '')
+  const [squad, setSquad] = useState(SQUADS.includes(initialSquad ?? '') ? initialSquad ?? '' : '')
   const [error, setError] = useState('')
   const [submitting, setSubmitting] = useState(false)
-  const isMentor = email.trim().toLowerCase().endsWith('@kalvium.com')
+  const isMentor = email?.trim().toLowerCase().endsWith('@kalvium.com') ?? false
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()

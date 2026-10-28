@@ -16,6 +16,10 @@ export default async function DashboardPage() {
     .maybeSingle()
 
   if (profileError) {
+    console.error('Failed to load dashboard profile', {
+      code: profileError.code,
+      message: profileError.message,
+    })
     return (
       <div className="min-h-screen flex items-center justify-center bg-[#f7f7f8] p-6">
         <div className="max-w-md rounded-xl border border-[#e7e7ea] bg-white p-6 text-center">

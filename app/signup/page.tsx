@@ -5,6 +5,7 @@ import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { useAuth, LoadingSpinner } from '@/components/providers'
 import Link from 'next/link'
+import { isValidEmailFormat } from '@/lib/email-validation'
 
 const SQUADS = ['138', '139', '183']
 
@@ -34,10 +35,16 @@ export default function SignupPage() {
 
     setError('')
     setSuccess('')
+    const normalizedEmail = email.trim()
+    if (!isValidEmailFormat(normalizedEmail)) {
+      setError('Please enter a valid email address.')
+      return
+    }
+
     setSubmitting(true)
     try {
       const { data, error: authError } = await supabase.auth.signUp({
-        email,
+        email: normalizedEmail,
         password,
         options: {
           data: { full_name: fullName },
