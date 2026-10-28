@@ -20,6 +20,7 @@ import { getAccessToken } from '@/lib/supabase/auth-token'
 
 type Session = { id: string; squad: string; name: string; status: string; started_at: string; mentor_id: string }
 type Handover = { id: string; student_id: string; session_id: string; status: string; reason: string | null; updated_at: string; student?: { full_name: string } }
+type StudentAccount = { id: string; full_name: string; squad: string | null; created_at: string }
 type View = 'sessions' | 'reports' | 'squads' | 'profile'
 
 const squads = ['138', '139', '183']
@@ -35,6 +36,7 @@ export default function MentorPage() {
   const { user, loading: authLoading } = useAuth()
   const [sessions, setSessions] = useState<Session[]>([])
   const [handovers, setHandovers] = useState<Handover[]>([])
+  const [students, setStudents] = useState<StudentAccount[]>([])
   const [profile, setProfile] = useState<{ role: string; squad: string | null } | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
@@ -74,9 +76,15 @@ export default function MentorPage() {
       if (!profRes.ok || !sessRes.ok) {
         throw new Error(prof.error || sess.error || 'Unable to load your workspace')
       }
+      const studentRes = await fetch('/api/students', { credentials: 'include', headers })
+      const studentData = await studentRes.json()
+      if (prof.profile?.role === 'mentor' && !studentRes.ok) {
+        throw new Error(studentData.error || 'Unable to load student accounts')
+      }
       setProfile(prof.profile ?? null)
       setSessions(sess.sessions ?? [])
       setHandovers(hand.handovers ?? [])
+      setStudents(studentData.students ?? [])
       setError('')
     } catch (err: any) {
       setError(err.message || 'Failed to load data')
@@ -407,9 +415,41 @@ export default function MentorPage() {
                     <UsersRound size={20} className="mb-4 text-[#e53935]" />
                     <span className="block text-base font-semibold">Squad {squad}</span>
                     <span className="mt-1.5 block text-sm text-[#77787d]">{sessions.filter((session) => session.squad === squad && session.status === 'active').length} active sessions</span>
+                    <span className="mt-1 block text-sm text-[#77787d]">{students.filter((student) => student.squad === squad).length} registered accounts</span>
                   </button>
                 ))}
               </div>
+              <section className="mt-10" aria-labelledby="student-accounts-title">
+                <h2 id="student-accounts-title" className="text-xl font-bold">Registered student accounts</h2>
+                <p className="mb-5 mt-1.5 text-sm text-[#77787d]">Students who have completed profile setup in Phosub.</p>
+                <div className="grid gap-4 xl:grid-cols-3">
+                  {squads.map((squad) => {
+                    const squadStudents = students.filter((student) => student.squad === squad)
+                    return (
+                      <section key={squad} className="rounded-lg border border-[#e4e4e7] bg-white p-4 sm:p-5" aria-label={`Registered students in Squad ${squad}`}>
+                        <div className="mb-3 flex items-center justify-between gap-3">
+                          <h3 className="text-base font-semibold">Squad {squad}</h3>
+                          <span className="rounded-full bg-[#f1f1f2] px-2.5 py-1 text-xs font-semibold text-[#555]">{squadStudents.length}</span>
+                        </div>
+                        {squadStudents.length ? (
+                          <ul className="divide-y divide-[#f0f0f1]">
+                            {squadStudents.map((student) => (
+                              <li key={student.id} className="py-3 first:pt-1 last:pb-1">
+                                <p className="text-sm font-medium">{student.full_name}</p>
+                                <time dateTime={student.created_at} className="mt-1 block text-xs text-[#77787d]">
+                                  Account created {new Date(student.created_at).toLocaleDateString()}
+                                </time>
+                              </li>
+                            ))}
+                          </ul>
+                        ) : (
+                          <p className="py-3 text-sm text-[#77787d]">No student profiles yet.</p>
+                        )}
+                      </section>
+                    )
+                  })}
+                </div>
+              </section>
             </section>
           ) : activeView === 'reports' ? (
             <section>

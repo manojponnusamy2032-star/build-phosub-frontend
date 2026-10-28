@@ -8,7 +8,8 @@ import { createClient as createSupabaseClient } from '@/lib/supabase/client'
 import { getAccessToken } from '@/lib/supabase/auth-token'
 
 type Session = { id: string; squad: string; name: string; status: string; started_at: string }
-type Handover = { id: string; status: string; reason: string | null; updated_at: string }
+type Handover = { id: string; status: string; reason: string | null; phone_model: string | null; updated_at: string }
+type HandoverStatus = 'submitted' | 'not_submitted' | 'retrieved'
 
 export default function StudentPage() {
   const router = useRouter()
@@ -18,7 +19,11 @@ export default function StudentPage() {
   const [profile, setProfile] = useState<{ role: string; squad: string | null } | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
-  const [updatingStatus, setUpdatingStatus] = useState('')
+  const [notice, setNotice] = useState('')
+  const [updatingStatus, setUpdatingStatus] = useState<HandoverStatus | ''>('')
+  const [reasonStatus, setReasonStatus] = useState<HandoverStatus | null>(null)
+  const [reason, setReason] = useState('')
+  const [phoneModel, setPhoneModel] = useState('')
 
   useEffect(() => {
     if (authLoading || !user) return
@@ -49,9 +54,20 @@ export default function StudentPage() {
     }
   }
 
-  async function updateHandover(status: string, reason: string) {
+  async function updateHandover(status: HandoverStatus, reasonText = '', phoneModelText = '') {
     if (!user) return
+    const trimmedReason = reasonText.trim()
+    const trimmedPhoneModel = phoneModelText.trim()
+    if (status !== 'submitted' && !trimmedReason) {
+      setError('Please enter a reason before updating your status.')
+      return
+    }
+    if (status === 'submitted' && !trimmedPhoneModel) {
+      setError('Enter your phone model before marking it submitted.')
+      return
+    }
     setError('')
+    setNotice('')
     setUpdatingStatus(status)
     try {
       const token = await getAccessToken()
@@ -63,11 +79,15 @@ export default function StudentPage() {
           Authorization: `Bearer ${token}`,
         },
         credentials: 'include',
-        body: JSON.stringify({ status, reason }),
+        body: JSON.stringify({ status, reason: trimmedReason, phoneModel: trimmedPhoneModel }),
       })
       const result = await res.json().catch(() => ({}))
       if (!res.ok) throw new Error(result.error || 'Failed to update handover')
       await loadData(false)
+      setReasonStatus(null)
+      setReason('')
+      setPhoneModel('')
+      setNotice('Your handover status was updated.')
     } catch (updateError) {
       setError(updateError instanceof Error ? updateError.message : 'Failed to update handover')
     } finally {
@@ -120,8 +140,13 @@ export default function StudentPage() {
       </header>
       <main className="max-w-6xl mx-auto px-5 py-8">
         <h1 className="mb-6 text-2xl font-bold">Student Dashboard</h1>
+        {notice && (
+          <div role="status" aria-live="polite" className="mb-6 rounded-lg border border-[#bbebca] bg-[#f2fbf5] p-4 text-sm text-[#166534]">
+            {notice}
+          </div>
+        )}
         {error && (
-          <div className="mb-6 rounded-lg border border-[#ffcdd2] bg-[#fff8f8] p-4 text-sm text-[#C62828]">
+          <div role="alert" className="mb-6 rounded-lg border border-[#ffcdd2] bg-[#fff8f8] p-4 text-sm text-[#C62828]">
             {error}
           </div>
         )}
@@ -135,10 +160,10 @@ export default function StudentPage() {
             <div className="mb-8 rounded-xl border border-[#e7e7ea] bg-white p-6">
               <h2 className="mb-4 text-lg font-bold">Active Session</h2>
               {session ? (
-                <div className="grid gap-4 md:grid-cols-3">
+                <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
                   <div className="rounded-lg border border-[#e7e7ea] bg-[#f7f7f8] p-4">
-                    <p className="text-xs text-[#666]">Session ID</p>
-                    <p className="font-mono text-xs">{session.id}</p>
+                    <p className="text-xs text-[#666]">Session</p>
+                    <p className="font-semibold">{session.name || 'Phone handover'}</p>
                   </div>
                   <div className="rounded-lg border border-[#e7e7ea] bg-[#f7f7f8] p-4">
                     <p className="text-xs text-[#666]">Squad</p>
@@ -147,6 +172,10 @@ export default function StudentPage() {
                   <div className="rounded-lg border border-[#e7e7ea] bg-[#f7f7f8] p-4">
                     <p className="text-xs text-[#666]">Status</p>
                     <p className="font-semibold text-[#E53935]">{session.status}</p>
+                  </div>
+                  <div className="rounded-lg border border-[#e7e7ea] bg-[#f7f7f8] p-4">
+                    <p className="text-xs text-[#666]">Started</p>
+                    <p className="font-medium">{new Date(session.started_at).toLocaleString()}</p>
                   </div>
                 </div>
               ) : (
@@ -166,49 +195,122 @@ export default function StudentPage() {
                       <p className="text-sm text-[#666]">{handovers[0].reason}</p>
                     </div>
                   )}
+                  {handovers[0].phone_model && (
+                    <div className="flex items-center justify-between gap-4 px-4 py-3 rounded-lg border border-[#e7e7ea] bg-[#f7f7f8]">
+                      <span className="text-sm font-semibold">Phone model</span>
+                      <span className="text-right text-sm">{handovers[0].phone_model}</span>
+                    </div>
+                  )}
                 </div>
               ) : (
                 <p className="text-[#666]">No handover submitted yet.</p>
               )}
               <div className="mt-6 flex flex-wrap gap-3">
                 <button
-                  onClick={() => updateHandover('submitted', '')}
-                  disabled={!session || Boolean(updatingStatus)}
-                  className="px-4 py-2 rounded-lg bg-[#15803D] text-white font-semibold disabled:opacity-50 hover:bg-[#15803D]/90 transition-colors"
-                >
-                  {updatingStatus === 'submitted' ? 'Updating...' : 'Mark Submitted'}
-                </button>
-                <button
+                  type="button"
                   onClick={() => {
-                    const r = prompt('Reason for not submitting:')
-                    if (r === null) return
-                    if (!r.trim()) {
-                      setError('Please enter a reason before marking not submitted.')
-                      return
-                    }
-                    updateHandover('not_submitted', r)
+                    setReasonStatus('submitted')
+                    setPhoneModel('')
+                    setError('')
+                    setNotice('')
                   }}
                   disabled={!session || Boolean(updatingStatus)}
-                  className="px-4 py-2 rounded-lg bg-[#B91C1C] text-white font-semibold disabled:opacity-50 hover:bg-[#B91C1C]/90 transition-colors"
+                  className="min-h-11 px-4 py-2 rounded-lg bg-[#15803D] text-white font-semibold disabled:opacity-50 hover:bg-[#15803D]/90 transition-colors"
                 >
-                  {updatingStatus === 'not_submitted' ? 'Updating...' : 'Mark Not Submitted'}
+                  Mark Submitted
                 </button>
                 <button
+                  type="button"
                   onClick={() => {
-                    const r = prompt('Reason for retrieval:')
-                    if (r === null) return
-                    if (!r.trim()) {
-                      setError('Please enter a reason before marking retrieved.')
-                      return
-                    }
-                    updateHandover('retrieved', r)
+                    setReasonStatus('not_submitted')
+                    setReason('')
+                    setError('')
+                    setNotice('')
                   }}
                   disabled={!session || Boolean(updatingStatus)}
-                  className="px-4 py-2 rounded-lg bg-[#2563EB] text-white font-semibold disabled:opacity-50 hover:bg-[#2563EB]/90 transition-colors"
+                  className="min-h-11 px-4 py-2 rounded-lg bg-[#B91C1C] text-white font-semibold disabled:opacity-50 hover:bg-[#B91C1C]/90 transition-colors"
                 >
-                  {updatingStatus === 'retrieved' ? 'Updating...' : 'Mark Retrieved'}
+                  Mark Not Submitted
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setReasonStatus('retrieved')
+                    setReason('')
+                    setError('')
+                    setNotice('')
+                  }}
+                  disabled={!session || Boolean(updatingStatus)}
+                  className="min-h-11 px-4 py-2 rounded-lg bg-[#2563EB] text-white font-semibold disabled:opacity-50 hover:bg-[#2563EB]/90 transition-colors"
+                >
+                  Mark Retrieved
                 </button>
               </div>
+              {reasonStatus && (
+                <form
+                  className="mt-5 max-w-xl rounded-lg border border-[#e7e7ea] bg-[#fafafa] p-4"
+                  onSubmit={(event) => {
+                    event.preventDefault()
+                    void updateHandover(reasonStatus, reason, phoneModel)
+                  }}
+                >
+                  {reasonStatus === 'submitted' ? (
+                    <>
+                      <label htmlFor="phone-model" className="block text-sm font-semibold">Phone model</label>
+                      <input
+                        id="phone-model"
+                        type="text"
+                        required
+                        maxLength={100}
+                        autoComplete="off"
+                        placeholder="For example, Samsung Galaxy A55"
+                        value={phoneModel}
+                        onChange={(event) => setPhoneModel(event.target.value)}
+                        disabled={Boolean(updatingStatus)}
+                        className="mt-2 block min-h-11 w-full rounded-lg border border-[#e7e7ea] bg-white px-3 py-2 text-sm focus:border-[#E53935] focus:ring-1 focus:ring-[#E53935] disabled:bg-[#f1f1f2]"
+                      />
+                      <p className="mt-1 text-right text-xs text-[#77787d]">{phoneModel.length}/100</p>
+                    </>
+                  ) : (
+                    <>
+                      <label htmlFor="handover-reason" className="block text-sm font-semibold">
+                        Reason for {reasonStatus === 'retrieved' ? 'retrieving the phone' : 'not submitting'}
+                      </label>
+                      <textarea
+                        id="handover-reason"
+                        required
+                        maxLength={500}
+                        rows={3}
+                        value={reason}
+                        onChange={(event) => setReason(event.target.value)}
+                        disabled={Boolean(updatingStatus)}
+                        className="mt-2 block w-full rounded-lg border border-[#e7e7ea] bg-white px-3 py-2 text-sm focus:border-[#E53935] focus:ring-1 focus:ring-[#E53935] disabled:bg-[#f1f1f2]"
+                      />
+                      <p className="mt-1 text-right text-xs text-[#77787d]">{reason.length}/500</p>
+                    </>
+                  )}
+                  <div className="mt-3 flex flex-wrap gap-2">
+                    <button
+                      type="submit"
+                      disabled={Boolean(updatingStatus) || (reasonStatus === 'submitted' ? !phoneModel.trim() : !reason.trim())}
+                      className="min-h-11 rounded-lg bg-[#E53935] px-4 text-sm font-semibold text-white hover:bg-[#C62828] disabled:cursor-not-allowed disabled:opacity-50"
+                    >
+                      {updatingStatus === reasonStatus ? 'Saving...' : reasonStatus === 'submitted' ? 'Confirm submission' : 'Save status'}
+                    </button>
+                    <button
+                      type="button"
+                      disabled={Boolean(updatingStatus)}
+                      onClick={() => {
+                        setReasonStatus(null)
+                        setReason('')
+                        setPhoneModel('')
+                        setError('')
+                      }}
+                      className="min-h-11 rounded-lg border border-[#e7e7ea] px-4 text-sm font-semibold hover:bg-white disabled:opacity-50"
+                    >Cancel</button>
+                  </div>
+                </form>
+              )}
             </div>
             <div className="rounded-xl border border-[#e7e7ea] bg-white p-6">
               <h2 className="mb-4 text-lg font-bold">History</h2>
@@ -217,6 +319,7 @@ export default function StudentPage() {
                   <thead className="bg-[#fafafa] text-xs text-[#666]">
                     <tr>
                       <th className="px-4 py-3">Status</th>
+                      <th className="px-4 py-3">Phone model</th>
                       <th className="px-4 py-3">Reason</th>
                       <th className="px-4 py-3">Updated</th>
                     </tr>
@@ -225,6 +328,7 @@ export default function StudentPage() {
                     {handovers.map((h) => (
                       <tr key={h.id} className="border-t border-[#f0f0f1]">
                         <td className="px-4 py-3 font-semibold">{h.status}</td>
+                        <td className="px-4 py-3">{h.phone_model || '—'}</td>
                         <td className="px-4 py-3 text-[#666]">{h.reason || '—'}</td>
                         <td className="px-4 py-3 text-[#666]">{new Date(h.updated_at).toLocaleString()}</td>
                       </tr>

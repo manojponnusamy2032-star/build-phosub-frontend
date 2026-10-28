@@ -1,33 +1,60 @@
-# build-phosub-frontend
+# Phosub
 
-This is a [Next.js](https://nextjs.org) project bootstrapped with [v0](https://v0.app).
+Phosub manages phone handover sessions for student squads. Mentors start and end sessions; students in the active squad record whether they submitted or retrieved a phone, with a reason where required.
 
-## Built with v0
+## Prerequisites
 
-This repository is linked to a [v0](https://v0.app) project. You can continue developing by visiting the link below -- start new chats to make changes, and v0 will push commits directly to this repo. Every merge to `main` will automatically deploy.
+- Node.js 22.6 or later
+- pnpm 12.3.4 (the version pinned in `package.json`)
+- A Supabase project for local integration testing
 
-[Continue working on v0 →](https://v0.app/chat/projects/prj_IH5GzhdSvU1W8LW7TBtvRrio0OFK)
-
-## Getting Started
-
-First, run the development server:
+## Local setup
 
 ```bash
-npm run dev
-# or
-yarn dev
-# or
+pnpm install --frozen-lockfile
+```
+
+Create `.env.local` with these variable names:
+
+- `NEXT_PUBLIC_SUPABASE_URL`
+- `NEXT_PUBLIC_SUPABASE_ANON_KEY` or `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY`
+- `NEXT_PUBLIC_APP_URL`
+- `SUPABASE_SERVICE_ROLE_KEY` (server-side only; never use a `NEXT_PUBLIC_` prefix)
+
+Do not commit `.env.local` or any file containing real credentials. The service-role key bypasses row-level security and must only be available to server code.
+
+Review `supabase/schema.sql` before setting up a database. It is the repository's current schema definition, not an automatically applied migration. Apply database changes to a disposable local/test project first; this repository does not apply schema changes to a remote project automatically.
+
+Start the app:
+
+```bash
 pnpm dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Open `http://localhost:3000`.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Checks
 
-## Learn More
+```bash
+pnpm typecheck
+pnpm test
+pnpm build
+```
 
-To learn more, take a look at the following resources:
+The unit tests use Node's built-in test runner. The production build in CI uses placeholder Supabase configuration and does not connect to a real project. No production secrets are required for these checks.
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-- [v0 Documentation](https://v0.app/docs) - learn about v0 and how to use it.
+## Workflow and data model
+
+- The profile API derives roles from the verified email domain, but the current database insert policy does not prevent direct self-assignment of `mentor`. Do not treat this as secure mentor provisioning until a reviewed database migration adds a trusted mentor approval mechanism and direct-write tests pass.
+- A squad can have at most one active session.
+- Students can submit handover statuses only for their own active squad session.
+- `handovers` stores the current status. `handover_events` stores status-change history.
+
+The SQL file contains RLS policies and database triggers. API routes that use the service-role client must perform their own authorization checks because that client bypasses RLS.
+
+## Troubleshooting
+
+- `PGRST205` for a table means the connected project's schema cache cannot find that table. Confirm the local schema has been reviewed and applied to the intended test project, then refresh the schema cache if needed.
+- A missing profile after email confirmation can be completed through the profile setup flow.
+- Confirmation redirects must use an origin configured in Supabase Auth URL settings. Email delivery and confirmation requirements are controlled by Supabase Auth, not the client-side validator.
+- If a server-side API returns a generic error, inspect the local server log. Never paste service-role keys, access tokens, passwords, or cookies into issue reports.

@@ -46,10 +46,10 @@ export default function LoginPage() {
       if (err) {
         // Check if it's an unconfirmed email error
         const errorMessage = err.message || 'Login failed'
-        const isUnconfirmed = /invalid.*confirmation|email.*confirmation|confirmation.*required/i.test(errorMessage)
+        const isUnconfirmed = /email\s+not\s+confirmed|invalid.*confirmation|email.*confirmation|confirmation.*required/i.test(errorMessage)
 
         if (isUnconfirmed) {
-          setError('Please confirm your email first. A confirmation link has been sent to your email address.')
+          setError('Please confirm your email before signing in.')
           setShowResend(true)
         } else {
           setError(errorMessage)
@@ -72,16 +72,26 @@ export default function LoginPage() {
     setError(null)
     setSubmitting(true)
     try {
-      const { error } = await supa.auth.signInWithOtp({
-        email,
-        options: { emailRedirectTo: `${process.env.NEXT_PUBLIC_APP_URL}/auth/callback` },
+        const { error } = await supa.auth.signInWithOtp({
+          email,
+          options: {
+            shouldCreateUser: false,
+            emailRedirectTo: new URL(
+              '/auth/callback',
+              process.env.NEXT_PUBLIC_APP_URL || window.location.origin,
+            ).toString(),
+          },
       })
       if (error) {
-        setError(error.message || 'Failed to send confirmation email')
+          setShowResend(true)
+          setError(/rate.?limit|too many requests/i.test(error.message)
+            ? 'Too many confirmation emails have been requested. Please wait before trying again.'
+            : error.message || 'Failed to send confirmation email')
       } else {
         setError('A new confirmation email has been sent to your email address.')
       }
     } catch (err: any) {
+      setShowResend(true)
       setError(err.message || 'Failed to send confirmation email')
     } finally {
       setSubmitting(false)

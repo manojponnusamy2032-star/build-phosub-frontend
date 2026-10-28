@@ -18,8 +18,17 @@ export default function ConfirmEmailPage() {
   const [success, setSuccess] = useState<string | null>(null)
 
   useEffect(() => {
-    // Check for confirmation parameters in URL
     const params = new URLSearchParams(window.location.search)
+    const errorCode = params.get('error_code')
+    if (errorCode) {
+      setError(
+        errorCode === 'otp_expired' || errorCode === 'access_denied'
+          ? 'This confirmation link is invalid or has expired. Request a new confirmation email and try again.'
+          : 'We could not confirm your email. Request a new confirmation email or sign in if your account is already confirmed.',
+      )
+      return
+    }
+
     const type = params.get('type')
 
     if (type === 'signup') {

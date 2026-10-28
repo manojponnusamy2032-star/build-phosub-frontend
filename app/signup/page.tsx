@@ -48,7 +48,10 @@ export default function SignupPage() {
         password,
         options: {
           data: { full_name: fullName },
-          emailRedirectTo: `${process.env.NEXT_PUBLIC_APP_URL}/auth/callback`,
+          emailRedirectTo: new URL(
+            '/auth/callback',
+            process.env.NEXT_PUBLIC_APP_URL || window.location.origin,
+          ).toString(),
         },
       })
       if (authError) throw authError
