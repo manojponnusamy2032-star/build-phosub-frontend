@@ -18,8 +18,6 @@ export default function SignupPage() {
   const [error, setError] = useState('')
   const [success, setSuccess] = useState('')
   const [submitting, setSubmitting] = useState(false)
-  const [lastRequestTime, setLastRequestTime] = useState<number | null>(null)
-  const COOLDOWN_MS = 300000 // 5 minutes cooldown after rate limit
 
   // If already signed in, go to dashboard
   if (user) {
@@ -33,14 +31,7 @@ export default function SignupPage() {
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault()
     if (!supabase) return
-    
-    // Check cooldown after rate limit error
-    if (lastRequestTime && Date.now() - lastRequestTime < COOLDOWN_MS) {
-      const minutesRemaining = Math.ceil((COOLDOWN_MS - (Date.now() - lastRequestTime)) / 60000)
-      setError(`Please wait ${minutesRemaining} minute(s) before trying again. Email rate limit has been reached.`)
-      return
-    }
-    
+
     setError('')
     setSuccess('')
     setSubmitting(true)
@@ -48,14 +39,16 @@ export default function SignupPage() {
       const { data, error: authError } = await supabase.auth.signUp({
         email,
         password,
-        options: { data: { full_name: fullName, ...(squad ? { squad } : {}) } },
+        options: {
+          data: { full_name: fullName },
+          emailRedirectTo: `${process.env.NEXT_PUBLIC_APP_URL}/auth/callback`,
+        },
       })
       if (authError) throw authError
       if (!data.user) throw new Error('No user returned')
 
       if (!data.session) {
         setSuccess('Account created. Check your email for a confirmation link, then sign in.')
-        setLastRequestTime(Date.now())
         return
       }
 
@@ -82,19 +75,15 @@ export default function SignupPage() {
       router.push(result.profile?.role === 'mentor' ? '/mentor' : '/student')
     } catch (err: any) {
       const message = err.message || 'Signup failed'
-      // Only set the detailed rate limit message if we're not already in cooldown
-      // and the error is actually about email rate limiting
+      // Only set the detailed rate limit message if the error is actually about email rate limiting
       const isRateLimitError = /email rate limit exceeded/i.test(message)
       setError(
         isRateLimitError
           ? 'Too many confirmation emails have been requested. Please wait before trying again. The project owner can configure custom SMTP in Supabase to raise the email sending limit.'
           : message,
       )
-      // Set cooldown on rate limit error
-      if (isRateLimitError) {
-        setLastRequestTime(Date.now())
-      }
-    } finally {
+    }
+    finally {
       setSubmitting(false)
     }
   }
@@ -110,20 +99,10 @@ export default function SignupPage() {
           </span>
           <span className="font-bold tracking-tight text-[21px]">phosub</span>
         </div>
-        <h2 className="mb-2 text-xl font-bold">Create account</h2>
-        <p className="mb-8 text-sm text-[#666]">Your account will be stored securely in Supabase.</p>
+        <h2 className="mb-2 text-xl font-bold">Sign up</h2>
+        <p className="mb-8 text-sm text-[#666]">Create your account to get started.</p>
         {error && (
-          <div className="mb-6 rounded-lg border border-[#ffcdd2] bg-[#fff8f8] p-4 text-sm text-[#C62828]">
-            {error}
-          </div>
-        )}
-        {success && (
-          <div role="status" className="mb-6 rounded-lg border border-[#bbebca] bg-[#f2fbf5] p-4 text-sm text-[#166534]">
-            {success}
-          </div>
-        )}
-        {error && !submitting && (
-          <div role="status" className="mb-6 rounded-lg border-l-4 border-[#E53935] bg-[#fef3f3] p-4 text-sm text-[#C62828]">
+          <div className="mb-6 rounded-lg border border-[#bbebca] bg-[#f2fbf5] p-4 text-sm text-[#166534]">
             {error}
           </div>
         )}
@@ -185,10 +164,10 @@ export default function SignupPage() {
           )}
           <button
             type="submit"
-            disabled={submitting || Boolean(success) || !suggestedRole || (suggestedRole === 'student' && !squad) || (lastRequestTime !== null && Date.now() - lastRequestTime < COOLDOWN_MS)}
+            disabled={submitting || Boolean(success) || !suggestedRole || (suggestedRole === 'student' && !squad)}
             className="w-full flex justify-center py-2.5 rounded-lg bg-[#E53935] text-white font-semibold disabled:opacity-50 disabled:cursor-not-allowed hover:bg-[#C62828] transition-colors"
           >
-            {submitting ? 'Creating account...' : lastRequestTime !== null && Date.now() - lastRequestTime < COOLDOWN_MS ? `Please wait ${Math.ceil((COOLDOWN_MS - (Date.now() - lastRequestTime)) / 60000)} minute(s)` : success ? 'Check your email' : 'Create account'}
+            {submitting ? 'Creating account...' : success ? 'Check your email' : 'Create account'}
           </button>
         </form>
         <p className="mt-8 text-center text-sm text-[#666]">
