@@ -1,7 +1,7 @@
 'use client'
 export const dynamic = 'force-dynamic'
 
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { useAuth, LoadingSpinner } from '@/components/providers'
 import Link from 'next/link'
@@ -19,12 +19,11 @@ export default function SignupPage() {
   const [error, setError] = useState('')
   const [success, setSuccess] = useState('')
   const [submitting, setSubmitting] = useState(false)
+  const [signupAttempted, setSignupAttempted] = useState(false)
 
-  // If already signed in, go to dashboard
-  if (user) {
-    router.push('/dashboard')
-    return <LoadingSpinner />
-  }
+  useEffect(() => {
+    if (user && !signupAttempted) router.replace('/dashboard')
+  }, [router, signupAttempted, user])
 
   const normalizedEmail = email.trim().toLowerCase()
   const suggestedRole = normalizedEmail.endsWith('@kalvium.com') ? 'mentor' : normalizedEmail.endsWith('@kalvium.community') ? 'student' : null
@@ -41,6 +40,7 @@ export default function SignupPage() {
       return
     }
 
+    setSignupAttempted(true)
     setSubmitting(true)
     try {
       const { data, error: authError } = await supabase.auth.signUp({
@@ -98,7 +98,7 @@ export default function SignupPage() {
     }
   }
 
-  if (loading) return <LoadingSpinner />
+  if (loading || (user && !signupAttempted)) return <LoadingSpinner />
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-[#f7f7f8]">
