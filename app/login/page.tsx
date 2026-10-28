@@ -1,4 +1,5 @@
 'use client'
+
 export const dynamic = 'force-dynamic'
 
 import { useState } from 'react'
@@ -9,9 +10,19 @@ import Link from 'next/link'
 export default function LoginPage() {
   const router = useRouter()
   const { supabase, user, loading } = useAuth()
+
+  // Handle null supabase
+  if (!supabase) {
+    return <p className="text-center text-sm text-[#666]">Configuration error: Supabase not initialized.</p>
+  }
+
+  // Use non-null supabase reference
+  const supa = supabase
+
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
-  const [error, setError] = useState('')
+  const [error, setError] = useState<string | null>(null)
+  const [showResend, setShowResend] = useState(false)
   const [submitting, setSubmitting] = useState(false)
 
   // If already signed in, go to dashboard
@@ -22,15 +33,31 @@ export default function LoginPage() {
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault()
-    if (!supabase) return
-    setError('')
+    if (!supa) return
+
+    setError(null)
     setSubmitting(true)
     try {
-      const { error: err } = await supabase.auth.signInWithPassword({
+      const { error: err } = await supa.auth.signInWithPassword({
         email,
         password,
       })
-      if (err) throw err
+
+      if (err) {
+        // Check if it's an unconfirmed email error
+        const errorMessage = err.message || 'Login failed'
+        const isUnconfirmed = /invalid.*confirmation|email.*confirmation|confirmation.*required/i.test(errorMessage)
+
+        if (isUnconfirmed) {
+          setError('Please confirm your email first. A confirmation link has been sent to your email address.')
+          setShowResend(true)
+        } else {
+          setError(errorMessage)
+        }
+        return
+      }
+
+      // Successful login
       router.push('/dashboard')
     } catch (err: any) {
       setError(err.message || 'Login failed')
@@ -39,7 +66,44 @@ export default function LoginPage() {
     }
   }
 
+  // Handle resend confirmation
+  async function handleResendConfirm() {
+    setShowResend(false)
+    setError(null)
+    setSubmitting(true)
+    try {
+      const { error } = await supa.auth.signInWithOtp({
+        email,
+        options: { emailRedirectTo: `${process.env.NEXT_PUBLIC_APP_URL}/auth/callback` },
+      })
+      if (error) {
+        setError(error.message || 'Failed to send confirmation email')
+      } else {
+        setError('A new confirmation email has been sent to your email address.')
+      }
+    } catch (err: any) {
+      setError(err.message || 'Failed to send confirmation email')
+    } finally {
+      setSubmitting(false)
+    }
+  }
+
   if (loading) return <LoadingSpinner />
+
+  // If there's a resend message showing, include the resend button
+  const resendSection = showResend && (
+    <div className="mt-4">
+      <p className="text-sm text-[#666]">
+        Don't have a confirmation email?{' '}
+        <button
+          onClick={handleResendConfirm}
+          className="ml-2 text-[#E53935] font-semibold hover:underline cursor-pointer"
+        >
+          Resend confirmation email
+        </button>
+      </p>
+    </div>
+  )
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-[#f7f7f8]">
@@ -86,6 +150,7 @@ export default function LoginPage() {
             {submitting ? 'Signing in...' : 'Sign in'}
           </button>
         </form>
+        {resendSection}
         <p className="mt-8 text-center text-sm text-[#666]">
           Don't have an account?{' '}
           <Link href="/signup" className="text-[#E53935] font-semibold hover:underline">
