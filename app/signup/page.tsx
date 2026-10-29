@@ -31,7 +31,10 @@ export default function SignupPage() {
       const { error: authError } = await supabase.auth.signInWithOAuth({
         provider: 'google',
         options: {
-          redirectTo: new URL('/auth/callback', window.location.origin).toString(),
+          redirectTo: new URL(
+            '/auth/callback',
+            process.env.NEXT_PUBLIC_APP_URL || window.location.origin,
+          ).toString(),
           queryParams: { prompt: 'select_account' },
         },
       })
