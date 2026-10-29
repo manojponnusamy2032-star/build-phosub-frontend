@@ -144,19 +144,19 @@ export default function StudentPage() {
             <h2 className="mb-4 text-lg font-bold">Active Session</h2>
             {session && hasActiveSession ? (
               <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-                <div className="rounded-lg border border-[#e7e7ea] bg-[#f7f7f8] p-4">
+                <div className="rounded-lg border border-[#e7e7ea] bg-[#f8f8f9] p-4">
                   <p className="text-xs text-[#666]">Session</p>
                   <p className="font-semibold">{session.name || 'Phone handover'}</p>
                 </div>
-                <div className="rounded-lg border border-[#e7e7ea] bg-[#f7f7f8] p-4">
+                <div className="rounded-lg border border-[#e7e7ea] bg-[#f8f8f9] p-4">
                   <p className="text-xs text-[#666]">Squad</p>
                   <p className="font-semibold">{session.squad}</p>
                 </div>
-                <div className="rounded-lg border border-[#e7e7ea] bg-[#f7f7f8] p-4">
+                <div className="rounded-lg border border-[#e7e7ea] bg-[#f8f8f9] p-4">
                   <p className="text-xs text-[#666]">Status</p>
                   <p className="font-semibold text-[#E53935]">{session.status}</p>
                 </div>
-                <div className="rounded-lg border border-[#e7e7ea] bg-[#f7f7f8] p-4">
+                <div className="rounded-lg border border-[#e7e7ea] bg-[#f8f8f9] p-4">
                   <p className="text-xs text-[#666]">Started</p>
                   <p className="font-medium">{new Date(session.started_at).toLocaleString()}</p>
                 </div>
@@ -201,7 +201,7 @@ export default function StudentPage() {
                   setNotice('')
                 }}
                 disabled={!hasActiveSession || Boolean(updatingStatus)}
-                className="min-h-11 px-4 py-2 rounded-lg bg-[#15803D] text-white font-semibold disabled:opacity-50 hover:bg-[#15803D]/90 transition-colors"
+                className="min-h-11 rounded-lg bg-[#ef3027] px-4 py-2 font-semibold text-white transition-colors hover:bg-[#d92720] disabled:opacity-50"
               >
                 Mark Submitted
               </button>
@@ -214,7 +214,7 @@ export default function StudentPage() {
                   setNotice('')
                 }}
                 disabled={!hasActiveSession || Boolean(updatingStatus)}
-                className="min-h-11 px-4 py-2 rounded-lg bg-[#B91C1C] text-white font-semibold disabled:opacity-50 hover:bg-[#B91C1C]/90 transition-colors"
+                className="min-h-11 rounded-lg border border-[#dedee2] bg-white px-4 py-2 font-semibold text-[#303036] transition-colors hover:border-[#171717] hover:bg-[#f7f7f8] disabled:opacity-50"
               >
                 Mark Not Submitted
               </button>
@@ -227,7 +227,7 @@ export default function StudentPage() {
                   setNotice('')
                 }}
                 disabled={!hasActiveSession || Boolean(updatingStatus)}
-                className="min-h-11 px-4 py-2 rounded-lg bg-[#2563EB] text-white font-semibold disabled:opacity-50 hover:bg-[#2563EB]/90 transition-colors"
+                className="min-h-11 rounded-lg border border-[#dedee2] bg-white px-4 py-2 font-semibold text-[#303036] transition-colors hover:border-[#171717] hover:bg-[#f7f7f8] disabled:opacity-50"
               >
                 Mark Retrieved
               </button>
@@ -279,7 +279,7 @@ export default function StudentPage() {
                   <button
                     type="submit"
                     disabled={Boolean(updatingStatus) || (reasonStatus === 'submitted' ? !phoneModel.trim() : !reason.trim())}
-                    className="min-h-11 rounded-lg bg-[#E53935] px-4 text-sm font-semibold text-white hover:bg-[#C62828] disabled:cursor-not-allowed disabled:opacity-50"
+                    className="min-h-11 rounded-lg bg-[#ef3027] px-4 text-sm font-semibold text-white hover:bg-[#d92720] disabled:cursor-not-allowed disabled:opacity-50"
                   >
                     {updatingStatus === reasonStatus ? 'Saving...' : reasonStatus === 'submitted' ? 'Confirm submission' : 'Save status'}
                   </button>
