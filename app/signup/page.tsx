@@ -22,6 +22,29 @@ export default function SignupPage() {
   const normalizedEmail = email.trim().toLowerCase()
   const suggestedRole = normalizedEmail.endsWith('@kalvium.com') ? 'mentor' : normalizedEmail.endsWith('@kalvium.community') ? 'student' : null
 
+  async function handleGoogleSignIn() {
+    if (!supabase) return
+
+    setError('')
+    setSubmitting(true)
+    try {
+      const { error: authError } = await supabase.auth.signInWithOAuth({
+        provider: 'google',
+        options: {
+          redirectTo: new URL('/auth/callback', window.location.origin).toString(),
+          queryParams: { prompt: 'select_account' },
+        },
+      })
+      if (authError) throw authError
+    } catch (authError) {
+      const message = authError instanceof Error ? authError.message : 'Unable to continue with Google'
+      setError(/unsupported provider|provider is not enabled/i.test(message)
+        ? 'Google sign-in is not enabled yet. Ask the app administrator to configure Google in Supabase Auth.'
+        : message)
+      setSubmitting(false)
+    }
+  }
+
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault()
     if (!supabase) return
@@ -107,6 +130,19 @@ export default function SignupPage() {
             {error}
           </div>
         )}
+        <button
+          type="button"
+          onClick={handleGoogleSignIn}
+          disabled={loading || submitting}
+          className="flex w-full items-center justify-center rounded-lg border border-[#e7e7ea] bg-white py-2.5 text-sm font-semibold text-[#171717] transition-colors hover:bg-[#f7f7f8] disabled:cursor-not-allowed disabled:opacity-50"
+        >
+          {submitting ? 'Connecting to Google...' : 'Continue with Google'}
+        </button>
+        <div className="my-5 flex items-center gap-3 text-xs text-[#888]">
+          <span className="h-px flex-1 bg-[#e7e7ea]" />
+          <span>or sign up with email</span>
+          <span className="h-px flex-1 bg-[#e7e7ea]" />
+        </div>
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
             <label className="block text-sm font-semibold text-[#171717]">Full name</label>
