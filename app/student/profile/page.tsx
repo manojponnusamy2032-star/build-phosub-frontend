@@ -4,8 +4,9 @@ export const dynamic = 'force-dynamic'
 import { useEffect, useState } from 'react'
 import { useAuth, LoadingSpinner } from '@/components/providers'
 import { getAccessToken } from '@/lib/supabase/auth-token'
+import { ProfilePhotoEditor } from '@/components/profile-photo'
 
-type Profile = { id: string; full_name: string; email: string; role: string; squad: string | null }
+type Profile = { id: string; full_name: string; email: string; role: string; squad: string | null; avatar_url: string | null }
 
 export default function StudentProfilePage() {
   const { user, loading: authLoading } = useAuth()
@@ -63,6 +64,13 @@ export default function StudentProfilePage() {
         </div>
       ) : (
         <div className="max-w-2xl rounded-xl border border-[#e7e7ea] bg-white p-6">
+          <div className="mb-6 border-b border-[#e7e7ea] pb-6">
+            <ProfilePhotoEditor
+              avatarUrl={profile.avatar_url}
+              name={profile.full_name}
+              onUploaded={(avatarUrl) => setProfile((current) => current ? { ...current, avatar_url: avatarUrl } : current)}
+            />
+          </div>
           <dl className="space-y-5">
             <div>
               <dt className="text-xs text-[#77787d]">Name</dt>
@@ -83,10 +91,10 @@ export default function StudentProfilePage() {
           </dl>
 
           <div className="mt-6 rounded-lg border border-[#e7e7ea] bg-[#fafafa] p-4 text-sm text-[#666]">
-            <p className="font-semibold text-[#333]">Read-only profile</p>
+            <p className="font-semibold text-[#333]">Account details</p>
             <p className="mt-1">
               Your role, squad, identity, and email are managed through your verified account and cannot be changed here.
-              To request a correction, contact your mentor.
+              Your profile photo can be changed above.
             </p>
           </div>
         </div>

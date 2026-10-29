@@ -4,10 +4,18 @@ create table if not exists public.profiles (
   role text not null check (role in ('student', 'mentor')),
   squad text check (squad in ('138', '139', '183')),
   email text not null,
+  avatar_url text,
   created_at timestamptz not null default now(),
   constraint mentor_has_no_squad check (role = 'student' or squad is null),
   constraint student_has_squad check (role = 'mentor' or squad is not null)
 );
+
+insert into storage.buckets (id, name, public, file_size_limit, allowed_mime_types)
+values ('profile-photos', 'profile-photos', true, 5242880, array['image/jpeg', 'image/png', 'image/webp'])
+on conflict (id) do update set
+  public = excluded.public,
+  file_size_limit = excluded.file_size_limit,
+  allowed_mime_types = excluded.allowed_mime_types;
 
 create table if not exists public.sessions (
   id uuid primary key default gen_random_uuid(),

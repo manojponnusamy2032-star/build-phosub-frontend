@@ -82,8 +82,13 @@ export function useAuth() {
 
 export function LoadingSpinner() {
   return (
-    <div className="min-h-screen flex items-center justify-center bg-[#f7f7f8]">
-      <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#E53935]"></div>
+    <div role="status" aria-live="polite" className="flex min-h-screen flex-col items-center justify-center gap-4 bg-[#f7f7f8]">
+      <span className="relative grid size-14 place-items-center">
+        <span aria-hidden="true" className="absolute inset-0 animate-spin rounded-full border-[3px] border-[#e7e7ea] border-t-[#E53935]" />
+        <span aria-hidden="true" className="text-lg font-black text-[#E53935]">K</span>
+      </span>
+      <span aria-hidden="true" className="text-sm font-black tracking-[0.18em] text-[#202124]">KALVIUM</span>
+      <span className="sr-only">Loading...</span>
     </div>
   )
 }

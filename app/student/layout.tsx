@@ -8,8 +8,9 @@ import { LayoutDashboard, History, User, HelpCircle, LogOut } from 'lucide-react
 import { useAuth, LoadingSpinner } from '@/components/providers'
 import { createClient as createSupabaseClient } from '@/lib/supabase/client'
 import { getAccessToken } from '@/lib/supabase/auth-token'
+import { ProfileAvatar } from '@/components/profile-photo'
 
-type Profile = { role: string; squad: string | null; full_name?: string; email?: string }
+type Profile = { role: string; squad: string | null; full_name?: string; email?: string; avatar_url?: string | null }
 
 const navItems = [
   { href: '/student', label: 'Dashboard', icon: LayoutDashboard },
@@ -50,11 +51,20 @@ export default function StudentLayout({ children }: { children: React.ReactNode 
   }, [user, authLoading])
 
   useEffect(() => {
+    const handleAvatarUpdate = (event: Event) => {
+      const avatarUrl = (event as CustomEvent<string>).detail
+      if (avatarUrl) setProfile((current) => current ? { ...current, avatar_url: avatarUrl } : current)
+    }
+    window.addEventListener('phosub:avatar-updated', handleAvatarUpdate)
+    return () => window.removeEventListener('phosub:avatar-updated', handleAvatarUpdate)
+  }, [])
+
+  useEffect(() => {
     if (!authLoading && !user) router.replace('/login')
   }, [authLoading, user, router])
 
   if (authLoading) return <LoadingSpinner />
-  if (!user) return null
+  if (!user) return <LoadingSpinner />
 
   const squad = profile?.squad ?? '-'
 
@@ -109,9 +119,13 @@ export default function StudentLayout({ children }: { children: React.ReactNode 
             <span aria-hidden="true">/</span>
             <span className="font-medium text-[#333]">{navItems.find((item) => isActive(pathname ?? '', item.href))?.label ?? 'Dashboard'}</span>
           </div>
-          <div className="flex items-center gap-3 text-sm text-[#666]">
-            <span>Squad {squad}</span>
-          </div>
+          <Link href="/student/profile" aria-label="Open my profile" className="flex min-w-0 items-center gap-2.5 rounded-lg px-2 py-1 hover:bg-[#f7f7f8]">
+            <ProfileAvatar avatarUrl={profile?.avatar_url} name={profile?.full_name || user.email || 'Student'} />
+            <span className="hidden min-w-0 text-right sm:block">
+              <span className="block max-w-40 truncate text-xs font-semibold text-[#333]">{profile?.full_name || 'My profile'}</span>
+              <span className="block text-[11px] text-[#77787d]">Squad {squad}</span>
+            </span>
+          </Link>
         </header>
 
         <main className="mx-auto max-w-6xl px-5 py-8">{children}</main>

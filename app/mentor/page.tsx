@@ -17,6 +17,7 @@ import {
 import { useAuth, LoadingSpinner } from '@/components/providers'
 import { createClient as createSupabaseClient } from '@/lib/supabase/client'
 import { getAccessToken } from '@/lib/supabase/auth-token'
+import { ProfileAvatar, ProfilePhotoEditor } from '@/components/profile-photo'
 
 type Session = { id: string; squad: string; name: string; status: string; started_at: string; mentor_id: string }
 type Handover = { id: string; student_id: string; session_id: string; status: string; reason: string | null; updated_at: string; student?: { full_name: string } }
@@ -37,7 +38,7 @@ export default function MentorPage() {
   const [sessions, setSessions] = useState<Session[]>([])
   const [handovers, setHandovers] = useState<Handover[]>([])
   const [students, setStudents] = useState<StudentAccount[]>([])
-  const [profile, setProfile] = useState<{ role: string; squad: string | null } | null>(null)
+  const [profile, setProfile] = useState<{ role: string; squad: string | null; full_name: string; email: string; avatar_url: string | null } | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
   const [notice, setNotice] = useState('')
@@ -59,6 +60,15 @@ export default function MentorPage() {
       window.removeEventListener('focus', refreshOnFocus)
     }
   }, [user, authLoading])
+
+  useEffect(() => {
+    const handleAvatarUpdate = (event: Event) => {
+      const avatarUrl = (event as CustomEvent<string>).detail
+      if (avatarUrl) setProfile((current) => current ? { ...current, avatar_url: avatarUrl } : current)
+    }
+    window.addEventListener('phosub:avatar-updated', handleAvatarUpdate)
+    return () => window.removeEventListener('phosub:avatar-updated', handleAvatarUpdate)
+  }, [])
 
   async function loadData(showLoading = true) {
     if (showLoading) setLoading(true)
@@ -170,8 +180,7 @@ export default function MentorPage() {
 
   const isMentor = profile?.role === 'mentor'
   const email = user.email ?? ''
-  const displayName = email.split('@')[0]?.replace(/[._-]/g, ' ') || 'Mentor'
-  const initials = displayName.split(' ').map((part) => part[0]).join('').slice(0, 2).toUpperCase()
+  const displayName = profile?.full_name?.trim() || email.split('@')[0]?.replace(/[._-]/g, ' ') || 'Mentor'
   const activeTitle = navigation.find((item) => item.id === activeView)?.label ?? 'Sessions'
   const reportSession = sessions.find((session) => session.id === reportSessionId)
   const reportHandovers = reportSessionId
@@ -262,7 +271,7 @@ export default function MentorPage() {
                 }}
                 className="flex items-center gap-2 text-left"
               >
-                <span className="grid size-8 place-items-center rounded-full bg-[#f8dedd] text-xs font-bold text-[#d52b27]">{initials}</span>
+                <ProfileAvatar avatarUrl={profile?.avatar_url} name={displayName} />
                 <span className="hidden sm:block">
                   <span className="block max-w-40 truncate text-xs font-semibold">{displayName}</span>
                   <span className="block text-[11px] text-[#77787d]">mentor</span>
@@ -272,6 +281,14 @@ export default function MentorPage() {
               {accountMenuOpen && (
                 <div className="absolute right-0 top-11 z-40 w-64 rounded-lg border border-[#e4e4e7] bg-white p-3 shadow-lg">
                   <p className="truncate px-2 py-1 text-xs text-[#77787d]">{email}</p>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setActiveView('profile')
+                      setAccountMenuOpen(false)
+                    }}
+                    className="mt-1 flex min-h-10 w-full items-center gap-2 rounded-md px-2 text-left text-sm hover:bg-[#f7f7f8]"
+                  ><UserRound size={16} /> My Profile</button>
                   <button
                     type="button"
                     onClick={() => createSupabaseClient().auth.signOut().then(() => router.replace('/login'))}
@@ -500,6 +517,13 @@ export default function MentorPage() {
               <p className="mb-2 text-xs font-bold uppercase tracking-[0.16em] text-[#e53935]">Mentor workspace</p>
               <h1 className="text-3xl font-bold">Profile</h1>
               <div className="mt-6 max-w-2xl rounded-lg border border-[#e4e4e7] bg-white p-5 sm:p-6">
+                <div className="mb-6 border-b border-[#e4e4e7] pb-6">
+                  <ProfilePhotoEditor
+                    avatarUrl={profile?.avatar_url}
+                    name={displayName}
+                    onUploaded={(avatarUrl) => setProfile((current) => current ? { ...current, avatar_url: avatarUrl } : current)}
+                  />
+                </div>
                 <p className="text-xs text-[#77787d]">Name</p>
                 <p className="mt-1.5 text-base font-semibold capitalize">{displayName}</p>
                 <p className="mt-5 text-xs text-[#77787d]">Email</p>

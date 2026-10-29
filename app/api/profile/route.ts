@@ -8,7 +8,7 @@ export async function GET(request: Request) {
   if (!userId) return NextResponse.json({ error: 'Authentication required' }, { status: 401 })
   const { createAdminClient } = await import('@/lib/supabase/admin')
   const admin = createAdminClient()
-  const { data, error } = await admin.from('profiles').select('id, full_name, email, role, squad').eq('id', userId).maybeSingle()
+  const { data, error } = await admin.from('profiles').select('id, full_name, email, role, squad, avatar_url').eq('id', userId).maybeSingle()
   if (error) {
     console.error('Unable to load profile', { code: error.code })
     return NextResponse.json({ error: 'Unable to load profile' }, { status: 500 })
@@ -44,7 +44,7 @@ export async function POST(request: Request) {
   if (role === 'student' && !squads.has(squad ?? '')) return NextResponse.json({ error: 'Choose squad 138, 139, or 183' }, { status: 400 })
   const { createAdminClient } = await import('@/lib/supabase/admin')
   const adminClient = createAdminClient()
-  const { data, error } = await adminClient.from('profiles').upsert({ id: userId, full_name: fullName, email, role, squad: role === 'student' ? squad : null }, { onConflict: 'id' }).select('id, full_name, email, role, squad').single()
+  const { data, error } = await adminClient.from('profiles').upsert({ id: userId, full_name: fullName, email, role, squad: role === 'student' ? squad : null }, { onConflict: 'id' }).select('id, full_name, email, role, squad, avatar_url').single()
   if (error) {
     console.error('Unable to save profile', { code: error.code })
     return NextResponse.json({ error: 'Unable to save profile' }, { status: 500 })
