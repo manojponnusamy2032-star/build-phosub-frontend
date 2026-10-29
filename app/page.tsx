@@ -1,8 +1,10 @@
 import Link from 'next/link'
+import AuthRedirect from '@/components/auth-redirect'
 
 export default function LandingPage() {
   return (
     <div className="min-h-screen bg-white text-[#171717]">
+      <AuthRedirect />
       <header className="mx-auto flex max-w-6xl items-center justify-between px-5 py-5 lg:px-8">
         <div className="flex items-center gap-2 font-bold tracking-tight text-[21px]">
           <span className="grid size-8 place-items-center rounded-[10px] bg-[#E53935] text-white">

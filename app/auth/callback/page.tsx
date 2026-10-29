@@ -6,18 +6,18 @@ import { useAuth, LoadingSpinner } from '@/components/providers'
 
 export default function ConfirmEmailPage() {
   const router = useRouter()
-  const { supabase, user, loading } = useAuth()
-
-  // If user already logged in, redirect
-  if (user) {
-    router.push('/dashboard')
-    return null
-  }
+  const { user, loading } = useAuth()
 
   const [error, setError] = useState<string | null>(null)
   const [success, setSuccess] = useState<string | null>(null)
 
   useEffect(() => {
+    if (loading) return
+    if (user) {
+      router.replace('/dashboard')
+      return
+    }
+
     const params = new URLSearchParams(window.location.search)
     const errorCode = params.get('error_code')
     if (errorCode) {
@@ -40,7 +40,7 @@ export default function ConfirmEmailPage() {
       }, 3000)
       return () => clearTimeout(timeoutId)
     }
-  }, [])
+  }, [loading, router, user])
 
   if (loading) return <LoadingSpinner />
 
