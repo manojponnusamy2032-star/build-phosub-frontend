@@ -82,18 +82,18 @@ export default function StudentHistoryPage() {
   if (authLoading || loading) return <LoadingSpinner />
 
   if (!user) {
-    return <p className="text-[#666]">Please sign in to view your history.</p>
+    return <p className="text-[#6f5c4b]">Please sign in to view your history.</p>
   }
 
   return (
     <>
       <div className="mb-6">
         <h1 className="text-2xl font-bold">My History</h1>
-        <p className="mt-1 text-sm text-[#666]">Your previous phone handover sessions and status records.</p>
+        <p className="mt-1 text-sm text-[#6f5c4b]">Your previous phone handover sessions and status records.</p>
       </div>
 
       {error && (
-        <div role="alert" className="mb-6 rounded-lg border border-[#ffcdd2] bg-[#fff8f8] p-4 text-sm text-[#C62828]">
+        <div role="alert" className="mb-6 rounded-lg border border-[#d8b9b0] bg-[#f3e9ea] p-4 text-sm text-[#710014]">
           <p>{error}</p>
           <button
             type="button"
@@ -105,14 +105,14 @@ export default function StudentHistoryPage() {
         </div>
       )}
 
-      <div className="mb-6 rounded-xl border border-[#e7e7ea] bg-white p-4">
+      <div className="mb-6 rounded-xl border border-[#d8d2c9] bg-[#F2F1ED] p-4">
         <div className="flex flex-wrap items-end gap-3">
           <label className="text-sm">
             <span className="mb-1 block font-semibold">Status</span>
             <select
               value={statusFilter}
               onChange={(event) => setStatusFilter(event.target.value)}
-              className="min-h-11 rounded-lg border border-[#e7e7ea] bg-white px-3 py-2 text-sm"
+              className="min-h-11 rounded-lg border border-[#d8d2c9] bg-[#F2F1ED] px-3 py-2 text-sm"
             >
               <option value="all">All statuses</option>
               <option value="submitted">Submitted</option>
@@ -127,7 +127,7 @@ export default function StudentHistoryPage() {
               type="date"
               value={fromDate}
               onChange={(event) => setFromDate(event.target.value)}
-              className="min-h-11 rounded-lg border border-[#e7e7ea] bg-white px-3 py-2 text-sm"
+              className="min-h-11 rounded-lg border border-[#d8d2c9] bg-[#F2F1ED] px-3 py-2 text-sm"
             />
           </label>
           <label className="text-sm">
@@ -136,7 +136,7 @@ export default function StudentHistoryPage() {
               type="date"
               value={toDate}
               onChange={(event) => setToDate(event.target.value)}
-              className="min-h-11 rounded-lg border border-[#e7e7ea] bg-white px-3 py-2 text-sm"
+              className="min-h-11 rounded-lg border border-[#d8d2c9] bg-[#F2F1ED] px-3 py-2 text-sm"
             />
           </label>
           {(statusFilter !== 'all' || fromDate || toDate) && (
@@ -147,7 +147,7 @@ export default function StudentHistoryPage() {
                 setFromDate('')
                 setToDate('')
               }}
-              className="min-h-11 rounded-lg border border-[#e7e7ea] px-3 text-sm font-semibold hover:bg-[#f7f7f8]"
+              className="min-h-11 rounded-lg border border-[#d8d2c9] px-3 text-sm font-semibold hover:bg-[#f2f1ed]"
             >
               Clear filters
             </button>
@@ -155,17 +155,17 @@ export default function StudentHistoryPage() {
         </div>
       </div>
 
-      <div className="mb-8 rounded-xl border border-[#e7e7ea] bg-white p-6">
+      <div className="mb-8 rounded-xl border border-[#d8d2c9] bg-[#F2F1ED] p-6">
         <h2 className="mb-4 text-lg font-bold">Sessions &amp; Handovers</h2>
         {filteredHandovers.length === 0 ? (
-          <div className="rounded-lg border border-dashed border-[#d8d8dc] bg-[#fafafa] p-6 text-center">
-            <p className="font-semibold text-[#333]">No handover records found.</p>
-            <p className="mt-1 text-sm text-[#666]">Records appear here after you participate in a session.</p>
+          <div className="rounded-lg border border-dashed border-[#d8d2c9] bg-[#f2f1ed] p-6 text-center">
+            <p className="font-semibold text-[#161616]">No handover records found.</p>
+            <p className="mt-1 text-sm text-[#6f5c4b]">Records appear here after you participate in a session.</p>
           </div>
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full text-left text-sm">
-              <thead className="bg-[#fafafa] text-xs text-[#666]">
+              <thead className="bg-[#f2f1ed] text-xs text-[#6f5c4b]">
                 <tr>
                   <th className="px-4 py-3">Session</th>
                   <th className="px-4 py-3">Session status</th>
@@ -180,14 +180,14 @@ export default function StudentHistoryPage() {
                 {filteredHandovers.map((handover) => {
                   const session = sessionOf(handover)
                   return (
-                    <tr key={handover.id} className="border-t border-[#f0f0f1]">
+                    <tr key={handover.id} className="border-t border-[#d8d2c9]">
                       <td className="px-4 py-3 font-semibold">{session?.name || 'Phone handover'}</td>
                       <td className="px-4 py-3 capitalize">{session?.status || '—'}</td>
                       <td className="px-4 py-3 font-semibold">{handover.status}</td>
                       <td className="px-4 py-3">{handover.phone_model || '—'}</td>
-                      <td className="px-4 py-3 text-[#666]">{handover.reason || '—'}</td>
-                      <td className="px-4 py-3 text-[#666]">{session?.started_at ? new Date(session.started_at).toLocaleString() : '—'}</td>
-                      <td className="px-4 py-3 text-[#666]">{new Date(handover.updated_at).toLocaleString()}</td>
+                      <td className="px-4 py-3 text-[#6f5c4b]">{handover.reason || '—'}</td>
+                      <td className="px-4 py-3 text-[#6f5c4b]">{session?.started_at ? new Date(session.started_at).toLocaleString() : '—'}</td>
+                      <td className="px-4 py-3 text-[#6f5c4b]">{new Date(handover.updated_at).toLocaleString()}</td>
                     </tr>
                   )
                 })}
@@ -197,14 +197,14 @@ export default function StudentHistoryPage() {
         )}
       </div>
 
-      <div className="rounded-xl border border-[#e7e7ea] bg-white p-6">
+      <div className="rounded-xl border border-[#d8d2c9] bg-[#F2F1ED] p-6">
         <h2 className="mb-4 text-lg font-bold">Status Change History</h2>
         {events.length === 0 ? (
-          <p className="text-[#666]">No recorded status changes are available.</p>
+          <p className="text-[#6f5c4b]">No recorded status changes are available.</p>
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full text-left text-sm">
-              <thead className="bg-[#fafafa] text-xs text-[#666]">
+              <thead className="bg-[#f2f1ed] text-xs text-[#6f5c4b]">
                 <tr>
                   <th className="px-4 py-3">Status</th>
                   <th className="px-4 py-3">Reason</th>
@@ -213,10 +213,10 @@ export default function StudentHistoryPage() {
               </thead>
               <tbody>
                 {events.map((event) => (
-                  <tr key={event.id} className="border-t border-[#f0f0f1]">
+                  <tr key={event.id} className="border-t border-[#d8d2c9]">
                     <td className="px-4 py-3 font-semibold">{event.status}</td>
-                    <td className="px-4 py-3 text-[#666]">{event.reason || '—'}</td>
-                    <td className="px-4 py-3 text-[#666]">{new Date(event.changed_at).toLocaleString()}</td>
+                    <td className="px-4 py-3 text-[#6f5c4b]">{event.reason || '—'}</td>
+                    <td className="px-4 py-3 text-[#6f5c4b]">{new Date(event.changed_at).toLocaleString()}</td>
                   </tr>
                 ))}
               </tbody>

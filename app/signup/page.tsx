@@ -118,18 +118,18 @@ export default function SignupPage() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-[#f7f7f8]">
+    <div className="min-h-screen flex items-center justify-center bg-[#f2f1ed]">
       <div className="w-full max-w-md px-6">
         <div className="mb-8 flex items-center gap-2">
-          <span className="grid size-8 place-items-center rounded-[10px] bg-[#E53935] text-white">
+          <span className="grid size-8 place-items-center rounded-[10px] bg-[#710014] text-[#F2F1ED]">
             <svg width="17" height="17" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M9 12h6m-6 0h6m-9 3V9m0 0l3 3m-3-3l3-3m9 3v-6m0 0l-3 3m3-3l-3-3"/></svg>
           </span>
           <span className="font-bold tracking-tight text-[21px]">phosub</span>
         </div>
         <h2 className="mb-2 text-xl font-bold">Sign up</h2>
-        <p className="mb-8 text-sm text-[#666]">Create your account to get started.</p>
+        <p className="mb-8 text-sm text-[#6f5c4b]">Create your account to get started.</p>
         {error && (
-          <div className="mb-6 rounded-lg border border-[#bbebca] bg-[#f2fbf5] p-4 text-sm text-[#166534]">
+          <div className="mb-6 rounded-lg border border-[#bb9a7b] bg-[#e9e0d4] p-4 text-sm text-[#4b3a2d]">
             {error}
           </div>
         )}
@@ -137,61 +137,61 @@ export default function SignupPage() {
           type="button"
           onClick={handleGoogleSignIn}
           disabled={loading || submitting}
-          className="flex w-full items-center justify-center rounded-lg border border-[#e7e7ea] bg-white py-2.5 text-sm font-semibold text-[#171717] transition-colors hover:bg-[#f7f7f8] disabled:cursor-not-allowed disabled:opacity-50"
+          className="flex w-full items-center justify-center rounded-lg border border-[#d8d2c9] bg-[#F2F1ED] py-2.5 text-sm font-semibold text-[#161616] transition-colors hover:bg-[#f2f1ed] disabled:cursor-not-allowed disabled:opacity-50"
         >
           {submitting ? 'Connecting to Google...' : 'Continue with Google'}
         </button>
-        <div className="my-5 flex items-center gap-3 text-xs text-[#888]">
-          <span className="h-px flex-1 bg-[#e7e7ea]" />
+        <div className="my-5 flex items-center gap-3 text-xs text-[#6f5c4b]">
+          <span className="h-px flex-1 bg-[#d8d2c9]" />
           <span>or sign up with email</span>
-          <span className="h-px flex-1 bg-[#e7e7ea]" />
+          <span className="h-px flex-1 bg-[#d8d2c9]" />
         </div>
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
-            <label className="block text-sm font-semibold text-[#171717]">Full name</label>
+            <label className="block text-sm font-semibold text-[#161616]">Full name</label>
             <input
               type="text"
               required
-              className="mt-1 block w-full rounded-lg border border-[#e7e7ea] bg-white px-3 py-2 text-sm focus:border-[#E53935] focus:ring-1 focus:ring-[#E53935]"
+              className="mt-1 block w-full rounded-lg border border-[#d8d2c9] bg-[#F2F1ED] px-3 py-2 text-sm focus:border-[#710014] focus:ring-1 focus:ring-[#710014]"
               value={fullName}
               onChange={(e) => setFullName(e.target.value)}
             />
           </div>
           <div>
-            <label className="block text-sm font-semibold text-[#171717]">Email address</label>
+            <label className="block text-sm font-semibold text-[#161616]">Email address</label>
             <input
               type="email"
               required
-              className="mt-1 block w-full rounded-lg border border-[#e7e7ea] bg-white px-3 py-2 text-sm focus:border-[#E53935] focus:ring-1 focus:ring-[#E53935]"
+              className="mt-1 block w-full rounded-lg border border-[#d8d2c9] bg-[#F2F1ED] px-3 py-2 text-sm focus:border-[#710014] focus:ring-1 focus:ring-[#710014]"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
             />
             {suggestedRole && (
-              <p className="mt-1 text-xs text-[#666]">
+              <p className="mt-1 text-xs text-[#6f5c4b]">
                 Registered as a {suggestedRole} based on your email domain.
               </p>
             )}
             {!suggestedRole && (
-              <p className="mt-1 text-xs text-[#C62828]">Use @kalvium.com (mentor) or @kalvium.community (student).</p>
+              <p className="mt-1 text-xs text-[#710014]">Use @kalvium.com (mentor) or @kalvium.community (student).</p>
             )}
           </div>
           <div>
-            <label className="block text-sm font-semibold text-[#171717]">Password</label>
+            <label className="block text-sm font-semibold text-[#161616]">Password</label>
             <input
               type="password"
               required
               minLength={6}
-              className="mt-1 block w-full rounded-lg border border-[#e7e7ea] bg-white px-3 py-2 text-sm focus:border-[#E53935] focus:ring-1 focus:ring-[#E53935]"
+              className="mt-1 block w-full rounded-lg border border-[#d8d2c9] bg-[#F2F1ED] px-3 py-2 text-sm focus:border-[#710014] focus:ring-1 focus:ring-[#710014]"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
             />
           </div>
           {suggestedRole === 'student' && (
             <div>
-              <label className="block text-sm font-semibold text-[#171717]">Squad</label>
+              <label className="block text-sm font-semibold text-[#161616]">Squad</label>
               <select
                 required
-                className="mt-1 block w-full rounded-lg border border-[#e7e7ea] bg-white px-3 py-2 text-sm focus:border-[#E53935] focus:ring-1 focus:ring-[#E53935]"
+                className="mt-1 block w-full rounded-lg border border-[#d8d2c9] bg-[#F2F1ED] px-3 py-2 text-sm focus:border-[#710014] focus:ring-1 focus:ring-[#710014]"
                 value={squad}
                 onChange={(e) => setSquad(e.target.value)}
               >
@@ -205,14 +205,14 @@ export default function SignupPage() {
           <button
             type="submit"
             disabled={loading || submitting || Boolean(success) || !suggestedRole || (suggestedRole === 'student' && !squad)}
-            className="w-full flex justify-center py-2.5 rounded-lg bg-[#E53935] text-white font-semibold disabled:opacity-50 disabled:cursor-not-allowed hover:bg-[#C62828] transition-colors"
+            className="w-full flex justify-center py-2.5 rounded-lg bg-[#710014] text-[#F2F1ED] font-semibold disabled:opacity-50 disabled:cursor-not-allowed hover:bg-[#710014] transition-colors"
           >
             {submitting ? 'Creating account...' : success ? 'Check your email' : 'Create account'}
           </button>
         </form>
-        <p className="mt-8 text-center text-sm text-[#666]">
+        <p className="mt-8 text-center text-sm text-[#6f5c4b]">
           Already have an account?{' '}
-          <Link href="/login" className="text-[#E53935] font-semibold hover:underline">
+          <Link href="/login" className="text-[#710014] font-semibold hover:underline">
             Sign in
           </Link>
         </p>

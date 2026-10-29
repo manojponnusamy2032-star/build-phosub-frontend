@@ -105,12 +105,12 @@ export default function StudentPage() {
 
   if (!user) {
     return (
-      <div className="max-w-md rounded-xl border border-[#ffcdd2] bg-[#fff8f8] p-6 text-center">
-        <h2 className="mb-2 text-lg font-bold text-[#C62828]">Not signed in</h2>
-        <p className="mb-4 text-sm text-[#666]">Please sign in to access your dashboard.</p>
+      <div className="max-w-md rounded-xl border border-[#d8b9b0] bg-[#f3e9ea] p-6 text-center">
+        <h2 className="mb-2 text-lg font-bold text-[#710014]">Not signed in</h2>
+        <p className="mb-4 text-sm text-[#6f5c4b]">Please sign in to access your dashboard.</p>
         <button
           onClick={() => router.push('/login')}
-          className="w-full py-2 rounded-lg bg-[#E53935] text-white font-semibold hover:bg-[#C62828] transition-colors"
+          className="w-full py-2 rounded-lg bg-[#710014] text-[#F2F1ED] font-semibold hover:bg-[#710014] transition-colors"
         >
           Go to Sign In
         </button>
@@ -124,72 +124,72 @@ export default function StudentPage() {
   return (
     <>
       {notice && (
-        <div role="status" aria-live="polite" className="mb-6 rounded-lg border border-[#bbebca] bg-[#f2fbf5] p-4 text-sm text-[#166534]">
+        <div role="status" aria-live="polite" className="mb-6 rounded-lg border border-[#bb9a7b] bg-[#e9e0d4] p-4 text-sm text-[#4b3a2d]">
           {notice}
         </div>
       )}
       {error && (
-        <div role="alert" className="mb-6 rounded-lg border border-[#ffcdd2] bg-[#fff8f8] p-4 text-sm text-[#C62828]">
+        <div role="alert" className="mb-6 rounded-lg border border-[#d8b9b0] bg-[#f3e9ea] p-4 text-sm text-[#710014]">
           {error}
         </div>
       )}
       {!isStudent && (
-        <div className="rounded-lg border border-[#e7e7ea] bg-white p-6">
-          <p className="text-[#666]">Your account is not registered as a student.</p>
+        <div className="rounded-lg border border-[#d8d2c9] bg-[#F2F1ED] p-6">
+          <p className="text-[#6f5c4b]">Your account is not registered as a student.</p>
         </div>
       )}
       {isStudent && (
         <>
-          <div className="mb-8 rounded-xl border border-[#e7e7ea] bg-white p-6">
+          <div className="mb-8 rounded-xl border border-[#d8d2c9] bg-[#F2F1ED] p-6">
             <h2 className="mb-4 text-lg font-bold">Active Session</h2>
             {session && hasActiveSession ? (
               <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-                <div className="rounded-lg border border-[#e7e7ea] bg-[#f8f8f9] p-4">
-                  <p className="text-xs text-[#666]">Session</p>
+                <div className="rounded-lg border border-[#d8d2c9] bg-[#f2f1ed] p-4">
+                  <p className="text-xs text-[#6f5c4b]">Session</p>
                   <p className="font-semibold">{session.name || 'Phone handover'}</p>
                 </div>
-                <div className="rounded-lg border border-[#e7e7ea] bg-[#f8f8f9] p-4">
-                  <p className="text-xs text-[#666]">Squad</p>
+                <div className="rounded-lg border border-[#d8d2c9] bg-[#f2f1ed] p-4">
+                  <p className="text-xs text-[#6f5c4b]">Squad</p>
                   <p className="font-semibold">{session.squad}</p>
                 </div>
-                <div className="rounded-lg border border-[#e7e7ea] bg-[#f8f8f9] p-4">
-                  <p className="text-xs text-[#666]">Status</p>
-                  <p className="font-semibold text-[#E53935]">{session.status}</p>
+                <div className="rounded-lg border border-[#d8d2c9] bg-[#f2f1ed] p-4">
+                  <p className="text-xs text-[#6f5c4b]">Status</p>
+                  <p className="font-semibold text-[#710014]">{session.status}</p>
                 </div>
-                <div className="rounded-lg border border-[#e7e7ea] bg-[#f8f8f9] p-4">
-                  <p className="text-xs text-[#666]">Started</p>
+                <div className="rounded-lg border border-[#d8d2c9] bg-[#f2f1ed] p-4">
+                  <p className="text-xs text-[#6f5c4b]">Started</p>
                   <p className="font-medium">{new Date(session.started_at).toLocaleString()}</p>
                 </div>
               </div>
             ) : (
-              <div className="rounded-lg border border-dashed border-[#d8d8dc] bg-[#fafafa] p-6 text-center">
-                <p className="font-semibold text-[#333]">No active session for your squad.</p>
-                <p className="mt-1 text-sm text-[#666]">Status updates are disabled until a mentor starts a session.</p>
+              <div className="rounded-lg border border-dashed border-[#d8d2c9] bg-[#f2f1ed] p-6 text-center">
+                <p className="font-semibold text-[#161616]">No active session for your squad.</p>
+                <p className="mt-1 text-sm text-[#6f5c4b]">Status updates are disabled until a mentor starts a session.</p>
               </div>
             )}
           </div>
-          <div className="mb-8 rounded-xl border border-[#e7e7ea] bg-white p-6">
+          <div className="mb-8 rounded-xl border border-[#d8d2c9] bg-[#F2F1ED] p-6">
             <h2 className="mb-4 text-lg font-bold">Your Phone Handover</h2>
             {handovers.length > 0 ? (
               <div className="space-y-3">
-                <div className="flex items-center justify-between px-4 py-3 rounded-lg border border-[#e7e7ea] bg-[#f7f7f8]">
+                <div className="flex items-center justify-between px-4 py-3 rounded-lg border border-[#d8d2c9] bg-[#f2f1ed]">
                   <span className="text-sm font-semibold">Status</span>
                   <span className="text-sm font-semibold">{handovers[0].status}</span>
                 </div>
                 {handovers[0].reason && (
-                  <div className="px-4 py-3 rounded-lg border border-[#e7e7ea] bg-[#f7f7f8]">
-                    <p className="text-sm text-[#666]">{handovers[0].reason}</p>
+                  <div className="px-4 py-3 rounded-lg border border-[#d8d2c9] bg-[#f2f1ed]">
+                    <p className="text-sm text-[#6f5c4b]">{handovers[0].reason}</p>
                   </div>
                 )}
                 {handovers[0].phone_model && (
-                  <div className="flex items-center justify-between gap-4 px-4 py-3 rounded-lg border border-[#e7e7ea] bg-[#f7f7f8]">
+                  <div className="flex items-center justify-between gap-4 px-4 py-3 rounded-lg border border-[#d8d2c9] bg-[#f2f1ed]">
                     <span className="text-sm font-semibold">Phone model</span>
                     <span className="text-right text-sm">{handovers[0].phone_model}</span>
                   </div>
                 )}
               </div>
             ) : (
-              <p className="text-[#666]">No handover submitted yet.</p>
+              <p className="text-[#6f5c4b]">No handover submitted yet.</p>
             )}
             <div className="mt-6 flex flex-wrap gap-3">
               <button
@@ -201,7 +201,7 @@ export default function StudentPage() {
                   setNotice('')
                 }}
                 disabled={!hasActiveSession || Boolean(updatingStatus)}
-                className="min-h-11 rounded-lg bg-[#ef3027] px-4 py-2 font-semibold text-white transition-colors hover:bg-[#d92720] disabled:opacity-50"
+                className="min-h-11 rounded-lg bg-[#710014] px-4 py-2 font-semibold text-[#F2F1ED] transition-colors hover:bg-[#710014] disabled:opacity-50"
               >
                 Mark Submitted
               </button>
@@ -214,7 +214,7 @@ export default function StudentPage() {
                   setNotice('')
                 }}
                 disabled={!hasActiveSession || Boolean(updatingStatus)}
-                className="min-h-11 rounded-lg border border-[#dedee2] bg-white px-4 py-2 font-semibold text-[#303036] transition-colors hover:border-[#171717] hover:bg-[#f7f7f8] disabled:opacity-50"
+                className="min-h-11 rounded-lg border border-[#d8d2c9] bg-[#F2F1ED] px-4 py-2 font-semibold text-[#161616] transition-colors hover:border-[#161616] hover:bg-[#f2f1ed] disabled:opacity-50"
               >
                 Mark Not Submitted
               </button>
@@ -227,14 +227,14 @@ export default function StudentPage() {
                   setNotice('')
                 }}
                 disabled={!hasActiveSession || Boolean(updatingStatus)}
-                className="min-h-11 rounded-lg border border-[#dedee2] bg-white px-4 py-2 font-semibold text-[#303036] transition-colors hover:border-[#171717] hover:bg-[#f7f7f8] disabled:opacity-50"
+                className="min-h-11 rounded-lg border border-[#d8d2c9] bg-[#F2F1ED] px-4 py-2 font-semibold text-[#161616] transition-colors hover:border-[#161616] hover:bg-[#f2f1ed] disabled:opacity-50"
               >
                 Mark Retrieved
               </button>
             </div>
             {reasonStatus && (
               <form
-                className="mt-5 max-w-xl rounded-lg border border-[#e7e7ea] bg-[#fafafa] p-4"
+                className="mt-5 max-w-xl rounded-lg border border-[#d8d2c9] bg-[#f2f1ed] p-4"
                 onSubmit={(event) => {
                   event.preventDefault()
                   void updateHandover(reasonStatus, reason, phoneModel)
@@ -253,9 +253,9 @@ export default function StudentPage() {
                       value={phoneModel}
                       onChange={(event) => setPhoneModel(event.target.value)}
                       disabled={Boolean(updatingStatus)}
-                      className="mt-2 block min-h-11 w-full rounded-lg border border-[#e7e7ea] bg-white px-3 py-2 text-sm focus:border-[#E53935] focus:ring-1 focus:ring-[#E53935] disabled:bg-[#f1f1f2]"
+                      className="mt-2 block min-h-11 w-full rounded-lg border border-[#d8d2c9] bg-[#F2F1ED] px-3 py-2 text-sm focus:border-[#710014] focus:ring-1 focus:ring-[#710014] disabled:bg-[#e6e0d9]"
                     />
-                    <p className="mt-1 text-right text-xs text-[#77787d]">{phoneModel.length}/100</p>
+                    <p className="mt-1 text-right text-xs text-[#6f5c4b]">{phoneModel.length}/100</p>
                   </>
                 ) : (
                   <>
@@ -270,16 +270,16 @@ export default function StudentPage() {
                       value={reason}
                       onChange={(event) => setReason(event.target.value)}
                       disabled={Boolean(updatingStatus)}
-                      className="mt-2 block w-full rounded-lg border border-[#e7e7ea] bg-white px-3 py-2 text-sm focus:border-[#E53935] focus:ring-1 focus:ring-[#E53935] disabled:bg-[#f1f1f2]"
+                      className="mt-2 block w-full rounded-lg border border-[#d8d2c9] bg-[#F2F1ED] px-3 py-2 text-sm focus:border-[#710014] focus:ring-1 focus:ring-[#710014] disabled:bg-[#e6e0d9]"
                     />
-                    <p className="mt-1 text-right text-xs text-[#77787d]">{reason.length}/500</p>
+                    <p className="mt-1 text-right text-xs text-[#6f5c4b]">{reason.length}/500</p>
                   </>
                 )}
                 <div className="mt-3 flex flex-wrap gap-2">
                   <button
                     type="submit"
                     disabled={Boolean(updatingStatus) || (reasonStatus === 'submitted' ? !phoneModel.trim() : !reason.trim())}
-                    className="min-h-11 rounded-lg bg-[#ef3027] px-4 text-sm font-semibold text-white hover:bg-[#d92720] disabled:cursor-not-allowed disabled:opacity-50"
+                    className="min-h-11 rounded-lg bg-[#710014] px-4 text-sm font-semibold text-[#F2F1ED] hover:bg-[#710014] disabled:cursor-not-allowed disabled:opacity-50"
                   >
                     {updatingStatus === reasonStatus ? 'Saving...' : reasonStatus === 'submitted' ? 'Confirm submission' : 'Save status'}
                   </button>
@@ -292,7 +292,7 @@ export default function StudentPage() {
                       setPhoneModel('')
                       setError('')
                     }}
-                    className="min-h-11 rounded-lg border border-[#e7e7ea] px-4 text-sm font-semibold hover:bg-white disabled:opacity-50"
+                    className="min-h-11 rounded-lg border border-[#d8d2c9] px-4 text-sm font-semibold hover:bg-[#F2F1ED] disabled:opacity-50"
                   >
                     Cancel
                   </button>
@@ -300,19 +300,19 @@ export default function StudentPage() {
               </form>
             )}
           </div>
-          <div className="rounded-xl border border-[#e7e7ea] bg-white p-6">
+          <div className="rounded-xl border border-[#d8d2c9] bg-[#F2F1ED] p-6">
             <div className="mb-4 flex items-center justify-between">
               <h2 className="text-lg font-bold">Recent Activity</h2>
-              <Link href="/student/history" className="text-sm font-semibold text-[#E53935] hover:underline">
+              <Link href="/student/history" className="text-sm font-semibold text-[#710014] hover:underline">
                 View full history
               </Link>
             </div>
             {handovers.length === 0 ? (
-              <p className="text-[#666]">No handover activity yet.</p>
+              <p className="text-[#6f5c4b]">No handover activity yet.</p>
             ) : (
               <div className="overflow-x-auto">
                 <table className="w-full text-left text-sm">
-                  <thead className="bg-[#fafafa] text-xs text-[#666]">
+                  <thead className="bg-[#f2f1ed] text-xs text-[#6f5c4b]">
                     <tr>
                       <th className="px-4 py-3">Status</th>
                       <th className="px-4 py-3">Phone model</th>
@@ -322,11 +322,11 @@ export default function StudentPage() {
                   </thead>
                   <tbody>
                     {handovers.slice(0, 5).map((h) => (
-                      <tr key={h.id} className="border-t border-[#f0f0f1]">
+                      <tr key={h.id} className="border-t border-[#d8d2c9]">
                         <td className="px-4 py-3 font-semibold">{h.status}</td>
                         <td className="px-4 py-3">{h.phone_model || '—'}</td>
-                        <td className="px-4 py-3 text-[#666]">{h.reason || '—'}</td>
-                        <td className="px-4 py-3 text-[#666]">{new Date(h.updated_at).toLocaleString()}</td>
+                        <td className="px-4 py-3 text-[#6f5c4b]">{h.reason || '—'}</td>
+                        <td className="px-4 py-3 text-[#6f5c4b]">{new Date(h.updated_at).toLocaleString()}</td>
                       </tr>
                     ))}
                   </tbody>

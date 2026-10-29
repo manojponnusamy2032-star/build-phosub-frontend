@@ -45,20 +45,20 @@ export default function ConfirmEmailPage() {
   if (loading) return <LoadingSpinner />
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-[#f7f7f8]">
+    <div className="min-h-screen flex items-center justify-center bg-[#f2f1ed]">
       <div className="w-full max-w-md px-6">
         {success && (
-          <div className="mb-6 rounded-lg border border-[#bbebca] bg-[#f2fbf5] p-4 text-sm text-[#166534]">
+          <div className="mb-6 rounded-lg border border-[#bb9a7b] bg-[#e9e0d4] p-4 text-sm text-[#4b3a2d]">
             {success}
           </div>
         )}
         {error && (
-          <div className="mb-6 rounded-lg border border-[#bbebca] bg-[#fef3f3] p-4 text-sm text-[#C62828]">
+          <div className="mb-6 rounded-lg border border-[#bb9a7b] bg-[#f3e9ea] p-4 text-sm text-[#710014]">
             {error}
           </div>
         )}
         {!success && !error && (
-          <p className="text-center text-sm text-[#666]">Confirming your email...</p>
+          <p className="text-center text-sm text-[#6f5c4b]">Confirming your email...</p>
         )}
       </div>
     </div>
