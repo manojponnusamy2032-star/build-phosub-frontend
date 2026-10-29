@@ -62,6 +62,31 @@ export async function GET(request: Request) {
     return NextResponse.json({ error: 'Unsupported account role' }, { status: 403 })
   }
 
+  const url = new URL(request.url)
+  const history = url.searchParams.get('history') === '1' || url.searchParams.get('view') === 'history'
+
+  if (history) {
+    const { data, error } = await admin
+      .from('handovers')
+      .select('id, student_id, session_id, status, reason, phone_model, updated_at, sessions(id, squad, name, status, started_at, ended_at)')
+      .eq('student_id', userId)
+      .order('updated_at', { ascending: false })
+    if (error) {
+      console.error('Unable to load student handover history', { code: error.code })
+      return NextResponse.json({ error: 'Unable to load handovers' }, { status: 500 })
+    }
+    const { data: events, error: eventsError } = await admin
+      .from('handover_events')
+      .select('id, handover_id, session_id, student_id, status, reason, changed_by, changed_at')
+      .eq('student_id', userId)
+      .order('changed_at', { ascending: false })
+    if (eventsError) {
+      console.error('Unable to load student handover events', { code: eventsError.code })
+      return NextResponse.json({ error: 'Unable to load handover history' }, { status: 500 })
+    }
+    return NextResponse.json({ handovers: data ?? [], events: events ?? [] })
+  }
+
   const { data, error } = await admin
     .from('handovers')
     .select('id, student_id, session_id, status, reason, phone_model, updated_at, sessions!inner(squad, status)')
