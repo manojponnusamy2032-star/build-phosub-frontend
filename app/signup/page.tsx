@@ -98,7 +98,7 @@ export default function SignupPage() {
     }
   }
 
-  if (loading || (user && !signupAttempted)) return <LoadingSpinner />
+  if (user && !signupAttempted) return <LoadingSpinner />
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-[#f7f7f8]">
@@ -174,7 +174,7 @@ export default function SignupPage() {
           )}
           <button
             type="submit"
-            disabled={submitting || Boolean(success) || !suggestedRole || (suggestedRole === 'student' && !squad)}
+            disabled={loading || submitting || Boolean(success) || !suggestedRole || (suggestedRole === 'student' && !squad)}
             className="w-full flex justify-center py-2.5 rounded-lg bg-[#E53935] text-white font-semibold disabled:opacity-50 disabled:cursor-not-allowed hover:bg-[#C62828] transition-colors"
           >
             {submitting ? 'Creating account...' : success ? 'Check your email' : 'Create account'}
