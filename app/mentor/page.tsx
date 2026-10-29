@@ -112,6 +112,7 @@ export default function MentorPage() {
       })
       const result = await response.json().catch(() => ({}))
       if (!response.ok) {
+        if (response.status === 409) await loadData(false)
         if (response.status === 401) throw new Error('Your sign-in has expired. Please sign in again.')
         throw new Error(result.error || 'Unable to start session')
       }
@@ -345,20 +346,25 @@ export default function MentorPage() {
                       </div>
                       <p className="mt-3 text-xs text-[#77787d]">Started {new Date(session.started_at).toLocaleString()}</p>
                       <div className="mt-4 flex flex-wrap gap-2">
-                        <button
-                          type="button"
-                          onClick={() => {
-                            setReportSessionId(session.id)
-                            setActiveView('reports')
-                          }}
-                          className="inline-flex min-h-11 items-center justify-center rounded-md border border-[#e4e4e7] px-4 text-sm font-medium text-[#444] hover:bg-[#f7f7f8]"
-                        >View report</button>
-                        {session.status === 'active' && (
+                        {session.mentor_id === user.id && (
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setReportSessionId(session.id)
+                              setActiveView('reports')
+                            }}
+                            className="inline-flex min-h-11 items-center justify-center rounded-md border border-[#e4e4e7] px-4 text-sm font-medium text-[#444] hover:bg-[#f7f7f8]"
+                          >View report</button>
+                        )}
+                        {session.status === 'active' && session.mentor_id === user.id && (
                           <button
                             type="button"
                             onClick={() => endSession(session.id)}
                             className="inline-flex min-h-11 items-center justify-center rounded-md border border-[#f0c9c7] px-4 text-sm font-medium text-[#c62828] hover:bg-[#fff8f7]"
                           >End session</button>
+                        )}
+                        {session.status === 'active' && session.mentor_id !== user.id && (
+                          <p className="self-center text-sm text-[#77787d]">Managed by another mentor</p>
                         )}
                       </div>
                     </article>
@@ -376,23 +382,27 @@ export default function MentorPage() {
                             <td className="px-5 py-4"><span className={`rounded-full px-2.5 py-1 text-xs font-semibold ${session.status === 'active' ? 'bg-[#fff2f1] text-[#c62828]' : 'bg-[#f1f1f2] text-[#666]'}`}>{session.status}</span></td>
                             <td className="px-5 py-4 text-[#77787d]">{new Date(session.started_at).toLocaleString()}</td>
                             <td className="whitespace-nowrap px-5 py-4">
-                              <button
-                                type="button"
-                                onClick={() => {
-                                  setReportSessionId(session.id)
-                                  setActiveView('reports')
-                                }}
-                                className="inline-flex min-h-10 min-w-28 justify-center font-medium text-[#555] hover:underline"
-                              >View report</button>
+                              {session.mentor_id === user.id ? (
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    setReportSessionId(session.id)
+                                    setActiveView('reports')
+                                  }}
+                                  className="inline-flex min-h-10 min-w-28 justify-center font-medium text-[#555] hover:underline"
+                                >View report</button>
+                              ) : <span className="text-[#aaa]">—</span>}
                             </td>
                             <td className="whitespace-nowrap px-5 py-4">
-                              {session.status === 'active' ? (
+                              {session.status === 'active' && session.mentor_id === user.id ? (
                                 <button
                                   type="button"
                                   aria-label={`End session for Squad ${session.squad}`}
                                   onClick={() => endSession(session.id)}
                                   className="inline-flex min-h-10 items-center font-medium text-[#d52b27] hover:underline"
                                 >End Squad {session.squad}</button>
+                              ) : session.status === 'active' ? (
+                                <span className="text-[#77787d]">Managed by another mentor</span>
                               ) : <span className="text-[#aaa]">—</span>}
                             </td>
                           </tr>

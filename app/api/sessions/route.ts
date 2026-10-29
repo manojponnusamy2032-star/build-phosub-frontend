@@ -15,7 +15,7 @@ export async function GET(request: Request) {
   }
   if (!profile) return NextResponse.json({ error: 'Profile not found' }, { status: 404 })
   const query = profile.role === 'mentor'
-    ? admin.from('sessions').select('id, squad, name, status, started_at, ended_at').eq('mentor_id', userId).order('started_at', { ascending: false })
+    ? admin.from('sessions').select('id, squad, name, status, started_at, ended_at, mentor_id').or(`mentor_id.eq.${userId},status.eq.active`).order('started_at', { ascending: false })
     : admin.from('sessions').select('id, squad, name, status, started_at, ended_at').eq('squad', profile.squad).eq('status', 'active').order('started_at', { ascending: false }).limit(1)
   const { data, error } = await query
   if (error) {
