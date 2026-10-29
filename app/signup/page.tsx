@@ -1,9 +1,9 @@
 'use client'
 export const dynamic = 'force-dynamic'
 
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { useAuth, LoadingSpinner } from '@/components/providers'
+import { useAuth } from '@/components/providers'
 import Link from 'next/link'
 import { isValidEmailFormat } from '@/lib/email-validation'
 
@@ -11,7 +11,7 @@ const SQUADS = ['138', '139', '183']
 
 export default function SignupPage() {
   const router = useRouter()
-  const { supabase, user, loading } = useAuth()
+  const { supabase, loading } = useAuth()
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [fullName, setFullName] = useState('')
@@ -19,12 +19,6 @@ export default function SignupPage() {
   const [error, setError] = useState('')
   const [success, setSuccess] = useState('')
   const [submitting, setSubmitting] = useState(false)
-  const [signupAttempted, setSignupAttempted] = useState(false)
-
-  useEffect(() => {
-    if (user && !signupAttempted) router.replace('/dashboard')
-  }, [router, signupAttempted, user])
-
   const normalizedEmail = email.trim().toLowerCase()
   const suggestedRole = normalizedEmail.endsWith('@kalvium.com') ? 'mentor' : normalizedEmail.endsWith('@kalvium.community') ? 'student' : null
 
@@ -40,7 +34,6 @@ export default function SignupPage() {
       return
     }
 
-    setSignupAttempted(true)
     setSubmitting(true)
     try {
       const { data, error: authError } = await supabase.auth.signUp({
@@ -97,8 +90,6 @@ export default function SignupPage() {
       setSubmitting(false)
     }
   }
-
-  if (user && !signupAttempted) return <LoadingSpinner />
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-[#f7f7f8]">

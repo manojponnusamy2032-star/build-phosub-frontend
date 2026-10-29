@@ -25,8 +25,8 @@ export async function middleware(request: NextRequest) {
 
   const { data: { user } } = await supabase.auth.getUser()
 
-  // Auth routes - redirect to dashboard if already logged in
-  if (request.nextUrl.pathname.startsWith('/login') || request.nextUrl.pathname.startsWith('/signup')) {
+  // Redirect signed-in users away from login, but keep signup publicly accessible.
+  if (request.nextUrl.pathname.startsWith('/login')) {
     if (user) return NextResponse.redirect(new URL('/dashboard', request.url))
     return NextResponse.next()
   }
