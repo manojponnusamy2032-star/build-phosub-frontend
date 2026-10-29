@@ -142,7 +142,7 @@ export default function StudentLayout({ children }: { children: React.ReactNode 
                 title={label}
                 aria-label={label}
                 aria-current={active ? 'page' : undefined}
-                className={`mx-auto grid size-12 place-items-center rounded-xl transition-colors ${active ? 'bg-[#4a0010] text-[#710014]' : 'text-[#d8d2c9] hover:bg-[#24211e] hover:text-[#F2F1ED]'}`}
+                className={`mx-auto grid size-12 place-items-center rounded-xl transition-colors ${active ? 'bg-[#710014] text-[#F2F1ED]' : 'text-[#d8d2c9] hover:bg-[#24211e] hover:text-[#F2F1ED]'}`}
               >
                 <Icon size={21} strokeWidth={1.9} />
               </Link>
