@@ -1,7 +1,31 @@
+'use client'
+
+import { usePathname } from 'next/navigation'
+
 const repositoryUrl = 'https://github.com/manojponnusamy2032-star/build-phosub-frontend'
 const feedbackEmail = 'manoj.ponnusamy.s.138@kalvium.community'
 
 export default function SiteFooter() {
+  const pathname = usePathname()
+  const isDashboard = pathname?.startsWith('/student') || pathname?.startsWith('/mentor')
+
+  if (isDashboard) {
+    return (
+      <footer className="border-t border-[#292929] bg-[#111] text-[#a5a5aa]">
+        <div className="mx-auto flex max-w-6xl flex-col gap-2 px-5 py-3 text-xs sm:flex-row sm:items-center sm:justify-between sm:px-8">
+          <span className="font-bold tracking-tight text-[#e53935]">phosub</span>
+          <nav aria-label="Project links" className="flex flex-wrap items-center gap-x-4 gap-y-1">
+            <a href={repositoryUrl} target="_blank" rel="noreferrer" className="hover:text-white">GitHub</a>
+            <a href={`mailto:${feedbackEmail}?subject=Phosub%20bug%20or%20feature%20report`} className="break-all hover:text-white">
+              Report a bug or request a feature
+            </a>
+          </nav>
+          <span className="text-[#77777d]">(c) {new Date().getFullYear()} Phosub</span>
+        </div>
+      </footer>
+    )
+  }
+
   return (
     <footer className="border-t border-[#292929] bg-[#111] text-white">
       <div className="mx-auto grid max-w-6xl gap-8 px-5 py-8 sm:grid-cols-[1.4fr_1fr_1fr] sm:px-8">

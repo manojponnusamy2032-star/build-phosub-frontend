@@ -232,12 +232,12 @@ export default function MentorPage() {
       </aside>
 
       <div className="min-h-screen lg:pl-56">
-        <header className="sticky top-0 z-20 flex h-14 items-center justify-between border-b border-[#e4e4e7] bg-white px-4 sm:px-6 lg:h-16">
-          <div className="flex items-center gap-2 text-sm text-[#77787d]">
-            <span className="font-bold text-[#202124] lg:hidden">phosub</span>
+        <header className="sticky top-0 z-20 flex h-14 items-center justify-between border-b border-[#292929] bg-[#111] px-4 text-white sm:px-6 lg:h-16">
+          <div className="flex items-center gap-2 text-sm text-[#a5a5aa]">
+            <span className="font-bold text-white lg:hidden">phosub</span>
             <span className="hidden lg:inline">Mentor workspace</span>
             <span aria-hidden="true">/</span>
-            <span className="font-medium text-[#333]">{activeTitle}</span>
+            <span className="font-medium text-white">{activeTitle}</span>
           </div>
           <div className="flex items-center gap-3">
             <div className="relative">
@@ -249,19 +249,19 @@ export default function MentorPage() {
                   setNotificationsOpen(!notificationsOpen)
                   setAccountMenuOpen(false)
                 }}
-                className="relative grid size-10 place-items-center rounded-lg text-[#77787d] hover:bg-[#f7f7f8] hover:text-[#222]"
+                className="relative grid size-10 place-items-center rounded-lg text-[#a5a5aa] hover:bg-[#262626] hover:text-white"
               >
                 <Bell size={18} strokeWidth={1.7} />
                 <span className="absolute right-2 top-2 size-2 rounded-full bg-[#e53935]" />
               </button>
               {notificationsOpen && (
-                <div className="absolute right-0 top-11 z-40 w-64 rounded-lg border border-[#e4e4e7] bg-white p-4 text-sm shadow-lg">
+                <div className="absolute right-0 top-11 z-40 w-64 rounded-lg border border-[#292929] bg-[#111] p-4 text-sm text-white shadow-lg">
                   <p className="font-semibold">Notifications</p>
-                  <p className="mt-1 text-[#77787d]">You’re all caught up.</p>
+                  <p className="mt-1 text-[#a5a5aa]">You’re all caught up.</p>
                 </div>
               )}
             </div>
-            <div className="relative border-l border-[#e4e4e7] pl-3">
+            <div className="relative border-l border-[#292929] pl-3">
               <button
                 type="button"
                 aria-expanded={accountMenuOpen}
@@ -269,30 +269,30 @@ export default function MentorPage() {
                   setAccountMenuOpen(!accountMenuOpen)
                   setNotificationsOpen(false)
                 }}
-                className="flex items-center gap-2 text-left"
+                className="flex items-center gap-2 text-left text-white"
               >
                 <ProfileAvatar avatarUrl={profile?.avatar_url} name={displayName} />
                 <span className="hidden sm:block">
                   <span className="block max-w-40 truncate text-xs font-semibold">{displayName}</span>
                   <span className="block text-[11px] text-[#77787d]">mentor</span>
                 </span>
-                <ChevronDown size={15} className="text-[#888]" />
+                <ChevronDown size={15} className="text-[#a5a5aa]" />
               </button>
               {accountMenuOpen && (
-                <div className="absolute right-0 top-11 z-40 w-64 rounded-lg border border-[#e4e4e7] bg-white p-3 shadow-lg">
-                  <p className="truncate px-2 py-1 text-xs text-[#77787d]">{email}</p>
+                <div className="absolute right-0 top-11 z-40 w-64 rounded-lg border border-[#292929] bg-[#111] p-3 text-white shadow-lg">
+                  <p className="truncate px-2 py-1 text-xs text-[#a5a5aa]">{email}</p>
                   <button
                     type="button"
                     onClick={() => {
                       setActiveView('profile')
                       setAccountMenuOpen(false)
                     }}
-                    className="mt-1 flex min-h-10 w-full items-center gap-2 rounded-md px-2 text-left text-sm hover:bg-[#f7f7f8]"
+                    className="mt-1 flex min-h-10 w-full items-center gap-2 rounded-md px-2 text-left text-sm hover:bg-[#262626]"
                   ><UserRound size={16} /> My Profile</button>
                   <button
                     type="button"
                     onClick={() => createSupabaseClient().auth.signOut().then(() => router.replace('/login'))}
-                    className="mt-1 flex min-h-10 w-full items-center gap-2 rounded-md px-2 text-left text-sm hover:bg-[#f7f7f8]"
+                    className="mt-1 flex min-h-10 w-full items-center gap-2 rounded-md px-2 text-left text-sm hover:bg-[#262626]"
                   ><LogOut size={16} /> Sign out</button>
                 </div>
               )}
@@ -534,7 +534,7 @@ export default function MentorPage() {
             </section>
           )}
         </main>
-        <nav aria-label="Mentor workspace" className="fixed inset-x-0 bottom-0 z-40 border-t border-[#e4e4e7] bg-white/95 pb-[env(safe-area-inset-bottom)] shadow-[0_-8px_24px_rgba(20,20,20,0.06)] backdrop-blur lg:hidden">
+        <nav aria-label="Mentor workspace" className="fixed inset-x-0 bottom-0 z-40 border-t border-[#292929] bg-[#111]/95 pb-[env(safe-area-inset-bottom)] shadow-[0_-8px_24px_rgba(0,0,0,0.2)] backdrop-blur lg:hidden">
           <div className="mx-auto grid h-16 max-w-md grid-cols-4 items-center gap-2 px-4">
             {navigation.map(({ id, label, icon: Icon }) => (
               <button
@@ -547,7 +547,7 @@ export default function MentorPage() {
                   setActiveView(id)
                   if (id === 'reports') setReportSessionId(null)
                 }}
-                className={`mx-auto grid size-12 place-items-center rounded-xl transition-colors ${activeView === id ? 'bg-[#fff1f0] text-[#d52b27]' : 'text-[#77787d] hover:bg-[#f7f7f8]'}`}
+                className={`mx-auto grid size-12 place-items-center rounded-xl transition-colors ${activeView === id ? 'bg-[#3b1716] text-[#ff6b66]' : 'text-[#a5a5aa] hover:bg-[#262626] hover:text-white'}`}
               >
                 <Icon size={21} strokeWidth={1.9} />
               </button>

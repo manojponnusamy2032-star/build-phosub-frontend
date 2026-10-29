@@ -112,18 +112,18 @@ export default function StudentLayout({ children }: { children: React.ReactNode 
       </aside>
 
       <div className="min-h-screen lg:pl-56">
-        <header className="sticky top-0 z-20 flex h-14 items-center justify-between border-b border-[#e4e4e7] bg-white px-4 sm:px-6 lg:h-16">
-          <div className="flex items-center gap-2 text-sm text-[#77787d]">
-            <span className="font-bold text-[#202124] lg:hidden">phosub</span>
+        <header className="sticky top-0 z-20 flex h-14 items-center justify-between border-b border-[#292929] bg-[#111] px-4 text-white sm:px-6 lg:h-16">
+          <div className="flex items-center gap-2 text-sm text-[#a5a5aa]">
+            <span className="font-bold text-white lg:hidden">phosub</span>
             <span className="hidden lg:inline">Student workspace</span>
             <span aria-hidden="true">/</span>
-            <span className="font-medium text-[#333]">{navItems.find((item) => isActive(pathname ?? '', item.href))?.label ?? 'Dashboard'}</span>
+            <span className="font-medium text-white">{navItems.find((item) => isActive(pathname ?? '', item.href))?.label ?? 'Dashboard'}</span>
           </div>
-          <Link href="/student/profile" aria-label="Open my profile" className="flex min-w-0 items-center gap-2.5 rounded-lg px-2 py-1 hover:bg-[#f7f7f8]">
+          <Link href="/student/profile" aria-label="Open my profile" className="flex min-w-0 items-center gap-2.5 rounded-lg px-2 py-1 hover:bg-[#262626]">
             <ProfileAvatar avatarUrl={profile?.avatar_url} name={profile?.full_name || user.email || 'Student'} />
             <span className="hidden min-w-0 text-right sm:block">
-              <span className="block max-w-40 truncate text-xs font-semibold text-[#333]">{profile?.full_name || 'My profile'}</span>
-              <span className="block text-[11px] text-[#77787d]">Squad {squad}</span>
+              <span className="block max-w-40 truncate text-xs font-semibold text-white">{profile?.full_name || 'My profile'}</span>
+              <span className="block text-[11px] text-[#a5a5aa]">Squad {squad}</span>
             </span>
           </Link>
         </header>
@@ -131,7 +131,7 @@ export default function StudentLayout({ children }: { children: React.ReactNode 
         <main className="mx-auto max-w-6xl px-5 py-8">{children}</main>
       </div>
 
-      <nav aria-label="Student navigation" className="fixed inset-x-0 bottom-0 z-40 border-t border-[#e4e4e7] bg-white/95 pb-[env(safe-area-inset-bottom)] shadow-[0_-8px_24px_rgba(20,20,20,0.06)] backdrop-blur lg:hidden">
+      <nav aria-label="Student navigation" className="fixed inset-x-0 bottom-0 z-40 border-t border-[#292929] bg-[#111]/95 pb-[env(safe-area-inset-bottom)] shadow-[0_-8px_24px_rgba(0,0,0,0.2)] backdrop-blur lg:hidden">
         <div className="mx-auto grid h-16 max-w-md grid-cols-4 items-center gap-2 px-4">
           {navItems.map(({ href, label, icon: Icon }) => {
             const active = isActive(pathname ?? '', href)
@@ -142,7 +142,7 @@ export default function StudentLayout({ children }: { children: React.ReactNode 
                 title={label}
                 aria-label={label}
                 aria-current={active ? 'page' : undefined}
-                className={`mx-auto grid size-12 place-items-center rounded-xl transition-colors ${active ? 'bg-[#fff1f0] text-[#d52b27]' : 'text-[#77787d] hover:bg-[#f7f7f8]'}`}
+                className={`mx-auto grid size-12 place-items-center rounded-xl transition-colors ${active ? 'bg-[#3b1716] text-[#ff6b66]' : 'text-[#a5a5aa] hover:bg-[#262626] hover:text-white'}`}
               >
                 <Icon size={21} strokeWidth={1.9} />
               </Link>
