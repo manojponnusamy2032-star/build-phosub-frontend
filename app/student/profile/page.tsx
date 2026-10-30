@@ -39,18 +39,18 @@ export default function StudentProfilePage() {
   if (authLoading || loading) return <LoadingSpinner />
 
   if (!user) {
-    return <p className="text-[#6f5c4b]">Please sign in to view your profile.</p>
+    return <p className="text-[#000000]">Please sign in to view your profile.</p>
   }
 
   return (
     <>
       <div className="mb-6">
         <h1 className="text-2xl font-bold">My Profile</h1>
-        <p className="mt-1 text-sm text-[#6f5c4b]">Your account information.</p>
+        <p className="mt-1 text-sm text-[#000000]">Your account information.</p>
       </div>
 
       {error && (
-        <div role="alert" className="mb-6 rounded-lg border border-[#d8b9b0] bg-[#f3e9ea] p-4 text-sm text-[#710014]">
+        <div role="alert" className="mb-6 rounded-lg border border-[#D3CCC7] bg-[#EFEEE8] p-4 text-sm text-[#000000]">
           <p>{error}</p>
           <button type="button" onClick={() => void loadData()} className="mt-2 text-sm font-semibold underline">
             Retry
@@ -59,12 +59,12 @@ export default function StudentProfilePage() {
       )}
 
       {!profile ? (
-        <div className="rounded-lg border border-[#d8d2c9] bg-[#F2F1ED] p-6">
-          <p className="text-[#6f5c4b]">Profile not found.</p>
+        <div className="rounded-lg border border-[#D3CCC7] bg-[#EFEEE8] p-6">
+          <p className="text-[#000000]">Profile not found.</p>
         </div>
       ) : (
-        <div className="max-w-2xl rounded-xl border border-[#d8d2c9] bg-[#F2F1ED] p-6">
-          <div className="mb-6 border-b border-[#d8d2c9] pb-6">
+        <div className="max-w-2xl rounded-xl border border-[#D3CCC7] bg-[#EFEEE8] p-6">
+          <div className="mb-6 border-b border-[#D3CCC7] pb-6">
             <ProfilePhotoEditor
               avatarUrl={profile.avatar_url}
               name={profile.full_name}
@@ -73,25 +73,25 @@ export default function StudentProfilePage() {
           </div>
           <dl className="space-y-5">
             <div>
-              <dt className="text-xs text-[#6f5c4b]">Name</dt>
+              <dt className="text-xs text-[#000000]">Name</dt>
               <dd className="mt-1.5 text-base font-semibold">{profile.full_name}</dd>
             </div>
             <div>
-              <dt className="text-xs text-[#6f5c4b]">College email</dt>
+              <dt className="text-xs text-[#000000]">College email</dt>
               <dd className="mt-1.5 break-all text-base font-medium">{profile.email}</dd>
             </div>
             <div>
-              <dt className="text-xs text-[#6f5c4b]">Squad</dt>
+              <dt className="text-xs text-[#000000]">Squad</dt>
               <dd className="mt-1.5 text-base font-medium">{profile.squad ?? '—'}</dd>
             </div>
             <div>
-              <dt className="text-xs text-[#6f5c4b]">Role</dt>
+              <dt className="text-xs text-[#000000]">Role</dt>
               <dd className="mt-1.5 text-base font-medium capitalize">{profile.role}</dd>
             </div>
           </dl>
 
-          <div className="mt-6 rounded-lg border border-[#d8d2c9] bg-[#f2f1ed] p-4 text-sm text-[#6f5c4b]">
-            <p className="font-semibold text-[#161616]">Account details</p>
+          <div className="mt-6 rounded-lg border border-[#D3CCC7] bg-[#EFEEE8] p-4 text-sm text-[#000000]">
+            <p className="font-semibold text-[#000000]">Account details</p>
             <p className="mt-1">
               Your role, squad, identity, and email are managed through your verified account and cannot be changed here.
               Your profile photo can be changed above.

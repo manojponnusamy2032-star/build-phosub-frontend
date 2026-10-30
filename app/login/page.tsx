@@ -13,7 +13,7 @@ export default function LoginPage() {
 
   // Handle null supabase
   if (!supabase) {
-    return <p className="text-center text-sm text-[#6f5c4b]">Configuration error: Supabase not initialized.</p>
+    return <p className="text-center text-sm text-[#000000]">Configuration error: Supabase not initialized.</p>
   }
 
   // Use non-null supabase reference
@@ -127,11 +127,11 @@ export default function LoginPage() {
   // If there's a resend message showing, include the resend button
   const resendSection = showResend && (
     <div className="mt-4">
-      <p className="text-sm text-[#6f5c4b]">
+      <p className="text-sm text-[#000000]">
         Don't have a confirmation email?{' '}
         <button
           onClick={handleResendConfirm}
-          className="ml-2 text-[#710014] font-semibold hover:underline cursor-pointer"
+          className="ml-2 text-[#000000] font-semibold hover:underline cursor-pointer"
         >
           Resend confirmation email
         </button>
@@ -140,18 +140,18 @@ export default function LoginPage() {
   )
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-[#f2f1ed]">
+    <div className="min-h-screen flex items-center justify-center bg-[#EFEEE8]">
       <div className="w-full max-w-md px-6">
         <div className="mb-8 flex items-center gap-2">
-          <span className="grid size-8 place-items-center rounded-[10px] bg-[#710014] text-[#F2F1ED]">
+          <span className="grid size-8 place-items-center rounded-[10px] bg-[#EF0606] text-[#000000]">
             <svg width="17" height="17" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M9 12h6m-6 0h6m-9 3V9m0 0l3 3m-3-3l3-3m9 3v-6m0 0l-3 3m3-3l-3-3"/></svg>
           </span>
           <span className="font-bold tracking-tight text-[21px]">phosub</span>
         </div>
         <h2 className="mb-2 text-xl font-bold">Sign in</h2>
-        <p className="mb-8 text-sm text-[#6f5c4b]">Enter your credentials to access your account.</p>
+        <p className="mb-8 text-sm text-[#000000]">Enter your credentials to access your account.</p>
         {error && (
-          <div className="mb-6 rounded-lg border border-[#d8b9b0] bg-[#f3e9ea] p-4 text-sm text-[#710014]">
+          <div className="mb-6 rounded-lg border border-[#D3CCC7] bg-[#EFEEE8] p-4 text-sm text-[#000000]">
             {error}
           </div>
         )}
@@ -159,32 +159,32 @@ export default function LoginPage() {
           type="button"
           onClick={handleGoogleSignIn}
           disabled={submitting}
-          className="flex w-full items-center justify-center rounded-lg border border-[#d8d2c9] bg-[#F2F1ED] py-2.5 text-sm font-semibold text-[#161616] transition-colors hover:bg-[#f2f1ed] disabled:cursor-not-allowed disabled:opacity-50"
+          className="flex w-full items-center justify-center rounded-lg border border-[#D3CCC7] bg-[#EFEEE8] py-2.5 text-sm font-semibold text-[#000000] transition-colors hover:bg-[#EFEEE8] disabled:cursor-not-allowed"
         >
           {submitting ? 'Connecting to Google...' : 'Continue with Google'}
         </button>
-        <div className="my-5 flex items-center gap-3 text-xs text-[#6f5c4b]">
-          <span className="h-px flex-1 bg-[#d8d2c9]" />
+        <div className="my-5 flex items-center gap-3 text-xs text-[#000000]">
+          <span className="h-px flex-1 bg-[#D3CCC7]" />
           <span>or sign in with email</span>
-          <span className="h-px flex-1 bg-[#d8d2c9]" />
+          <span className="h-px flex-1 bg-[#D3CCC7]" />
         </div>
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
-            <label className="block text-sm font-semibold text-[#161616]">Email address</label>
+            <label className="block text-sm font-semibold text-[#000000]">Email address</label>
             <input
               type="email"
               required
-              className="mt-1 block w-full rounded-lg border border-[#d8d2c9] bg-[#F2F1ED] px-3 py-2 text-sm focus:border-[#710014] focus:ring-1 focus:ring-[#710014]"
+              className="mt-1 block w-full rounded-lg border border-[#D3CCC7] bg-[#EFEEE8] px-3 py-2 text-sm focus:border-[#EF0606] focus:ring-1 focus:ring-[#EF0606]"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
             />
           </div>
           <div>
-            <label className="block text-sm font-semibold text-[#161616]">Password</label>
+            <label className="block text-sm font-semibold text-[#000000]">Password</label>
             <input
               type="password"
               required
-              className="mt-1 block w-full rounded-lg border border-[#d8d2c9] bg-[#F2F1ED] px-3 py-2 text-sm focus:border-[#710014] focus:ring-1 focus:ring-[#710014]"
+              className="mt-1 block w-full rounded-lg border border-[#D3CCC7] bg-[#EFEEE8] px-3 py-2 text-sm focus:border-[#EF0606] focus:ring-1 focus:ring-[#EF0606]"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
             />
@@ -192,15 +192,15 @@ export default function LoginPage() {
           <button
             type="submit"
             disabled={submitting}
-            className="w-full flex justify-center py-2.5 rounded-lg bg-[#710014] text-[#F2F1ED] font-semibold disabled:opacity-50 disabled:cursor-not-allowed hover:bg-[#710014] transition-colors"
+            className="w-full flex justify-center py-2.5 rounded-lg bg-[#EF0606] text-[#000000] font-semibold disabled:cursor-not-allowed hover:bg-[#EF0606] transition-colors"
           >
             {submitting ? 'Signing in...' : 'Sign in'}
           </button>
         </form>
         {resendSection}
-        <p className="mt-8 text-center text-sm text-[#6f5c4b]">
+        <p className="mt-8 text-center text-sm text-[#000000]">
           Don't have an account?{' '}
-          <Link href="/signup" className="text-[#710014] font-semibold hover:underline">
+          <Link href="/signup" className="text-[#000000] font-semibold hover:underline">
             Create one
           </Link>
         </p>

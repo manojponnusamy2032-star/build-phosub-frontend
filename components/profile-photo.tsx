@@ -21,7 +21,7 @@ export function ProfileAvatar({ avatarUrl, name, size = 'small' }: ProfileAvatar
     <span
       role="img"
       aria-label={`${name || 'User'} profile photo`}
-      className={`grid shrink-0 place-items-center overflow-hidden rounded-full bg-[#f3e9ea] font-bold text-[#710014] ${sizeClass}`}
+      className={`grid shrink-0 place-items-center overflow-hidden rounded-full bg-[#EFEEE8] font-bold text-[#000000] ${sizeClass}`}
     >
       {avatarUrl && !imageFailed ? (
         <img src={avatarUrl} alt="" onError={() => setImageFailed(true)} className="size-full object-cover" />
@@ -87,13 +87,13 @@ export function ProfilePhotoEditor({
         />
         <label
           htmlFor={inputId}
-          className={`inline-flex min-h-10 cursor-pointer items-center gap-2 rounded-md border border-[#d8d2c9] px-3 text-sm font-semibold text-[#161616] hover:bg-[#f2f1ed] ${uploading ? 'pointer-events-none opacity-50' : ''}`}
+          className={`inline-flex min-h-10 cursor-pointer items-center gap-2 rounded-md border border-[#D3CCC7] px-3 text-sm font-semibold text-[#000000] hover:bg-[#EFEEE8] ${uploading ? 'pointer-events-none' : ''}`}
         >
           <Camera size={16} /> {uploading ? 'Uploading...' : 'Change photo'}
         </label>
-        <p className="mt-2 text-xs text-[#6f5c4b]">JPEG, PNG, or WebP up to 5 MB</p>
-        {message && <p role="status" className="mt-2 text-sm text-[#4b3a2d]">{message}</p>}
-        {error && <p role="alert" className="mt-2 text-sm text-[#710014]">{error}</p>}
+        <p className="mt-2 text-xs text-[#000000]">JPEG, PNG, or WebP up to 5 MB</p>
+        {message && <p role="status" className="mt-2 text-sm text-[#000000]">{message}</p>}
+        {error && <p role="alert" className="mt-2 text-sm text-[#000000]">{error}</p>}
       </div>
     </div>
   )

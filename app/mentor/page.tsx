@@ -163,13 +163,13 @@ export default function MentorPage() {
 
   if (!user) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-[#f2f1ed] p-6">
-        <div className="max-w-md rounded-xl border border-[#d8b9b0] bg-[#f3e9ea] p-6 text-center">
-          <h2 className="mb-2 text-lg font-bold text-[#710014]">Not signed in</h2>
-          <p className="mb-4 text-sm text-[#6f5c4b]">Please sign in to access your dashboard.</p>
+      <div className="min-h-screen flex items-center justify-center bg-[#EFEEE8] p-6">
+        <div className="max-w-md rounded-xl border border-[#D3CCC7] bg-[#EFEEE8] p-6 text-center">
+          <h2 className="mb-2 text-lg font-bold text-[#000000]">Not signed in</h2>
+          <p className="mb-4 text-sm text-[#000000]">Please sign in to access your dashboard.</p>
           <button
             onClick={() => router.push('/login')}
-            className="w-full py-2 rounded-lg bg-[#710014] text-[#F2F1ED] font-semibold hover:bg-[#710014] transition-colors"
+            className="w-full py-2 rounded-lg bg-[#EF0606] text-[#000000] font-semibold hover:bg-[#EF0606] transition-colors"
           >
             Go to Sign In
           </button>
@@ -188,16 +188,16 @@ export default function MentorPage() {
     : handovers.slice(0, 10)
 
   return (
-    <div className="min-h-screen bg-[#f2f1ed] text-[#161616]">
-      <aside className="fixed inset-y-0 left-0 z-30 hidden w-56 flex-col border-r border-[#d8d2c9] bg-[#F2F1ED] px-5 py-5 lg:flex">
+    <div className="min-h-screen bg-[#EFEEE8] text-[#000000]">
+      <aside className="fixed inset-y-0 left-0 z-30 hidden w-56 flex-col border-r border-[#D3CCC7] bg-[#EFEEE8] px-5 py-5 lg:flex">
         <a href="#sessions" onClick={() => setActiveView('sessions')} className="mb-9 flex items-center gap-2.5 px-0.5">
-          <span className="grid size-7 place-items-center rounded-md bg-[#710014] text-[#F2F1ED]">
+          <span className="grid size-7 place-items-center rounded-md bg-[#EF0606] text-[#000000]">
             <svg width="15" height="15" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 12h6m-6 0v7m0-7 4 4m-4-4 4-4m12 4h-6m6 0v-7m0 7-4-4m4 4-4 4" /></svg>
           </span>
           <span className="text-lg font-bold tracking-tight">phosub</span>
         </a>
 
-        <p className="mb-3 px-2 text-xs font-bold uppercase tracking-[0.16em] text-[#6f5c4b]">Workspace</p>
+        <p className="mb-3 px-2 text-xs font-bold uppercase tracking-[0.16em] text-[#000000]">Workspace</p>
         <nav aria-label="Mentor workspace" className="space-y-1.5">
           {navigation.map(({ id, label, icon: Icon }) => (
             <button
@@ -208,7 +208,7 @@ export default function MentorPage() {
                 if (id === 'reports') setReportSessionId(null)
               }}
               aria-current={activeView === id ? 'page' : undefined}
-              className={`flex h-11 w-full items-center gap-3 rounded-lg px-3 text-left text-sm transition-colors ${activeView === id ? 'bg-[#f3e9ea] font-semibold text-[#710014]' : 'text-[#6f5c4b] hover:bg-[#f2f1ed] hover:text-[#161616]'}`}
+              className={`flex h-11 w-full items-center gap-3 rounded-lg px-3 text-left text-sm transition-colors ${activeView === id ? 'bg-[#EFEEE8] font-semibold text-[#000000]' : 'text-[#000000] hover:bg-[#EFEEE8] hover:text-[#000000]'}`}
             >
               <Icon size={17} strokeWidth={1.8} />
               {label}
@@ -217,14 +217,14 @@ export default function MentorPage() {
         </nav>
 
         <div className="mt-auto">
-          <div className="rounded-lg bg-[#f2f1ed] px-3 py-3">
+          <div className="rounded-lg bg-[#EFEEE8] px-3 py-3">
             <p className="text-xs font-semibold">Mentor workspace</p>
-            <p className="mt-1 truncate text-xs text-[#6f5c4b]">Connected workspace</p>
+            <p className="mt-1 truncate text-xs text-[#000000]">Connected workspace</p>
           </div>
           <button
             type="button"
             onClick={() => createSupabaseClient().auth.signOut().then(() => router.replace('/login'))}
-            className="mt-4 flex h-10 w-full items-center gap-2 px-3 text-sm text-[#6f5c4b] hover:text-[#710014]"
+            className="mt-4 flex h-10 w-full items-center gap-2 px-3 text-sm text-[#000000] hover:text-[#000000]"
           >
             <LogOut size={16} /> Sign out
           </button>
@@ -232,12 +232,12 @@ export default function MentorPage() {
       </aside>
 
       <div className="min-h-screen lg:pl-56">
-        <header className="sticky top-0 z-20 flex h-14 items-center justify-between border-b border-[#24211e] bg-[#161616] px-4 text-[#F2F1ED] sm:px-6 lg:h-16">
-          <div className="flex items-center gap-2 text-sm text-[#d8d2c9]">
-            <span className="font-bold text-[#F2F1ED] lg:hidden">phosub</span>
+        <header className="sticky top-0 z-20 flex h-14 items-center justify-between border-b border-[#000000] bg-[#000000] px-4 text-[#EFEEE8] sm:px-6 lg:h-16">
+          <div className="flex items-center gap-2 text-sm text-[#D3CCC7]">
+            <span className="font-bold text-[#EFEEE8] lg:hidden">phosub</span>
             <span className="hidden lg:inline">Mentor workspace</span>
             <span aria-hidden="true">/</span>
-            <span className="font-medium text-[#F2F1ED]">{activeTitle}</span>
+            <span className="font-medium text-[#EFEEE8]">{activeTitle}</span>
           </div>
           <div className="flex items-center gap-3">
             <div className="relative">
@@ -249,19 +249,19 @@ export default function MentorPage() {
                   setNotificationsOpen(!notificationsOpen)
                   setAccountMenuOpen(false)
                 }}
-                className="relative grid size-10 place-items-center rounded-lg text-[#d8d2c9] hover:bg-[#24211e] hover:text-[#F2F1ED]"
+                className="relative grid size-10 place-items-center rounded-lg text-[#D3CCC7] hover:bg-[#000000] hover:text-[#EFEEE8]"
               >
                 <Bell size={18} strokeWidth={1.7} />
-                <span className="absolute right-2 top-2 size-2 rounded-full bg-[#710014]" />
+                <span className="absolute right-2 top-2 size-2 rounded-full bg-[#EF0606]" />
               </button>
               {notificationsOpen && (
-                <div className="absolute right-0 top-11 z-40 w-64 rounded-lg border border-[#24211e] bg-[#161616] p-4 text-sm text-[#F2F1ED] shadow-lg">
+                <div className="absolute right-0 top-11 z-40 w-64 rounded-lg border border-[#000000] bg-[#000000] p-4 text-sm text-[#EFEEE8]">
                   <p className="font-semibold">Notifications</p>
-                  <p className="mt-1 text-[#d8d2c9]">You’re all caught up.</p>
+                  <p className="mt-1 text-[#D3CCC7]">You’re all caught up.</p>
                 </div>
               )}
             </div>
-            <div className="relative border-l border-[#24211e] pl-3">
+            <div className="relative border-l border-[#000000] pl-3">
               <button
                 type="button"
                 aria-expanded={accountMenuOpen}
@@ -269,30 +269,30 @@ export default function MentorPage() {
                   setAccountMenuOpen(!accountMenuOpen)
                   setNotificationsOpen(false)
                 }}
-                className="flex items-center gap-2 text-left text-[#F2F1ED]"
+                className="flex items-center gap-2 text-left text-[#EFEEE8]"
               >
                 <ProfileAvatar avatarUrl={profile?.avatar_url} name={displayName} />
                 <span className="hidden sm:block">
                   <span className="block max-w-40 truncate text-xs font-semibold">{displayName}</span>
-                  <span className="block text-[11px] text-[#6f5c4b]">mentor</span>
+                  <span className="block text-[11px] text-[#000000]">mentor</span>
                 </span>
-                <ChevronDown size={15} className="text-[#d8d2c9]" />
+                <ChevronDown size={15} className="text-[#D3CCC7]" />
               </button>
               {accountMenuOpen && (
-                <div className="absolute right-0 top-11 z-40 w-64 rounded-lg border border-[#24211e] bg-[#161616] p-3 text-[#F2F1ED] shadow-lg">
-                  <p className="truncate px-2 py-1 text-xs text-[#d8d2c9]">{email}</p>
+                <div className="absolute right-0 top-11 z-40 w-64 rounded-lg border border-[#000000] bg-[#000000] p-3 text-[#EFEEE8]">
+                  <p className="truncate px-2 py-1 text-xs text-[#D3CCC7]">{email}</p>
                   <button
                     type="button"
                     onClick={() => {
                       setActiveView('profile')
                       setAccountMenuOpen(false)
                     }}
-                    className="mt-1 flex min-h-10 w-full items-center gap-2 rounded-md px-2 text-left text-sm hover:bg-[#24211e]"
+                    className="mt-1 flex min-h-10 w-full items-center gap-2 rounded-md px-2 text-left text-sm hover:bg-[#000000]"
                   ><UserRound size={16} /> My Profile</button>
                   <button
                     type="button"
                     onClick={() => createSupabaseClient().auth.signOut().then(() => router.replace('/login'))}
-                    className="mt-1 flex min-h-10 w-full items-center gap-2 rounded-md px-2 text-left text-sm hover:bg-[#24211e]"
+                    className="mt-1 flex min-h-10 w-full items-center gap-2 rounded-md px-2 text-left text-sm hover:bg-[#000000]"
                   ><LogOut size={16} /> Sign out</button>
                 </div>
               )}
@@ -302,12 +302,12 @@ export default function MentorPage() {
 
         <main className="mx-auto w-full max-w-[1200px] px-4 pb-[calc(6rem+env(safe-area-inset-bottom))] pt-6 sm:px-8 sm:pt-8 lg:px-10 lg:pb-12">
           {notice && (
-            <div role="status" aria-live="polite" className="mb-5 rounded-lg border border-[#bb9a7b] bg-[#e9e0d4] px-4 py-3 text-sm text-[#4b3a2d]">
+            <div role="status" aria-live="polite" className="mb-5 rounded-lg border border-[#D3CCC7] bg-[#D3CCC7] px-4 py-3 text-sm text-[#000000]">
               {notice}
             </div>
           )}
           {error && (
-            <div role="alert" className="mb-5 flex items-center justify-between gap-3 rounded-lg border border-[#bb9a7b] bg-[#f3e9ea] px-4 py-3 text-sm text-[#710014]">
+            <div role="alert" className="mb-5 flex items-center justify-between gap-3 rounded-lg border border-[#D3CCC7] bg-[#EFEEE8] px-4 py-3 text-sm text-[#000000]">
               <span>{error}</span>
               {error.toLowerCase().includes('sign in again') && (
                 <button type="button" onClick={() => router.replace('/login')} className="shrink-0 font-semibold underline underline-offset-2">Sign in</button>
@@ -316,18 +316,18 @@ export default function MentorPage() {
           )}
 
           {!isMentor ? (
-            <div className="rounded-lg border border-[#d8d2c9] bg-[#F2F1ED] p-6 text-base text-[#6f5c4b]">Your account is not registered as a mentor.</div>
+            <div className="rounded-lg border border-[#D3CCC7] bg-[#EFEEE8] p-6 text-base text-[#000000]">Your account is not registered as a mentor.</div>
           ) : activeView === 'sessions' ? (
             <>
               <div className="mb-5">
-                <p className="mb-2 text-xs font-bold uppercase tracking-[0.16em] text-[#710014]">Mentor workspace</p>
+                <p className="mb-2 text-xs font-bold uppercase tracking-[0.16em] text-[#000000]">Mentor workspace</p>
                 <h1 className="text-3xl font-bold leading-tight tracking-tight">Phone handover sessions</h1>
-                <p className="mt-2 text-sm text-[#6f5c4b]">Start a session for one squad. Only students in that squad can submit phones.</p>
+                <p className="mt-2 text-sm text-[#000000]">Start a session for one squad. Only students in that squad can submit phones.</p>
               </div>
 
-              <section aria-labelledby="start-session-title" className="w-full max-w-2xl rounded-lg border border-[#d8d2c9] bg-[#F2F1ED] p-5 sm:p-6">
+              <section aria-labelledby="start-session-title" className="w-full max-w-2xl rounded-lg border border-[#D3CCC7] bg-[#EFEEE8] p-5 sm:p-6">
                 <h2 id="start-session-title" className="text-lg font-bold">Start a session</h2>
-                <p className="mt-1.5 text-sm text-[#6f5c4b]">Choose the squad you are teaching today.</p>
+                <p className="mt-1.5 text-sm text-[#000000]">Choose the squad you are teaching today.</p>
                 <div className="mt-4 flex flex-wrap gap-2" role="group" aria-label="Choose squad">
                   {squads.map((squad) => (
                     <button
@@ -338,7 +338,7 @@ export default function MentorPage() {
                         setSelectedSquad(squad)
                         setError('')
                       }}
-                      className={`min-h-11 rounded-md border px-4 text-sm transition-colors ${selectedSquad === squad ? 'border-[#710014] bg-[#f3e9ea] font-semibold text-[#710014]' : 'border-[#d8d2c9] bg-[#F2F1ED] text-[#161616] hover:border-[#bb9a7b] hover:bg-[#f2f1ed]'}`}
+                      className={`min-h-11 rounded-md border px-4 text-sm transition-colors ${selectedSquad === squad ? 'border-[#EF0606] bg-[#EFEEE8] font-semibold text-[#000000]' : 'border-[#D3CCC7] bg-[#EFEEE8] text-[#000000] hover:border-[#D3CCC7] hover:bg-[#EFEEE8]'}`}
                     >Squad {squad}</button>
                   ))}
                 </div>
@@ -346,22 +346,22 @@ export default function MentorPage() {
                   type="button"
                   onClick={startSession}
                   disabled={!selectedSquad || starting}
-                  className="mt-4 inline-flex min-h-11 items-center gap-2 rounded-md bg-[#710014] px-4 text-sm font-semibold text-[#F2F1ED] transition-colors hover:bg-[#710014] disabled:cursor-not-allowed disabled:opacity-50"
+                  className="mt-4 inline-flex min-h-11 items-center gap-2 rounded-md bg-[#EF0606] px-4 text-sm font-semibold text-[#000000] transition-colors hover:bg-[#EF0606] disabled:cursor-not-allowed"
                 >
                   <Play size={16} /> {starting ? 'Starting...' : 'Start session'}
                 </button>
               </section>
               <section className="mt-10">
                 <h2 className="mb-1.5 text-xl font-bold">Sessions</h2>
-                <p className="mb-5 text-sm text-[#6f5c4b]">Manage phone handover sessions for your squads.</p>
+                <p className="mb-5 text-sm text-[#000000]">Manage phone handover sessions for your squads.</p>
                 <div className="space-y-3 lg:hidden">
                   {sessions.map((session) => (
-                    <article key={session.id} className="rounded-lg border border-[#d8d2c9] bg-[#F2F1ED] p-4 sm:p-5">
+                    <article key={session.id} className="rounded-lg border border-[#D3CCC7] bg-[#EFEEE8] p-4 sm:p-5">
                       <div className="flex items-start justify-between gap-3">
                         <h3 className="text-base font-semibold">Squad {session.squad}</h3>
-                        <span className={`shrink-0 rounded-full px-2.5 py-1 text-xs font-semibold ${session.status === 'active' ? 'bg-[#f3e9ea] text-[#710014]' : 'bg-[#e6e0d9] text-[#6f5c4b]'}`}>{session.status}</span>
+                        <span className={`shrink-0 rounded-full px-2.5 py-1 text-xs font-semibold ${session.status === 'active' ? 'bg-[#EFEEE8] text-[#000000]' : 'bg-[#D3CCC7] text-[#000000]'}`}>{session.status}</span>
                       </div>
-                      <p className="mt-3 text-xs text-[#6f5c4b]">Started {new Date(session.started_at).toLocaleString()}</p>
+                      <p className="mt-3 text-xs text-[#000000]">Started {new Date(session.started_at).toLocaleString()}</p>
                       <div className="mt-4 flex flex-wrap gap-2">
                         {session.mentor_id === user.id && (
                           <button
@@ -370,34 +370,34 @@ export default function MentorPage() {
                               setReportSessionId(session.id)
                               setActiveView('reports')
                             }}
-                            className="inline-flex min-h-11 items-center justify-center rounded-md border border-[#d8d2c9] px-4 text-sm font-medium text-[#161616] hover:bg-[#f2f1ed]"
+                            className="inline-flex min-h-11 items-center justify-center rounded-md border border-[#D3CCC7] px-4 text-sm font-medium text-[#000000] hover:bg-[#EFEEE8]"
                           >View report</button>
                         )}
                         {session.status === 'active' && session.mentor_id === user.id && (
                           <button
                             type="button"
                             onClick={() => endSession(session.id)}
-                            className="inline-flex min-h-11 items-center justify-center rounded-md border border-[#bb9a7b] px-4 text-sm font-medium text-[#710014] hover:bg-[#f3e9ea]"
+                            className="inline-flex min-h-11 items-center justify-center rounded-md border border-[#D3CCC7] px-4 text-sm font-medium text-[#000000] hover:bg-[#EFEEE8]"
                           >End session</button>
                         )}
                         {session.status === 'active' && session.mentor_id !== user.id && (
-                          <p className="self-center text-sm text-[#6f5c4b]">Managed by another mentor</p>
+                          <p className="self-center text-sm text-[#000000]">Managed by another mentor</p>
                         )}
                       </div>
                     </article>
                   ))}
-                  {sessions.length === 0 && <p className="rounded-lg border border-dashed border-[#d8d2c9] px-4 py-8 text-center text-sm text-[#6f5c4b]">No sessions yet.</p>}
+                  {sessions.length === 0 && <p className="rounded-lg border border-dashed border-[#D3CCC7] px-4 py-8 text-center text-sm text-[#000000]">No sessions yet.</p>}
                 </div>
-                <div className="hidden overflow-hidden rounded-lg border border-[#d8d2c9] bg-[#F2F1ED] lg:block">
+                <div className="hidden overflow-hidden rounded-lg border border-[#D3CCC7] bg-[#EFEEE8] lg:block">
                   <div className="overflow-x-auto">
                     <table className="w-full min-w-[720px] text-left text-sm">
-                      <thead className="bg-[#f2f1ed] text-xs text-[#6f5c4b]"><tr><th className="px-5 py-4 font-medium">Squad</th><th className="px-5 py-4 font-medium">Status</th><th className="px-5 py-4 font-medium">Started</th><th className="px-5 py-4 font-medium">Report</th><th className="px-5 py-4 font-medium">Session action</th></tr></thead>
+                      <thead className="bg-[#EFEEE8] text-xs text-[#000000]"><tr><th className="px-5 py-4 font-medium">Squad</th><th className="px-5 py-4 font-medium">Status</th><th className="px-5 py-4 font-medium">Started</th><th className="px-5 py-4 font-medium">Report</th><th className="px-5 py-4 font-medium">Session action</th></tr></thead>
                       <tbody>
                         {sessions.map((session) => (
-                          <tr key={session.id} className="border-t border-[#d8d2c9]">
+                          <tr key={session.id} className="border-t border-[#D3CCC7]">
                             <td className="px-5 py-4 font-semibold">Squad {session.squad}</td>
-                            <td className="px-5 py-4"><span className={`rounded-full px-2.5 py-1 text-xs font-semibold ${session.status === 'active' ? 'bg-[#f3e9ea] text-[#710014]' : 'bg-[#e6e0d9] text-[#6f5c4b]'}`}>{session.status}</span></td>
-                            <td className="px-5 py-4 text-[#6f5c4b]">{new Date(session.started_at).toLocaleString()}</td>
+                            <td className="px-5 py-4"><span className={`rounded-full px-2.5 py-1 text-xs font-semibold ${session.status === 'active' ? 'bg-[#EFEEE8] text-[#000000]' : 'bg-[#D3CCC7] text-[#000000]'}`}>{session.status}</span></td>
+                            <td className="px-5 py-4 text-[#000000]">{new Date(session.started_at).toLocaleString()}</td>
                             <td className="whitespace-nowrap px-5 py-4">
                               {session.mentor_id === user.id ? (
                                 <button
@@ -406,9 +406,9 @@ export default function MentorPage() {
                                     setReportSessionId(session.id)
                                     setActiveView('reports')
                                   }}
-                                  className="inline-flex min-h-10 min-w-28 justify-center font-medium text-[#6f5c4b] hover:underline"
+                                  className="inline-flex min-h-10 min-w-28 justify-center font-medium text-[#000000] hover:underline"
                                 >View report</button>
-                              ) : <span className="text-[#6f5c4b]">—</span>}
+                              ) : <span className="text-[#000000]">—</span>}
                             </td>
                             <td className="whitespace-nowrap px-5 py-4">
                               {session.status === 'active' && session.mentor_id === user.id ? (
@@ -416,15 +416,15 @@ export default function MentorPage() {
                                   type="button"
                                   aria-label={`End session for Squad ${session.squad}`}
                                   onClick={() => endSession(session.id)}
-                                  className="inline-flex min-h-10 items-center font-medium text-[#710014] hover:underline"
+                                  className="inline-flex min-h-10 items-center font-medium text-[#000000] hover:underline"
                                 >End Squad {session.squad}</button>
                               ) : session.status === 'active' ? (
-                                <span className="text-[#6f5c4b]">Managed by another mentor</span>
-                              ) : <span className="text-[#6f5c4b]">—</span>}
+                                <span className="text-[#000000]">Managed by another mentor</span>
+                              ) : <span className="text-[#000000]">—</span>}
                             </td>
                           </tr>
                         ))}
-                        {sessions.length === 0 && <tr><td colSpan={5} className="px-5 py-10 text-center text-sm text-[#6f5c4b]">No sessions yet.</td></tr>}
+                        {sessions.length === 0 && <tr><td colSpan={5} className="px-5 py-10 text-center text-sm text-[#000000]">No sessions yet.</td></tr>}
                       </tbody>
                     </table>
                   </div>
@@ -433,44 +433,44 @@ export default function MentorPage() {
             </>
           ) : activeView === 'squads' ? (
             <section>
-              <p className="mb-2 text-xs font-bold uppercase tracking-[0.16em] text-[#710014]">Mentor workspace</p>
+              <p className="mb-2 text-xs font-bold uppercase tracking-[0.16em] text-[#000000]">Mentor workspace</p>
               <h1 className="text-3xl font-bold">Squads</h1>
-              <p className="mb-6 mt-2 text-sm text-[#6f5c4b]">Choose a squad when starting a handover session.</p>
+              <p className="mb-6 mt-2 text-sm text-[#000000]">Choose a squad when starting a handover session.</p>
               <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
                 {squads.map((squad) => (
-                  <button key={squad} type="button" onClick={() => { setSelectedSquad(squad); setActiveView('sessions') }} className="min-h-32 rounded-lg border border-[#d8d2c9] bg-[#F2F1ED] p-5 text-left transition-colors hover:border-[#bb9a7b]">
-                    <UsersRound size={20} className="mb-4 text-[#710014]" />
+                  <button key={squad} type="button" onClick={() => { setSelectedSquad(squad); setActiveView('sessions') }} className="min-h-32 rounded-lg border border-[#D3CCC7] bg-[#EFEEE8] p-5 text-left transition-colors hover:border-[#D3CCC7]">
+                    <UsersRound size={20} className="mb-4 text-[#000000]" />
                     <span className="block text-base font-semibold">Squad {squad}</span>
-                    <span className="mt-1.5 block text-sm text-[#6f5c4b]">{sessions.filter((session) => session.squad === squad && session.status === 'active').length} active sessions</span>
-                    <span className="mt-1 block text-sm text-[#6f5c4b]">{students.filter((student) => student.squad === squad).length} registered accounts</span>
+                    <span className="mt-1.5 block text-sm text-[#000000]">{sessions.filter((session) => session.squad === squad && session.status === 'active').length} active sessions</span>
+                    <span className="mt-1 block text-sm text-[#000000]">{students.filter((student) => student.squad === squad).length} registered accounts</span>
                   </button>
                 ))}
               </div>
               <section className="mt-10" aria-labelledby="student-accounts-title">
                 <h2 id="student-accounts-title" className="text-xl font-bold">Registered student accounts</h2>
-                <p className="mb-5 mt-1.5 text-sm text-[#6f5c4b]">Students who have completed profile setup in Phosub.</p>
+                <p className="mb-5 mt-1.5 text-sm text-[#000000]">Students who have completed profile setup in Phosub.</p>
                 <div className="grid gap-4 xl:grid-cols-3">
                   {squads.map((squad) => {
                     const squadStudents = students.filter((student) => student.squad === squad)
                     return (
-                      <section key={squad} className="rounded-lg border border-[#d8d2c9] bg-[#F2F1ED] p-4 sm:p-5" aria-label={`Registered students in Squad ${squad}`}>
+                      <section key={squad} className="rounded-lg border border-[#D3CCC7] bg-[#EFEEE8] p-4 sm:p-5" aria-label={`Registered students in Squad ${squad}`}>
                         <div className="mb-3 flex items-center justify-between gap-3">
                           <h3 className="text-base font-semibold">Squad {squad}</h3>
-                          <span className="rounded-full bg-[#e6e0d9] px-2.5 py-1 text-xs font-semibold text-[#6f5c4b]">{squadStudents.length}</span>
+                          <span className="rounded-full bg-[#D3CCC7] px-2.5 py-1 text-xs font-semibold text-[#000000]">{squadStudents.length}</span>
                         </div>
                         {squadStudents.length ? (
-                          <ul className="divide-y divide-[#d8d2c9]">
+                          <ul className="divide-y divide-[#D3CCC7]">
                             {squadStudents.map((student) => (
                               <li key={student.id} className="py-3 first:pt-1 last:pb-1">
                                 <p className="text-sm font-medium">{student.full_name}</p>
-                                <time dateTime={student.created_at} className="mt-1 block text-xs text-[#6f5c4b]">
+                                <time dateTime={student.created_at} className="mt-1 block text-xs text-[#000000]">
                                   Account created {new Date(student.created_at).toLocaleDateString()}
                                 </time>
                               </li>
                             ))}
                           </ul>
                         ) : (
-                          <p className="py-3 text-sm text-[#6f5c4b]">No student profiles yet.</p>
+                          <p className="py-3 text-sm text-[#000000]">No student profiles yet.</p>
                         )}
                       </section>
                     )
@@ -480,33 +480,33 @@ export default function MentorPage() {
             </section>
           ) : activeView === 'reports' ? (
             <section>
-              <p className="mb-2 text-xs font-bold uppercase tracking-[0.16em] text-[#710014]">Mentor workspace</p>
+              <p className="mb-2 text-xs font-bold uppercase tracking-[0.16em] text-[#000000]">Mentor workspace</p>
               <h1 className="text-3xl font-bold">{reportSession ? `${reportSession.name} report` : 'Recent handovers'}</h1>
-              <p className="mb-6 mt-2 text-sm text-[#6f5c4b]">
+              <p className="mb-6 mt-2 text-sm text-[#000000]">
                 {reportSession ? `Squad ${reportSession.squad} handover statuses for this session.` : 'A record of recent student phone handovers.'}
               </p>
               <div className="space-y-3 lg:hidden">
                 {reportHandovers.map((handover) => (
-                  <article key={handover.id} className="rounded-lg border border-[#d8d2c9] bg-[#F2F1ED] p-4">
+                  <article key={handover.id} className="rounded-lg border border-[#D3CCC7] bg-[#EFEEE8] p-4">
                     <div className="flex items-start justify-between gap-3">
                       <h2 className="text-base font-semibold">{handover.student?.full_name || 'Student'}</h2>
-                      <span className="shrink-0 rounded-full bg-[#e6e0d9] px-2.5 py-1 text-xs font-semibold capitalize text-[#161616]">{handover.status.replace('_', ' ')}</span>
+                      <span className="shrink-0 rounded-full bg-[#D3CCC7] px-2.5 py-1 text-xs font-semibold capitalize text-[#000000]">{handover.status.replace('_', ' ')}</span>
                     </div>
-                    <p className="mt-3 text-sm text-[#6f5c4b]">{handover.reason || 'No reason provided'}</p>
-                    <p className="mt-2 text-xs text-[#6f5c4b]">Updated {new Date(handover.updated_at).toLocaleString()}</p>
+                    <p className="mt-3 text-sm text-[#000000]">{handover.reason || 'No reason provided'}</p>
+                    <p className="mt-2 text-xs text-[#000000]">Updated {new Date(handover.updated_at).toLocaleString()}</p>
                   </article>
                 ))}
-                {reportHandovers.length === 0 && <p className="rounded-lg border border-dashed border-[#d8d2c9] px-4 py-8 text-center text-sm text-[#6f5c4b]">{reportSession ? 'No handovers recorded for this session yet.' : 'No handovers to report yet.'}</p>}
+                {reportHandovers.length === 0 && <p className="rounded-lg border border-dashed border-[#D3CCC7] px-4 py-8 text-center text-sm text-[#000000]">{reportSession ? 'No handovers recorded for this session yet.' : 'No handovers to report yet.'}</p>}
               </div>
-              <div className="hidden overflow-hidden rounded-lg border border-[#d8d2c9] bg-[#F2F1ED] lg:block">
+              <div className="hidden overflow-hidden rounded-lg border border-[#D3CCC7] bg-[#EFEEE8] lg:block">
                 <div className="overflow-x-auto">
                   <table className="w-full min-w-[680px] text-left text-sm">
-                    <thead className="bg-[#f2f1ed] text-xs text-[#6f5c4b]"><tr><th className="px-5 py-4 font-medium">Student</th><th className="px-5 py-4 font-medium">Status</th><th className="px-5 py-4 font-medium">Reason</th><th className="px-5 py-4 font-medium">Updated</th></tr></thead>
+                    <thead className="bg-[#EFEEE8] text-xs text-[#000000]"><tr><th className="px-5 py-4 font-medium">Student</th><th className="px-5 py-4 font-medium">Status</th><th className="px-5 py-4 font-medium">Reason</th><th className="px-5 py-4 font-medium">Updated</th></tr></thead>
                     <tbody>
                       {reportHandovers.map((handover) => (
-                        <tr key={handover.id} className="border-t border-[#d8d2c9]"><td className="px-5 py-4 font-semibold">{handover.student?.full_name || 'Student'}</td><td className="px-5 py-4 capitalize">{handover.status.replace('_', ' ')}</td><td className="px-5 py-4 text-[#6f5c4b]">{handover.reason || '—'}</td><td className="px-5 py-4 text-[#6f5c4b]">{new Date(handover.updated_at).toLocaleString()}</td></tr>
+                        <tr key={handover.id} className="border-t border-[#D3CCC7]"><td className="px-5 py-4 font-semibold">{handover.student?.full_name || 'Student'}</td><td className="px-5 py-4 capitalize">{handover.status.replace('_', ' ')}</td><td className="px-5 py-4 text-[#000000]">{handover.reason || '—'}</td><td className="px-5 py-4 text-[#000000]">{new Date(handover.updated_at).toLocaleString()}</td></tr>
                       ))}
-                      {reportHandovers.length === 0 && <tr><td colSpan={4} className="px-5 py-10 text-center text-sm text-[#6f5c4b]">{reportSession ? 'No handovers recorded for this session yet.' : 'No handovers to report yet.'}</td></tr>}
+                      {reportHandovers.length === 0 && <tr><td colSpan={4} className="px-5 py-10 text-center text-sm text-[#000000]">{reportSession ? 'No handovers recorded for this session yet.' : 'No handovers to report yet.'}</td></tr>}
                     </tbody>
                   </table>
                 </div>
@@ -514,27 +514,27 @@ export default function MentorPage() {
             </section>
           ) : (
             <section>
-              <p className="mb-2 text-xs font-bold uppercase tracking-[0.16em] text-[#710014]">Mentor workspace</p>
+              <p className="mb-2 text-xs font-bold uppercase tracking-[0.16em] text-[#000000]">Mentor workspace</p>
               <h1 className="text-3xl font-bold">Profile</h1>
-              <div className="mt-6 max-w-2xl rounded-lg border border-[#d8d2c9] bg-[#F2F1ED] p-5 sm:p-6">
-                <div className="mb-6 border-b border-[#d8d2c9] pb-6">
+              <div className="mt-6 max-w-2xl rounded-lg border border-[#D3CCC7] bg-[#EFEEE8] p-5 sm:p-6">
+                <div className="mb-6 border-b border-[#D3CCC7] pb-6">
                   <ProfilePhotoEditor
                     avatarUrl={profile?.avatar_url}
                     name={displayName}
                     onUploaded={(avatarUrl) => setProfile((current) => current ? { ...current, avatar_url: avatarUrl } : current)}
                   />
                 </div>
-                <p className="text-xs text-[#6f5c4b]">Name</p>
+                <p className="text-xs text-[#000000]">Name</p>
                 <p className="mt-1.5 text-base font-semibold capitalize">{displayName}</p>
-                <p className="mt-5 text-xs text-[#6f5c4b]">Email</p>
+                <p className="mt-5 text-xs text-[#000000]">Email</p>
                 <p className="mt-1.5 break-all text-base font-medium">{email}</p>
-                <p className="mt-5 text-xs text-[#6f5c4b]">Role</p>
+                <p className="mt-5 text-xs text-[#000000]">Role</p>
                 <p className="mt-1.5 text-base font-medium">Mentor</p>
               </div>
             </section>
           )}
         </main>
-        <nav aria-label="Mentor workspace" className="fixed inset-x-0 bottom-0 z-40 border-t border-[#24211e] bg-[#161616]/95 pb-[env(safe-area-inset-bottom)] shadow-[0_-8px_24px_rgba(0,0,0,0.2)] backdrop-blur lg:hidden">
+        <nav aria-label="Mentor workspace" className="fixed inset-x-0 bottom-0 z-40 border-t border-[#000000] bg-[#000000] pb-[env(safe-area-inset-bottom)] lg:hidden">
           <div className="mx-auto grid h-16 max-w-md grid-cols-4 items-center gap-2 px-4">
             {navigation.map(({ id, label, icon: Icon }) => (
               <button
@@ -547,7 +547,7 @@ export default function MentorPage() {
                   setActiveView(id)
                   if (id === 'reports') setReportSessionId(null)
                 }}
-                className={`mx-auto grid size-12 place-items-center rounded-xl transition-colors ${activeView === id ? 'bg-[#710014] text-[#F2F1ED]' : 'text-[#d8d2c9] hover:bg-[#24211e] hover:text-[#F2F1ED]'}`}
+                className={`mx-auto grid size-12 place-items-center rounded-xl transition-colors ${activeView === id ? 'bg-[#EF0606] text-[#000000]' : 'text-[#D3CCC7] hover:bg-[#000000] hover:text-[#EFEEE8]'}`}
               >
                 <Icon size={21} strokeWidth={1.9} />
               </button>
