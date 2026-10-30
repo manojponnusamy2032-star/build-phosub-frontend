@@ -40,3 +40,41 @@ button, input, textarea, select { font: inherit; }
 .field::placeholder { color: #000000; }
 textarea.field { padding-top: 10px; padding-bottom: 10px; }
 select.field { appearance: auto; }
+
+/* Kalvium Wavy Loader Animations */
+@keyframes trace-fast {
+  0% {
+    stroke-dashoffset: 500;
+    stroke: var(--crimson-depth);
+  }
+  50% {
+    stroke: #ff9f1c;
+  }
+  100% {
+    stroke-dashoffset: 0;
+    stroke: var(--crimson-depth);
+  }
+}
+
+@keyframes trace-slow {
+  0% {
+    stroke-dashoffset: 500;
+    stroke: var(--crimson-depth);
+  }
+  50% {
+    stroke: #ff9f1c;
+  }
+  100% {
+    stroke-dashoffset: 0;
+    stroke: var(--crimson-depth);
+  }
+}
+
+.animate-trace-fast {
+  animation: trace-fast 2.5s linear infinite;
+}
+
+.animate-trace-slow {
+  animation: trace-slow 4s linear infinite reverse;
+  opacity: 0.7;
+}

@@ -1,5 +1,5 @@
-import { LoadingSpinner } from '@/components/providers'
+import KalviumWavyLoader from '@/components/wavy-loader'
 
 export default function Loading() {
-  return <LoadingSpinner />
+  return <KalviumWavyLoader />
 }
