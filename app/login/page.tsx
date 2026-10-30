@@ -4,7 +4,8 @@ export const dynamic = 'force-dynamic'
 
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { useAuth, LoadingSpinner } from '@/components/providers'
+import { useAuth } from '@/components/providers'
+import KalviumWavyLoader from '@/components/wavy-loader'
 import Link from 'next/link'
 
 export default function LoginPage() {
@@ -49,10 +50,10 @@ export default function LoginPage() {
     }
   }
 
-  // If already signed in, go to dashboard
+  // If already signed in, go straight to dashboard
   if (user) {
-    router.push('/dashboard')
-    return <LoadingSpinner />
+    router.replace('/dashboard')
+    return <KalviumWavyLoader />
   }
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
@@ -122,7 +123,7 @@ export default function LoginPage() {
     }
   }
 
-  if (loading) return <LoadingSpinner />
+  if (loading) return <KalviumWavyLoader />
 
   // If there's a resend message showing, include the resend button
   const resendSection = showResend && (

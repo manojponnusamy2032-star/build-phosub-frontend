@@ -4,6 +4,7 @@ export const dynamic = 'force-dynamic'
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { useAuth } from '@/components/providers'
+import KalviumWavyLoader from '@/components/wavy-loader'
 import Link from 'next/link'
 import { isValidEmailFormat } from '@/lib/email-validation'
 
@@ -11,7 +12,14 @@ const SQUADS = ['138', '139', '183']
 
 export default function SignupPage() {
   const router = useRouter()
-  const { supabase, loading } = useAuth()
+  const { supabase, user, loading } = useAuth()
+
+  // If already signed in, go straight to dashboard
+  if (user) {
+    router.replace('/dashboard')
+    return <KalviumWavyLoader />
+  }
+
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [fullName, setFullName] = useState('')
