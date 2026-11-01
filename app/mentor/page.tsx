@@ -6,12 +6,15 @@ import { useRouter } from 'next/navigation'
 import {
   Bell,
   ChartNoAxesColumn,
+  Check,
   ChevronDown,
+  Clock,
   ClipboardCheck,
   LogOut,
   Play,
   UserRound,
   UsersRound,
+  X,
   type LucideIcon,
 } from 'lucide-react'
 import { useAuth, LoadingSpinner } from '@/components/providers'
@@ -46,6 +49,7 @@ export default function MentorPage() {
   const [activeSquads, setActiveSquads] = useState<string[]>([])
   const [starting, setStarting] = useState(false)
   const [reportSessionId, setReportSessionId] = useState<string | null>(null)
+  const [reportFilter, setReportFilter] = useState<'submitted' | 'not_submitted' | 'not_responded' | null>(null)
   const [activeView, setActiveView] = useState<View>('sessions')
   const [accountMenuOpen, setAccountMenuOpen] = useState(false)
   const [notificationsOpen, setNotificationsOpen] = useState(false)
@@ -190,6 +194,20 @@ export default function MentorPage() {
   const reportHandovers = reportSessionId
     ? handovers.filter((handover) => handover.session_id === reportSessionId)
     : handovers.slice(0, 10)
+
+  const sessionSquadStudents = reportSession
+    ? students.filter((student) => student.squad === reportSession.squad)
+    : []
+  const submittedStudentIds = new Set(
+    reportHandovers.filter((handover) => handover.status === 'submitted').map((handover) => handover.student_id)
+  )
+  const notSubmittedStudentIds = new Set(
+    reportHandovers.filter((handover) => handover.status !== 'submitted').map((handover) => handover.student_id)
+  )
+  const respondedStudentIds = new Set(reportHandovers.map((handover) => handover.student_id))
+  const submittedStudents = sessionSquadStudents.filter((student) => submittedStudentIds.has(student.id))
+  const notSubmittedStudents = sessionSquadStudents.filter((student) => notSubmittedStudentIds.has(student.id))
+  const notRespondedStudents = sessionSquadStudents.filter((student) => !respondedStudentIds.has(student.id))
 
   return (
     <div className="min-h-screen bg-[#EFEEE8] text-[#000000]">
@@ -502,32 +520,119 @@ export default function MentorPage() {
               <p className="mb-6 mt-2 text-sm text-[#000000]">
                 {reportSession ? `Squad ${reportSession.squad} handover statuses for this session.` : 'A record of recent student phone handovers.'}
               </p>
-              <div className="space-y-3 lg:hidden">
-                {reportHandovers.map((handover) => (
-                  <article key={handover.id} className="rounded-lg border border-[#D3CCC7] bg-[#EFEEE8] p-4">
-                    <div className="flex items-start justify-between gap-3">
-                      <h2 className="text-base font-semibold">{handover.student?.full_name || 'Student'}</h2>
-                      <span className="shrink-0 rounded-full bg-[#D3CCC7] px-2.5 py-1 text-xs font-semibold capitalize text-[#000000]">{handover.status.replace('_', ' ')}</span>
-                    </div>
-                    <p className="mt-3 text-sm text-[#000000]">{handover.reason || 'No reason provided'}</p>
-                    <p className="mt-2 text-xs text-[#000000]">Updated {new Date(handover.updated_at).toLocaleString(undefined, { hour12: true })}</p>
-                  </article>
-                ))}
-                {reportHandovers.length === 0 && <p className="rounded-lg border border-dashed border-[#D3CCC7] px-4 py-8 text-center text-sm text-[#000000]">{reportSession ? 'No handovers recorded for this session yet.' : 'No handovers to report yet.'}</p>}
-              </div>
-              <div className="hidden overflow-hidden rounded-lg border border-[#D3CCC7] bg-[#EFEEE8] lg:block">
-                <div className="overflow-x-auto">
-                  <table className="w-full min-w-[680px] text-left text-sm">
-                    <thead className="bg-[#EFEEE8] text-xs text-[#000000]"><tr><th className="px-5 py-4 font-medium">Student</th><th className="px-5 py-4 font-medium">Status</th><th className="px-5 py-4 font-medium">Reason</th><th className="px-5 py-4 font-medium">Updated</th></tr></thead>
-                    <tbody>
-                      {reportHandovers.map((handover) => (
-                        <tr key={handover.id} className="border-t border-[#D3CCC7]"><td className="px-5 py-4 font-semibold">{handover.student?.full_name || 'Student'}</td><td className="px-5 py-4 capitalize">{handover.status.replace('_', ' ')}</td><td className="px-5 py-4 text-[#000000]">{handover.reason || '—'}</td><td className="px-5 py-4 text-[#000000]">{new Date(handover.updated_at).toLocaleString(undefined, { hour12: true })}</td></tr>
-                      ))}
-                      {reportHandovers.length === 0 && <tr><td colSpan={4} className="px-5 py-10 text-center text-sm text-[#000000]">{reportSession ? 'No handovers recorded for this session yet.' : 'No handovers to report yet.'}</td></tr>}
-                    </tbody>
-                  </table>
-                </div>
-              </div>
+
+              {reportSession ? (
+                <>
+                  <div className="mb-6 flex flex-wrap gap-3" role="group" aria-label="Handover submission filter">
+                    <button
+                      type="button"
+                      role="tab"
+                      aria-selected={reportFilter === 'submitted'}
+                      onClick={() => setReportFilter('submitted')}
+                      className={`min-w-[140px] rounded-md border px-4 py-2 text-sm font-semibold transition-all ${reportFilter === 'submitted' ? 'bg-[#EF0606] border-[#EF0606] text-[#000000]' : 'border-[#D3CCC7] bg-[#EFEEE8] text-[#000000] hover:border-[#D3CCC7]'}`}
+                    >
+                      <div className="flex items-center gap-1.5">
+                        <Check size={14} strokeWidth={2} />
+                        <span>Submitted</span>
+                        <span className="ml-2 inline-flex items-center rounded-full px-2 py-0.5 bg-[#000000] text-[#EFEEE8] text-[10px]">{submittedStudents.length}</span>
+                      </div>
+                    </button>
+                    <button
+                      type="button"
+                      role="tab"
+                      aria-selected={reportFilter === 'not_submitted'}
+                      onClick={() => setReportFilter('not_submitted')}
+                      className={`min-w-[140px] rounded-md border px-4 py-2 text-sm font-semibold transition-all ${reportFilter === 'not_submitted' ? 'bg-[#EF0606] border-[#EF0606] text-[#000000]' : 'border-[#D3CCC7] bg-[#EFEEE8] text-[#000000] hover:border-[#D3CCC7]'}`}
+                    >
+                      <div className="flex items-center gap-1.5">
+                        <X size={14} strokeWidth={2} />
+                        <span>Not Submitted</span>
+                        <span className="ml-2 inline-flex items-center rounded-full px-2 py-0.5 bg-[#000000] text-[#EFEEE8] text-[10px]">{notSubmittedStudents.length}</span>
+                      </div>
+                    </button>
+                    <button
+                      type="button"
+                      role="tab"
+                      aria-selected={reportFilter === 'not_responded'}
+                      onClick={() => setReportFilter('not_responded')}
+                      className={`min-w-[140px] rounded-md border px-4 py-2 text-sm font-semibold transition-all ${reportFilter === 'not_responded' ? 'bg-[#EF0606] border-[#EF0606] text-[#000000]' : 'border-[#D3CCC7] bg-[#EFEEE8] text-[#000000] hover:border-[#D3CCC7]'}`}
+                    >
+                      <div className="flex items-center gap-1.5">
+                        <Clock size={14} strokeWidth={2} />
+                        <span>Not Responded</span>
+                        <span className="ml-2 inline-flex items-center rounded-full px-2 py-0.5 bg-[#000000] text-[#EFEEE8] text-[10px]">{notRespondedStudents.length}</span>
+                      </div>
+                    </button>
+                  </div>
+
+                  <div className="rounded-lg border border-[#D3CCC7] bg-[#EFEEE8] p-4 sm:p-5">
+                    {reportFilter === null ? (
+                      <p className="text-sm text-[#000000] text-center">Select Submitted, Not Submitted or Not Responded above to view students.</p>
+                    ) : reportFilter === 'submitted' ? (
+                      <>
+                        <h3 className="mb-2 text-xs font-bold uppercase tracking-[0.16em] text-[#000000]">Submitted</h3>
+                        {submittedStudents.length ? (
+                          <ul className="divide-y divide-[#D3CCC7]">
+                            {submittedStudents.map((student) => {
+                              const handover = reportHandovers.find((h) => h.student_id === student.id)
+                              return (
+                                <li key={student.id} className="py-3 first:pt-1 last:pb-1 flex items-start justify-between gap-3">
+                                  <div>
+                                    <p className="text-sm font-medium">{student.full_name}</p>
+                                    <p className="mt-0.5 text-xs text-[#000000]">Phone {handover?.phone_model || '—'}</p>
+                                  </div>
+                                  <span className="shrink-0 rounded-full bg-[#EFEEE8] px-2.5 py-1 text-xs font-semibold text-[#000000]">Submitted</span>
+                                </li>
+                              )
+                            })}
+                          </ul>
+                        ) : (
+                          <p className="py-4 text-center text-sm text-[#000000]">No students have submitted yet.</p>
+                        )}
+                      </>
+                    ) : reportFilter === 'not_submitted' ? (
+                      <>
+                        <h3 className="mb-2 text-xs font-bold uppercase tracking-[0.16em] text-[#000000]">Not Submitted</h3>
+                        {notSubmittedStudents.length ? (
+                          <ul className="divide-y divide-[#D3CCC7]">
+                            {notSubmittedStudents.map((student) => {
+                              const handover = reportHandovers.find((h) => h.student_id === student.id)
+                              return (
+                                <li key={student.id} className="py-3 first:pt-1 last:pb-1 flex items-start justify-between gap-3">
+                                  <div>
+                                    <p className="text-sm font-medium">{student.full_name}</p>
+                                    <p className="mt-0.5 text-xs text-[#000000]">Reason {handover?.reason || '—'}</p>
+                                  </div>
+                                  <span className="shrink-0 rounded-full bg-[#D3CCC7] px-2.5 py-1 text-xs font-semibold text-[#000000]">Not Submitted</span>
+                                </li>
+                              )
+                            })}
+                          </ul>
+                        ) : (
+                          <p className="py-4 text-center text-sm text-[#000000]">All students have submitted.</p>
+                        )}
+                      </>
+                    ) : (
+                      <>
+                        <h3 className="mb-2 text-xs font-bold uppercase tracking-[0.16em] text-[#000000]">Not Responded</h3>
+                        {notRespondedStudents.length ? (
+                          <ul className="divide-y divide-[#D3CCC7]">
+                            {notRespondedStudents.map((student) => (
+                              <li key={student.id} className="py-3 first:pt-1 last:pb-1 flex items-start justify-between gap-3">
+                                <p className="text-sm font-medium">{student.full_name}</p>
+                              </li>
+                            ))}
+                          </ul>
+                        ) : (
+                          <p className="py-4 text-center text-sm text-[#000000]">All students have responded.</p>
+                        )}
+                      </>
+                    )}
+                  </div>
+                </>
+              ) : (
+                <p className="rounded-lg border border-dashed border-[#D3CCC7] px-4 py-8 text-center text-sm text-[#000000]">No handovers to report yet.</p>
+              )}
             </section>
           ) : (
             <section>
