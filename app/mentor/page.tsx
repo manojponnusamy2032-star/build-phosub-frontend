@@ -10,6 +10,7 @@ import {
   ChevronDown,
   Clock,
   ClipboardCheck,
+  FileSpreadsheet,
   LogOut,
   Play,
   UserRound,
@@ -48,6 +49,7 @@ export default function MentorPage() {
   const [selectedSquad, setSelectedSquad] = useState('')
   const [activeSquads, setActiveSquads] = useState<string[]>([])
   const [starting, setStarting] = useState(false)
+  const [downloadingReport, setDownloadingReport] = useState(false)
   const [reportSessionId, setReportSessionId] = useState<string | null>(null)
   const [reportFilter, setReportFilter] = useState<'submitted' | 'not_submitted' | 'not_responded' | null>(null)
   const [activeView, setActiveView] = useState<View>('sessions')
@@ -164,6 +166,38 @@ export default function MentorPage() {
       setNotice(result.session?.squad ? `Session for Squad ${result.session.squad} ended.` : 'Session ended.')
     } catch (endError) {
       setError(endError instanceof Error ? endError.message : 'Failed to end session')
+    }
+  }
+
+  async function downloadSessionReport(session: Session) {
+    setError('')
+    setNotice('')
+    setDownloadingReport(true)
+    try {
+      const token = await getAccessToken()
+      if (!token) throw new Error('Your sign-in has expired. Please sign in again.')
+      const response = await fetch(`/api/sessions/report?session_id=${encodeURIComponent(session.id)}`, {
+        credentials: 'include',
+        headers: { Authorization: `Bearer ${token}` },
+      })
+      if (!response.ok) {
+        const result = await response.json().catch(() => ({}))
+        throw new Error(result.error || 'Unable to download session report')
+      }
+
+      const reportUrl = URL.createObjectURL(await response.blob())
+      const downloadLink = document.createElement('a')
+      downloadLink.href = reportUrl
+      downloadLink.download = `squad-${session.squad}-handover-report.xlsx`
+      document.body.append(downloadLink)
+      downloadLink.click()
+      downloadLink.remove()
+      window.setTimeout(() => URL.revokeObjectURL(reportUrl), 1000)
+      setNotice('Excel report downloaded.')
+    } catch (downloadError) {
+      setError(downloadError instanceof Error ? downloadError.message : 'Unable to download session report')
+    } finally {
+      setDownloadingReport(false)
     }
   }
 
@@ -515,11 +549,28 @@ export default function MentorPage() {
             </section>
           ) : activeView === 'reports' ? (
             <section>
-              <p className="mb-2 text-xs font-bold uppercase tracking-[0.16em] text-[#000000]">Mentor workspace</p>
-              <h1 className="text-3xl font-bold">{reportSession ? `${reportSession.name} report` : 'Recent handovers'}</h1>
-              <p className="mb-6 mt-2 text-sm text-[#000000]">
-                {reportSession ? `Squad ${reportSession.squad} handover statuses for this session.` : 'A record of recent student phone handovers.'}
-              </p>
+              <div className="mb-6 flex items-start justify-between gap-4">
+                <div>
+                  <p className="mb-2 text-xs font-bold uppercase tracking-[0.16em] text-[#000000]">Mentor workspace</p>
+                  <h1 className="text-3xl font-bold">{reportSession ? `${reportSession.name} report` : 'Recent handovers'}</h1>
+                  <p className="mt-2 text-sm text-[#000000]">
+                    {reportSession ? `Squad ${reportSession.squad} handover statuses for this session.` : 'A record of recent student phone handovers.'}
+                  </p>
+                </div>
+                {reportSession?.status === 'ended' && (
+                  <button
+                    type="button"
+                    title="Download Excel report"
+                    aria-label="Download Excel report"
+                    aria-busy={downloadingReport}
+                    disabled={downloadingReport}
+                    onClick={() => void downloadSessionReport(reportSession)}
+                    className="mt-1 grid size-11 shrink-0 place-items-center rounded-md border border-[#D3CCC7] bg-[#EFEEE8] text-[#000000] transition-colors hover:bg-[#D3CCC7] disabled:cursor-wait disabled:opacity-60"
+                  >
+                    <FileSpreadsheet size={19} aria-hidden="true" />
+                  </button>
+                )}
+              </div>
 
               {reportSession ? (
                 <>
