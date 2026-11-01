@@ -43,8 +43,9 @@ export default function MentorPage() {
   const [error, setError] = useState('')
   const [notice, setNotice] = useState('')
   const [selectedSquad, setSelectedSquad] = useState('')
-  const [reportSessionId, setReportSessionId] = useState<string | null>(null)
+  const [activeSquads, setActiveSquads] = useState<string[]>([])
   const [starting, setStarting] = useState(false)
+  const [reportSessionId, setReportSessionId] = useState<string | null>(null)
   const [activeView, setActiveView] = useState<View>('sessions')
   const [accountMenuOpen, setAccountMenuOpen] = useState(false)
   const [notificationsOpen, setNotificationsOpen] = useState(false)
@@ -127,6 +128,7 @@ export default function MentorPage() {
         throw new Error(result.error || 'Unable to start session')
       }
       await loadData(false)
+      setActiveSquads((prev) => [...prev, selectedSquad].sort())
       setNotice(`Session for Squad ${selectedSquad} started.`)
     } catch (startError) {
       setError(startError instanceof Error ? startError.message : 'Unable to start session')
@@ -136,6 +138,7 @@ export default function MentorPage() {
   }
 
   async function endSession(sessionId: string) {
+    const session = sessions.find((s) => s.id === sessionId)
     setError('')
     setNotice('')
     try {
@@ -153,6 +156,7 @@ export default function MentorPage() {
       const result = await res.json().catch(() => ({}))
       if (!res.ok) throw new Error(result.error || 'Failed to end session')
       await loadData(false)
+      setActiveSquads((prev) => prev.filter((s) => s !== session?.squad))
       setNotice(result.session?.squad ? `Session for Squad ${result.session.squad} ended.` : 'Session ended.')
     } catch (endError) {
       setError(endError instanceof Error ? endError.message : 'Failed to end session')
@@ -302,19 +306,38 @@ export default function MentorPage() {
 
         <main className="mx-auto w-full max-w-[1200px] px-4 pb-[calc(6rem+env(safe-area-inset-bottom))] pt-6 sm:px-8 sm:pt-8 lg:px-10 lg:pb-12">
           {notice && (
-            <div role="status" aria-live="polite" className="mb-5 rounded-lg border border-[#D3CCC7] bg-[#D3CCC7] px-4 py-3 text-sm text-[#000000]">
-              {notice}
+            <div className="fixed inset-0 z-[100] flex items-center justify-center">
+              <div className="absolute inset-0 bg-[#000000]/40 backdrop-blur-sm" />
+              <div className="relative bg-[#EFEEE8] text-[#000000] rounded-xl border-2 border-[#EF0606] px-8 py-6 shadow-2xl flex flex-col items-center gap-4">
+                <p className="text-lg font-bold">{notice}</p>
+                <button
+                  type="button"
+                  onClick={() => setNotice('')}
+                  className="px-6 py-2 rounded-lg bg-[#EF0606] text-sm font-bold text-[#000000] hover:bg-[#EF0606] transition-all shadow-lg"
+                >
+                  OK
+                </button>
+              </div>
             </div>
           )}
           {error && (
-            <div role="alert" className="mb-5 flex items-center justify-between gap-3 rounded-lg border border-[#D3CCC7] bg-[#EFEEE8] px-4 py-3 text-sm text-[#000000]">
-              <span>{error}</span>
-              {error.toLowerCase().includes('sign in again') && (
-                <button type="button" onClick={() => router.replace('/login')} className="shrink-0 font-semibold underline underline-offset-2">Sign in</button>
-              )}
+            <div className="fixed inset-0 z-[100] flex items-center justify-center">
+              <div className="absolute inset-0 bg-[#000000]/40 backdrop-blur-sm" />
+              <div className="relative bg-[#EFEEE8] text-[#000000] rounded-xl border-2 border-[#D3CCC7] px-8 py-6 shadow-2xl flex flex-col items-center gap-4">
+                <p className="text-lg font-bold">{error}</p>
+                <button
+                  type="button"
+                  onClick={() => setError('')}
+                  className="px-6 py-2 rounded-lg bg-[#EF0606] text-sm font-bold text-[#000000] hover:bg-[#EF0606] transition-all shadow-lg"
+                >
+                  OK
+                </button>
+                {error.toLowerCase().includes('sign in again') && (
+                  <button type="button" onClick={() => router.replace('/login')} className="mt-3 text-sm font-semibold underline underline-offset-2">Sign in</button>
+                )}
+              </div>
             </div>
           )}
-
           {!isMentor ? (
             <div className="rounded-lg border border-[#D3CCC7] bg-[#EFEEE8] p-6 text-base text-[#000000]">Your account is not registered as a mentor.</div>
           ) : activeView === 'sessions' ? (
@@ -338,18 +361,24 @@ export default function MentorPage() {
                         setSelectedSquad(squad)
                         setError('')
                       }}
-                      className={`min-h-11 rounded-md border px-4 text-sm transition-colors ${selectedSquad === squad ? 'border-[#EF0606] bg-[#EFEEE8] font-semibold text-[#000000]' : 'border-[#D3CCC7] bg-[#EFEEE8] text-[#000000] hover:border-[#D3CCC7] hover:bg-[#EFEEE8]'}`}
+                      className={`min-h-11 rounded-md border px-4 text-sm transition-all active:scale-95 ${activeSquads.includes(squad) ? 'border-[#EF0606] bg-[#EFEEE8] font-semibold text-[#EF0606]' : selectedSquad === squad ? 'border-[#EF0606] bg-[#EFEEE8] font-semibold text-[#000000]' : 'border-[#D3CCC7] bg-[#EFEEE8] text-[#000000] hover:border-[#D3CCC7] hover:bg-[#EFEEE8]'}`}
                     >Squad {squad}</button>
                   ))}
                 </div>
-                <button
-                  type="button"
-                  onClick={startSession}
-                  disabled={!selectedSquad || starting}
-                  className="mt-4 inline-flex min-h-11 items-center gap-2 rounded-md bg-[#EF0606] px-4 text-sm font-semibold text-[#000000] transition-colors hover:bg-[#EF0606] disabled:cursor-not-allowed"
-                >
-                  <Play size={16} /> {starting ? 'Starting...' : 'Start session'}
-                </button>
+                {(() => {
+                  const activeSessionForSquad = sessions.find((s) => s.squad === selectedSquad && s.status === 'active')
+                  return (
+                    <button
+                      type="button"
+                      onClick={activeSessionForSquad ? () => endSession(activeSessionForSquad.id) : startSession}
+                      disabled={!selectedSquad || starting}
+                      className={`mt-4 inline-flex min-h-11 items-center gap-2 rounded-md px-4 text-sm font-semibold text-[#000000] transition-all active:scale-95 ${activeSessionForSquad ? 'bg-[#EF0606] hover:bg-[#EF0606] disabled:cursor-not-allowed' : 'bg-[#EF0606] hover:bg-[#EF0606] disabled:cursor-not-allowed'}`}
+                    >
+                      <Play size={16} />
+                      {starting ? 'Starting...' : activeSessionForSquad ? `Stop session for Squad ${selectedSquad}` : `Start session for Squad ${selectedSquad}`}
+                    </button>
+                  )
+                })()}
               </section>
               <section className="mt-10">
                 <h2 className="mb-1.5 text-xl font-bold">Sessions</h2>
@@ -361,7 +390,7 @@ export default function MentorPage() {
                         <h3 className="text-base font-semibold">Squad {session.squad}</h3>
                         <span className={`shrink-0 rounded-full px-2.5 py-1 text-xs font-semibold ${session.status === 'active' ? 'bg-[#EFEEE8] text-[#000000]' : 'bg-[#D3CCC7] text-[#000000]'}`}>{session.status}</span>
                       </div>
-                      <p className="mt-3 text-xs text-[#000000]">Started {new Date(session.started_at).toLocaleString()}</p>
+                      <p className="mt-3 text-xs text-[#000000]">Started {new Date(session.started_at).toLocaleString(undefined, { hour12: true })}</p>
                       <div className="mt-4 flex flex-wrap gap-2">
                         {session.mentor_id === user.id && (
                           <button
@@ -391,13 +420,13 @@ export default function MentorPage() {
                 <div className="hidden overflow-hidden rounded-lg border border-[#D3CCC7] bg-[#EFEEE8] lg:block">
                   <div className="overflow-x-auto">
                     <table className="w-full min-w-[720px] text-left text-sm">
-                      <thead className="bg-[#EFEEE8] text-xs text-[#000000]"><tr><th className="px-5 py-4 font-medium">Squad</th><th className="px-5 py-4 font-medium">Status</th><th className="px-5 py-4 font-medium">Started</th><th className="px-5 py-4 font-medium">Report</th><th className="px-5 py-4 font-medium">Session action</th></tr></thead>
+                      <thead className="bg-[#EFEEE8] text-xs text-[#000000]"><tr><th className="px-5 py-4 font-medium">Squad</th><th className="px-5 py-4 font-medium">Status</th><th className="px-5 py-4 font-medium">Started</th><th className="px-5 py-4 font-medium">Report</th></tr></thead>
                       <tbody>
                         {sessions.map((session) => (
                           <tr key={session.id} className="border-t border-[#D3CCC7]">
                             <td className="px-5 py-4 font-semibold">Squad {session.squad}</td>
                             <td className="px-5 py-4"><span className={`rounded-full px-2.5 py-1 text-xs font-semibold ${session.status === 'active' ? 'bg-[#EFEEE8] text-[#000000]' : 'bg-[#D3CCC7] text-[#000000]'}`}>{session.status}</span></td>
-                            <td className="px-5 py-4 text-[#000000]">{new Date(session.started_at).toLocaleString()}</td>
+                            <td className="px-5 py-4 text-[#000000]">{new Date(session.started_at).toLocaleString(undefined, { hour12: true })}</td>
                             <td className="whitespace-nowrap px-5 py-4">
                               {session.mentor_id === user.id ? (
                                 <button
@@ -406,25 +435,13 @@ export default function MentorPage() {
                                     setReportSessionId(session.id)
                                     setActiveView('reports')
                                   }}
-                                  className="inline-flex min-h-10 min-w-28 justify-center font-medium text-[#000000] hover:underline"
+                                  className="inline-flex min-h-10 min-w-28 items-center justify-center rounded-md bg-[#EF0606] px-3 text-sm font-medium text-[#000000] hover:bg-[#EF0606] transition-colors"
                                 >View report</button>
-                              ) : <span className="text-[#000000]">—</span>}
-                            </td>
-                            <td className="whitespace-nowrap px-5 py-4">
-                              {session.status === 'active' && session.mentor_id === user.id ? (
-                                <button
-                                  type="button"
-                                  aria-label={`End session for Squad ${session.squad}`}
-                                  onClick={() => endSession(session.id)}
-                                  className="inline-flex min-h-10 items-center font-medium text-[#000000] hover:underline"
-                                >End Squad {session.squad}</button>
-                              ) : session.status === 'active' ? (
-                                <span className="text-[#000000]">Managed by another mentor</span>
                               ) : <span className="text-[#000000]">—</span>}
                             </td>
                           </tr>
                         ))}
-                        {sessions.length === 0 && <tr><td colSpan={5} className="px-5 py-10 text-center text-sm text-[#000000]">No sessions yet.</td></tr>}
+                        {sessions.length === 0 && <tr><td colSpan={4} className="px-5 py-10 text-center text-sm text-[#000000]">No sessions yet.</td></tr>}
                       </tbody>
                     </table>
                   </div>
@@ -493,7 +510,7 @@ export default function MentorPage() {
                       <span className="shrink-0 rounded-full bg-[#D3CCC7] px-2.5 py-1 text-xs font-semibold capitalize text-[#000000]">{handover.status.replace('_', ' ')}</span>
                     </div>
                     <p className="mt-3 text-sm text-[#000000]">{handover.reason || 'No reason provided'}</p>
-                    <p className="mt-2 text-xs text-[#000000]">Updated {new Date(handover.updated_at).toLocaleString()}</p>
+                    <p className="mt-2 text-xs text-[#000000]">Updated {new Date(handover.updated_at).toLocaleString(undefined, { hour12: true })}</p>
                   </article>
                 ))}
                 {reportHandovers.length === 0 && <p className="rounded-lg border border-dashed border-[#D3CCC7] px-4 py-8 text-center text-sm text-[#000000]">{reportSession ? 'No handovers recorded for this session yet.' : 'No handovers to report yet.'}</p>}
@@ -504,7 +521,7 @@ export default function MentorPage() {
                     <thead className="bg-[#EFEEE8] text-xs text-[#000000]"><tr><th className="px-5 py-4 font-medium">Student</th><th className="px-5 py-4 font-medium">Status</th><th className="px-5 py-4 font-medium">Reason</th><th className="px-5 py-4 font-medium">Updated</th></tr></thead>
                     <tbody>
                       {reportHandovers.map((handover) => (
-                        <tr key={handover.id} className="border-t border-[#D3CCC7]"><td className="px-5 py-4 font-semibold">{handover.student?.full_name || 'Student'}</td><td className="px-5 py-4 capitalize">{handover.status.replace('_', ' ')}</td><td className="px-5 py-4 text-[#000000]">{handover.reason || '—'}</td><td className="px-5 py-4 text-[#000000]">{new Date(handover.updated_at).toLocaleString()}</td></tr>
+                        <tr key={handover.id} className="border-t border-[#D3CCC7]"><td className="px-5 py-4 font-semibold">{handover.student?.full_name || 'Student'}</td><td className="px-5 py-4 capitalize">{handover.status.replace('_', ' ')}</td><td className="px-5 py-4 text-[#000000]">{handover.reason || '—'}</td><td className="px-5 py-4 text-[#000000]">{new Date(handover.updated_at).toLocaleString(undefined, { hour12: true })}</td></tr>
                       ))}
                       {reportHandovers.length === 0 && <tr><td colSpan={4} className="px-5 py-10 text-center text-sm text-[#000000]">{reportSession ? 'No handovers recorded for this session yet.' : 'No handovers to report yet.'}</td></tr>}
                     </tbody>
