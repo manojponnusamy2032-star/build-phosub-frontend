@@ -631,7 +631,46 @@ export default function MentorPage() {
                   </div>
                 </>
               ) : (
-                <p className="rounded-lg border border-dashed border-[#D3CCC7] px-4 py-8 text-center text-sm text-[#000000]">No handovers to report yet.</p>
+                reportHandovers.length ? (
+                  <div className="overflow-hidden rounded-lg border border-[#D3CCC7] bg-[#EFEEE8]">
+                    <div className="overflow-x-auto">
+                      <table className="w-full min-w-[760px] text-left text-sm">
+                        <thead className="bg-[#EFEEE8] text-xs text-[#000000]">
+                          <tr>
+                            <th className="px-5 py-4 font-medium">Session</th>
+                            <th className="px-5 py-4 font-medium">Student</th>
+                            <th className="px-5 py-4 font-medium">Status</th>
+                            <th className="px-5 py-4 font-medium">Phone</th>
+                            <th className="px-5 py-4 font-medium">Reason</th>
+                            <th className="px-5 py-4 font-medium">Updated</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {reportHandovers.map((handover) => {
+                            const session = sessions.find((item) => item.id === handover.session_id)
+                            return (
+                              <tr key={handover.id} className="border-t border-[#D3CCC7]">
+                                <td className="px-5 py-4">
+                                  <p className="font-medium">{session?.name || 'Handover session'}</p>
+                                  {session && <p className="mt-1 text-xs text-[#000000]">Squad {session.squad}</p>}
+                                </td>
+                                <td className="px-5 py-4">{handover.student?.full_name || 'Student'}</td>
+                                <td className="px-5 py-4 capitalize">{handover.status.replaceAll('_', ' ')}</td>
+                                <td className="px-5 py-4">{handover.phone_model || '—'}</td>
+                                <td className="px-5 py-4">{handover.reason || '—'}</td>
+                                <td className="whitespace-nowrap px-5 py-4 text-[#000000]">
+                                  {new Date(handover.updated_at).toLocaleString(undefined, { hour12: true })}
+                                </td>
+                              </tr>
+                            )
+                          })}
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+                ) : (
+                  <p className="rounded-lg border border-dashed border-[#D3CCC7] px-4 py-8 text-center text-sm text-[#000000]">No handovers to report yet.</p>
+                )
               )}
             </section>
           ) : (
