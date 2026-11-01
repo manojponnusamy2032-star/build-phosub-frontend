@@ -23,7 +23,7 @@ import { getAccessToken } from '@/lib/supabase/auth-token'
 import { ProfileAvatar, ProfilePhotoEditor } from '@/components/profile-photo'
 
 type Session = { id: string; squad: string; name: string; status: string; started_at: string; mentor_id: string }
-type Handover = { id: string; student_id: string; session_id: string; status: string; reason: string | null; updated_at: string; student?: { full_name: string } }
+type Handover = { id: string; student_id: string; session_id: string; status: string; reason: string | null; phone_model: string | null; updated_at: string; student?: { full_name: string } }
 type StudentAccount = { id: string; full_name: string; squad: string | null; created_at: string }
 type View = 'sessions' | 'reports' | 'squads' | 'profile'
 
