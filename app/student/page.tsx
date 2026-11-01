@@ -4,6 +4,7 @@ export const dynamic = 'force-dynamic'
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
+import { Activity, CalendarDays, Check, Clock3, RotateCcw, Smartphone, UsersRound, X } from 'lucide-react'
 import { useAuth, LoadingSpinner } from '@/components/providers'
 import { createClient as createSupabaseClient } from '@/lib/supabase/client'
 import { getAccessToken } from '@/lib/supabase/auth-token'
@@ -140,101 +141,116 @@ export default function StudentPage() {
       )}
       {isStudent && (
         <>
-          <div className="mb-8 rounded-xl border border-[#D3CCC7] bg-[#EFEEE8] p-6">
-            <h2 className="mb-4 text-lg font-bold">Active Session</h2>
+          <div className="mb-5">
+            <p className="text-xs font-semibold uppercase tracking-[0.12em] text-[#000000]">Student workspace · Squad {squad}</p>
+            <h1 className="mt-1 text-2xl font-bold leading-tight">Phone handover</h1>
+            <p className="mt-1 text-sm text-[#000000]">Your session and phone status at a glance.</p>
+          </div>
+          <section aria-labelledby="active-session-title" className="mb-5 rounded-3xl border border-[#D3CCC7] bg-white p-4 shadow-sm sm:p-5">
+            <div className="mb-4 flex items-center justify-between gap-3">
+              <div>
+                <p className="text-[11px] font-semibold uppercase tracking-[0.12em] text-[#000000]">Session overview</p>
+                <h2 id="active-session-title" className="mt-1 text-base font-bold">Active session</h2>
+              </div>
+              {session && hasActiveSession && (
+                <span className="inline-flex items-center gap-1.5 rounded-full bg-[#EF0606]/10 px-2.5 py-1 text-xs font-semibold text-[#000000]">
+                  <span className="size-1.5 rounded-full bg-[#EF0606]" /> Live
+                </span>
+              )}
+            </div>
             {session && hasActiveSession ? (
-              <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-                <div className="rounded-lg border border-[#D3CCC7] bg-[#EFEEE8] p-4">
-                  <p className="text-xs text-[#000000]">Session</p>
-                  <p className="font-semibold">{session.name || 'Phone handover'}</p>
-                </div>
-                <div className="rounded-lg border border-[#D3CCC7] bg-[#EFEEE8] p-4">
-                  <p className="text-xs text-[#000000]">Squad</p>
-                  <p className="font-semibold">{session.squad}</p>
-                </div>
-                <div className="rounded-lg border border-[#D3CCC7] bg-[#EFEEE8] p-4">
-                  <p className="text-xs text-[#000000]">Status</p>
-                  <p className="font-semibold text-[#000000]">{session.status}</p>
-                </div>
-                <div className="rounded-lg border border-[#D3CCC7] bg-[#EFEEE8] p-4">
-                  <p className="text-xs text-[#000000]">Started</p>
-                  <p className="font-medium">{new Date(session.started_at).toLocaleString()}</p>
-                </div>
+              <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+                {[
+                  { label: 'Session', value: session.name || 'Phone handover', icon: Smartphone },
+                  { label: 'Squad', value: session.squad, icon: UsersRound },
+                  { label: 'Status', value: 'Active', icon: Activity },
+                  { label: 'Started', value: new Date(session.started_at).toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit' }), icon: Clock3 },
+                ].map(({ label, value, icon: Icon }) => (
+                  <div key={label} className="min-w-0 rounded-2xl border border-[#D3CCC7] bg-[#EFEEE8] p-3">
+                    <span className="mb-3 grid size-8 place-items-center rounded-xl bg-[#EF0606]/10 text-[#EF0606]">
+                      <Icon size={16} aria-hidden="true" />
+                    </span>
+                    <p className="text-[11px] font-medium text-[#000000]">{label}</p>
+                    <p className="mt-1 truncate text-sm font-bold">{value}</p>
+                  </div>
+                ))}
               </div>
             ) : (
-              <div className="rounded-lg border border-dashed border-[#D3CCC7] bg-[#EFEEE8] p-6 text-center">
+              <div className="rounded-2xl border border-dashed border-[#D3CCC7] bg-[#EFEEE8] p-5 text-center">
                 <p className="font-semibold text-[#000000]">No active session for your squad.</p>
                 <p className="mt-1 text-sm text-[#000000]">Status updates are disabled until a mentor starts a session.</p>
               </div>
             )}
-          </div>
-          <div className="mb-8 rounded-xl border border-[#D3CCC7] bg-[#EFEEE8] p-6">
-            <h2 className="mb-4 text-lg font-bold">Your Phone Handover</h2>
+          </section>
+          <section aria-labelledby="handover-title" className="mb-5 rounded-3xl border border-[#D3CCC7] bg-white p-4 shadow-sm sm:p-5">
+            <div className="mb-4 flex items-center justify-between gap-3">
+              <div>
+                <p className="text-[11px] font-semibold uppercase tracking-[0.12em] text-[#000000]">Your device</p>
+                <h2 id="handover-title" className="mt-1 text-base font-bold">Phone handover</h2>
+              </div>
+              {handovers[0] && (
+                <span className="max-w-[45%] truncate rounded-full bg-[#EFEEE8] px-3 py-1 text-xs font-semibold capitalize">
+                  {handovers[0].status.replaceAll('_', ' ')}
+                </span>
+              )}
+            </div>
             {handovers.length > 0 ? (
-              <div className="space-y-3">
-                <div className="flex items-center justify-between px-4 py-3 rounded-lg border border-[#D3CCC7] bg-[#EFEEE8]">
-                  <span className="text-sm font-semibold">Status</span>
-                  <span className="text-sm font-semibold">{handovers[0].status}</span>
+              <div className="grid grid-cols-2 gap-3">
+                <div className="rounded-2xl bg-[#EFEEE8] p-3">
+                  <p className="text-[11px] font-medium text-[#000000]">Phone model</p>
+                  <p className="mt-1 break-words text-sm font-semibold">{handovers[0].phone_model || 'Not entered'}</p>
+                </div>
+                <div className="rounded-2xl bg-[#EFEEE8] p-3">
+                  <p className="text-[11px] font-medium text-[#000000]">Last updated</p>
+                  <p className="mt-1 text-sm font-semibold">{new Date(handovers[0].updated_at).toLocaleString(undefined, { dateStyle: 'medium', timeStyle: 'short' })}</p>
                 </div>
                 {handovers[0].reason && (
-                  <div className="px-4 py-3 rounded-lg border border-[#D3CCC7] bg-[#EFEEE8]">
-                    <p className="text-sm text-[#000000]">{handovers[0].reason}</p>
-                  </div>
-                )}
-                {handovers[0].phone_model && (
-                  <div className="flex items-center justify-between gap-4 px-4 py-3 rounded-lg border border-[#D3CCC7] bg-[#EFEEE8]">
-                    <span className="text-sm font-semibold">Phone model</span>
-                    <span className="text-right text-sm">{handovers[0].phone_model}</span>
+                  <div className="col-span-2 rounded-2xl bg-[#EFEEE8] p-3">
+                    <p className="text-[11px] font-medium text-[#000000]">Reason</p>
+                    <p className="mt-1 break-words text-sm">{handovers[0].reason}</p>
                   </div>
                 )}
               </div>
             ) : (
-              <p className="text-[#000000]">No handover submitted yet.</p>
+              <p className="rounded-2xl bg-[#EFEEE8] p-3 text-sm text-[#000000]">No handover status recorded yet.</p>
             )}
-            <div className="mt-6 flex flex-wrap gap-3">
-              <button
-                type="button"
-                onClick={() => {
-                  setReasonStatus('submitted')
-                  setPhoneModel('')
-                  setError('')
-                  setNotice('')
-                }}
-                disabled={!hasActiveSession || Boolean(updatingStatus)}
-                className="min-h-11 rounded-lg bg-[#EF0606] px-4 py-2 font-semibold text-[#000000] transition-colors hover:bg-[#EF0606] "
-              >
-                Mark Submitted
-              </button>
-              <button
-                type="button"
-                onClick={() => {
-                  setReasonStatus('not_submitted')
-                  setReason('')
-                  setError('')
-                  setNotice('')
-                }}
-                disabled={!hasActiveSession || Boolean(updatingStatus)}
-                className="min-h-11 rounded-lg border border-[#D3CCC7] bg-[#EFEEE8] px-4 py-2 font-semibold text-[#000000] transition-colors hover:border-[#000000] hover:bg-[#EFEEE8] "
-              >
-                Mark Not Submitted
-              </button>
-              <button
-                type="button"
-                onClick={() => {
-                  setReasonStatus('retrieved')
-                  setReason('')
-                  setError('')
-                  setNotice('')
-                }}
-                disabled={!hasActiveSession || Boolean(updatingStatus)}
-                className="min-h-11 rounded-lg border border-[#D3CCC7] bg-[#EFEEE8] px-4 py-2 font-semibold text-[#000000] transition-colors hover:border-[#000000] hover:bg-[#EFEEE8] "
-              >
-                Mark Retrieved
-              </button>
+            <div className="mt-4 grid gap-2.5">
+              {[
+                { status: 'submitted' as const, title: 'Mark submitted', detail: 'Phone model required', icon: Check, primary: true },
+                { status: 'not_submitted' as const, title: 'Not submitted', detail: 'Add a reason for your status', icon: X, primary: false },
+                { status: 'retrieved' as const, title: 'Phone retrieved', detail: 'Update the handover record', icon: RotateCcw, primary: false },
+              ].map(({ status, title, detail, icon: Icon, primary }) => (
+                <div key={status} className="flex items-center justify-between gap-3 rounded-2xl border border-[#D3CCC7] bg-white p-3">
+                  <div className="flex min-w-0 items-center gap-3">
+                    <span className={`grid size-10 shrink-0 place-items-center rounded-xl ${primary ? 'bg-[#EF0606]/10 text-[#EF0606]' : 'bg-[#EFEEE8] text-[#000000]'}`}>
+                      <Icon size={18} aria-hidden="true" />
+                    </span>
+                    <span className="min-w-0">
+                      <span className="block text-sm font-semibold">{title}</span>
+                      <span className="block truncate text-xs text-[#000000]">{detail}</span>
+                    </span>
+                  </div>
+                  <button
+                    type="button"
+                    aria-label={`${title} status`}
+                    onClick={() => {
+                      setReasonStatus(status)
+                      if (status === 'submitted') setPhoneModel('')
+                      else setReason('')
+                      setError('')
+                      setNotice('')
+                    }}
+                    disabled={!hasActiveSession || Boolean(updatingStatus)}
+                    className={`min-h-10 shrink-0 rounded-xl px-3 text-xs font-semibold transition-all duration-200 active:scale-95 disabled:cursor-not-allowed disabled:opacity-50 ${primary ? 'bg-[#EF0606] text-[#000000]' : 'border border-[#D3CCC7] bg-[#EFEEE8] text-[#000000]'}`}
+                  >
+                    Update
+                  </button>
+                </div>
+              ))}
             </div>
             {reasonStatus && (
               <form
-                className="mt-5 max-w-xl rounded-lg border border-[#D3CCC7] bg-[#EFEEE8] p-4"
+                className="mt-4 rounded-2xl border border-[#D3CCC7] bg-[#EFEEE8] p-4"
                 onSubmit={(event) => {
                   event.preventDefault()
                   void updateHandover(reasonStatus, reason, phoneModel)
@@ -299,8 +315,8 @@ export default function StudentPage() {
                 </div>
               </form>
             )}
-          </div>
-          <div className="rounded-xl border border-[#D3CCC7] bg-[#EFEEE8] p-6">
+          </section>
+          <section className="rounded-3xl border border-[#D3CCC7] bg-white p-4 shadow-sm sm:p-5">
             <div className="mb-4 flex items-center justify-between">
               <h2 className="text-lg font-bold">Recent Activity</h2>
               <Link href="/student/history" className="text-sm font-semibold text-[#000000] hover:underline">
@@ -310,6 +326,22 @@ export default function StudentPage() {
             {handovers.length === 0 ? (
               <p className="text-[#000000]">No handover activity yet.</p>
             ) : (
+              <>
+              <ul className="divide-y divide-[#D3CCC7] sm:hidden">
+                {handovers.slice(0, 5).map((handover) => (
+                  <li key={handover.id} className="py-3 first:pt-1 last:pb-1">
+                    <div className="flex items-center justify-between gap-3">
+                      <span className="text-sm font-semibold capitalize">{handover.status.replaceAll('_', ' ')}</span>
+                      <time className="shrink-0 text-right text-xs text-[#000000]">
+                        {new Date(handover.updated_at).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}
+                      </time>
+                    </div>
+                    {handover.phone_model && <p className="mt-1 text-sm">{handover.phone_model}</p>}
+                    {handover.reason && <p className="mt-1 break-words text-sm text-[#000000]">{handover.reason}</p>}
+                  </li>
+                ))}
+              </ul>
+              <div className="hidden overflow-x-auto sm:block">
               <div className="overflow-x-auto">
                 <table className="w-full text-left text-sm">
                   <thead className="bg-[#EFEEE8] text-xs text-[#000000]">
@@ -332,8 +364,10 @@ export default function StudentPage() {
                   </tbody>
                 </table>
               </div>
+              </div>
+              </>
             )}
-          </div>
+          </section>
         </>
       )}
     </>

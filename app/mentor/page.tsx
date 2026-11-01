@@ -224,6 +224,8 @@ export default function MentorPage() {
   const email = user.email ?? ''
   const displayName = profile?.full_name?.trim() || email.split('@')[0]?.replace(/[._-]/g, ' ') || 'Mentor'
   const activeTitle = navigation.find((item) => item.id === activeView)?.label ?? 'Sessions'
+  const activeSessionCount = sessions.filter((session) => session.status === 'active').length
+  const submittedHandoverCount = handovers.filter((handover) => handover.status === 'submitted').length
   const reportSession = sessions.find((session) => session.id === reportSessionId)
   const reportHandovers = reportSessionId
     ? handovers.filter((handover) => handover.session_id === reportSessionId)
@@ -244,7 +246,7 @@ export default function MentorPage() {
   const notRespondedStudents = sessionSquadStudents.filter((student) => !respondedStudentIds.has(student.id))
 
   return (
-    <div className="min-h-screen bg-[#EFEEE8] text-[#000000]">
+    <div className="mx-auto min-h-screen w-full max-w-md bg-[#EFEEE8] text-[#000000] lg:max-w-none">
       <aside className="fixed inset-y-0 left-0 z-30 hidden w-56 flex-col border-r border-[#D3CCC7] bg-[#EFEEE8] px-5 py-5 lg:flex">
         <a href="#sessions" onClick={() => setActiveView('sessions')} className="mb-9 flex items-center gap-2.5 px-0.5">
           <span className="grid size-7 place-items-center rounded-md bg-[#EF0606] text-[#000000]">
@@ -287,15 +289,44 @@ export default function MentorPage() {
         </div>
       </aside>
 
-      <div className="min-h-screen lg:pl-56">
-        <header className="sticky top-0 z-20 flex h-14 items-center justify-between border-b border-[#000000] bg-[#000000] px-4 text-[#EFEEE8] sm:px-6 lg:h-16">
-          <div className="flex items-center gap-2 text-sm text-[#D3CCC7]">
-            <span className="font-bold text-[#EFEEE8] lg:hidden">phosub</span>
-            <span className="hidden lg:inline">Mentor workspace</span>
+      <div className="min-h-screen w-full lg:pl-56">
+        <header className="sticky top-0 z-20 border-b border-[#D3CCC7] bg-[#EFEEE8]/95 px-4 text-[#000000] backdrop-blur-md lg:flex lg:h-16 lg:items-center lg:justify-between lg:border-[#000000] lg:bg-[#000000] lg:px-6 lg:text-[#EFEEE8]">
+          <div className="mx-auto flex h-16 max-w-md items-center justify-between lg:hidden">
+            <div className="flex min-w-0 items-center gap-3">
+              <ProfileAvatar avatarUrl={profile?.avatar_url} name={displayName} />
+              <span className="min-w-0">
+                <span className="block text-xs text-[#000000]">Good morning,</span>
+                <span className="block truncate text-sm font-semibold">{displayName}</span>
+              </span>
+            </div>
+            <div className="relative">
+              <button
+                type="button"
+                aria-label="Notifications"
+                aria-expanded={notificationsOpen}
+                onClick={() => {
+                  setNotificationsOpen(!notificationsOpen)
+                  setAccountMenuOpen(false)
+                }}
+                className="relative grid size-10 place-items-center rounded-full border border-[#D3CCC7] bg-white text-[#000000] transition-all duration-200 active:scale-95"
+              >
+                <Bell size={18} strokeWidth={1.7} />
+                <span className="absolute right-2 top-2 size-2 rounded-full bg-[#EF0606] ring-2 ring-white" />
+              </button>
+              {notificationsOpen && (
+                <div className="absolute right-0 top-12 z-40 w-64 rounded-2xl border border-[#D3CCC7] bg-white p-4 text-sm text-[#000000] shadow-lg">
+                  <p className="font-semibold">Notifications</p>
+                  <p className="mt-1 text-[#000000]">You’re all caught up.</p>
+                </div>
+              )}
+            </div>
+          </div>
+          <div className="hidden items-center gap-2 text-sm text-[#D3CCC7] lg:flex">
+            <span className="font-medium text-[#EFEEE8]">Mentor workspace</span>
             <span aria-hidden="true">/</span>
             <span className="font-medium text-[#EFEEE8]">{activeTitle}</span>
           </div>
-          <div className="flex items-center gap-3">
+          <div className="hidden items-center gap-3 lg:flex">
             <div className="relative">
               <button
                 type="button"
@@ -356,7 +387,7 @@ export default function MentorPage() {
           </div>
         </header>
 
-        <main className="mx-auto w-full max-w-[1200px] px-4 pb-[calc(6rem+env(safe-area-inset-bottom))] pt-6 sm:px-8 sm:pt-8 lg:px-10 lg:pb-12">
+        <main className="mx-auto w-full max-w-md px-4 pb-[calc(6rem+env(safe-area-inset-bottom))] pt-5 sm:px-5 sm:pt-8 lg:max-w-[1200px] lg:px-10 lg:pb-12">
           {notice && (
             <div className="fixed inset-0 z-[100] flex items-center justify-center">
               <div className="absolute inset-0 bg-[#000000]/40 backdrop-blur-sm" />
@@ -395,15 +426,31 @@ export default function MentorPage() {
           ) : activeView === 'sessions' ? (
             <>
               <div className="mb-5">
-                <p className="mb-2 text-xs font-bold uppercase tracking-[0.16em] text-[#000000]">Mentor workspace</p>
-                <h1 className="text-3xl font-bold leading-tight tracking-tight">Phone handover sessions</h1>
+                <p className="mb-1 text-xs font-semibold uppercase tracking-[0.12em] text-[#000000]">Mentor workspace</p>
+                <h1 className="text-2xl font-bold leading-tight tracking-tight">Session dashboard</h1>
                 <p className="mt-2 text-sm text-[#000000]">Start a session for one squad. Only students in that squad can submit phones.</p>
               </div>
 
-              <section aria-labelledby="start-session-title" className="w-full max-w-2xl rounded-lg border border-[#D3CCC7] bg-[#EFEEE8] p-5 sm:p-6">
+              <div className="mb-5 grid grid-cols-3 gap-2.5">
+                {[
+                  { label: 'Active', value: activeSessionCount, icon: Play },
+                  { label: 'Students', value: students.length, icon: UsersRound },
+                  { label: 'Submitted', value: submittedHandoverCount, icon: Check },
+                ].map(({ label, value, icon: Icon }) => (
+                  <div key={label} className="min-w-0 rounded-2xl border border-[#D3CCC7] bg-white p-3 shadow-sm">
+                    <span className="mb-3 grid size-8 place-items-center rounded-xl bg-[#EFEEE8] text-[#000000]">
+                      <Icon size={16} aria-hidden="true" />
+                    </span>
+                    <p className="text-[10px] font-medium text-[#000000]">{label}</p>
+                    <p className="mt-0.5 text-lg font-bold">{value}</p>
+                  </div>
+                ))}
+              </div>
+
+              <section aria-labelledby="start-session-title" className="w-full rounded-3xl border border-[#D3CCC7] bg-white p-4 shadow-sm sm:p-6">
                 <h2 id="start-session-title" className="text-lg font-bold">Start a session</h2>
                 <p className="mt-1.5 text-sm text-[#000000]">Choose the squad you are teaching today.</p>
-                <div className="mt-4 flex flex-wrap gap-2" role="group" aria-label="Choose squad">
+                <div className="mt-4 grid grid-cols-3 gap-2" role="group" aria-label="Choose squad">
                   {squads.map((squad) => (
                     <button
                       key={squad}
@@ -413,7 +460,7 @@ export default function MentorPage() {
                         setSelectedSquad(squad)
                         setError('')
                       }}
-                      className={`min-h-11 rounded-md border px-4 text-sm transition-all active:scale-95 ${activeSquads.includes(squad) ? 'border-[#EF0606] bg-[#EFEEE8] font-semibold text-[#EF0606]' : selectedSquad === squad ? 'border-[#EF0606] bg-[#EFEEE8] font-semibold text-[#000000]' : 'border-[#D3CCC7] bg-[#EFEEE8] text-[#000000] hover:border-[#D3CCC7] hover:bg-[#EFEEE8]'}`}
+                      className={`min-h-12 w-full rounded-2xl border px-2 text-xs transition-all duration-200 active:scale-95 sm:text-sm ${activeSquads.includes(squad) ? 'border-[#EF0606] bg-[#EF0606]/10 font-semibold text-[#EF0606]' : selectedSquad === squad ? 'border-[#EF0606] bg-[#EFEEE8] font-semibold text-[#000000]' : 'border-[#D3CCC7] bg-[#EFEEE8] text-[#000000] hover:border-[#D3CCC7] hover:bg-white'}`}
                     >Squad {squad}</button>
                   ))}
                 </div>
@@ -424,7 +471,7 @@ export default function MentorPage() {
                       type="button"
                       onClick={activeSessionForSquad ? () => endSession(activeSessionForSquad.id) : startSession}
                       disabled={!selectedSquad || starting}
-                      className={`mt-4 inline-flex min-h-11 items-center gap-2 rounded-md px-4 text-sm font-semibold text-[#000000] transition-all active:scale-95 ${activeSessionForSquad ? 'bg-[#EF0606] hover:bg-[#EF0606] disabled:cursor-not-allowed' : 'bg-[#EF0606] hover:bg-[#EF0606] disabled:cursor-not-allowed'}`}
+                      className="mt-4 inline-flex min-h-12 w-full items-center justify-center gap-2 rounded-2xl bg-[#EF0606] px-4 text-sm font-semibold text-[#000000] transition-all duration-200 active:scale-95 disabled:cursor-not-allowed disabled:opacity-50"
                     >
                       <Play size={16} />
                       {starting ? 'Starting...' : activeSessionForSquad ? `Stop session for Squad ${selectedSquad}` : `Start session for Squad ${selectedSquad}`}
@@ -432,18 +479,42 @@ export default function MentorPage() {
                   )
                 })()}
               </section>
-              <section className="mt-10">
-                <h2 className="mb-1.5 text-xl font-bold">Sessions</h2>
-                <p className="mb-5 text-sm text-[#000000]">Manage phone handover sessions for your squads.</p>
+              <section className="mt-7">
+                <div className="mb-3 flex items-end justify-between gap-3">
+                  <div>
+                    <p className="text-[11px] font-semibold uppercase tracking-[0.12em] text-[#000000]">Your squads</p>
+                    <h2 className="mt-1 text-lg font-bold">Sessions</h2>
+                  </div>
+                  <span className="text-xs text-[#000000]">{sessions.length} total</span>
+                </div>
                 <div className="space-y-3 lg:hidden">
-                  {sessions.map((session) => (
-                    <article key={session.id} className="rounded-lg border border-[#D3CCC7] bg-[#EFEEE8] p-4 sm:p-5">
+                  {sessions.map((session) => {
+                    const squadSize = students.filter((student) => student.squad === session.squad).length
+                    const submittedCount = handovers.filter((handover) => handover.session_id === session.id && handover.status === 'submitted').length
+                    const completion = squadSize ? Math.round((submittedCount / squadSize) * 100) : 0
+                    return (
+                    <article key={session.id} className="rounded-2xl border border-[#D3CCC7] bg-white p-4 shadow-sm">
                       <div className="flex items-start justify-between gap-3">
-                        <h3 className="text-base font-semibold">Squad {session.squad}</h3>
-                        <span className={`shrink-0 rounded-full px-2.5 py-1 text-xs font-semibold ${session.status === 'active' ? 'bg-[#EFEEE8] text-[#000000]' : 'bg-[#D3CCC7] text-[#000000]'}`}>{session.status}</span>
+                        <div className="min-w-0">
+                          <p className="text-[11px] font-medium text-[#000000]">{session.name}</p>
+                          <h3 className="mt-0.5 text-base font-bold">Squad {session.squad}</h3>
+                        </div>
+                        <span className={`shrink-0 rounded-full px-2.5 py-1 text-xs font-semibold capitalize ${session.status === 'active' ? 'bg-[#EF0606]/10 text-[#000000]' : 'bg-[#EFEEE8] text-[#000000]'}`}>{session.status}</span>
                       </div>
-                      <p className="mt-3 text-xs text-[#000000]">Started {new Date(session.started_at).toLocaleString(undefined, { hour12: true })}</p>
-                      <div className="mt-4 flex flex-wrap gap-2">
+                      <div className="mt-3 flex items-center gap-2 text-xs text-[#000000]">
+                        <Clock size={14} aria-hidden="true" />
+                        Started {new Date(session.started_at).toLocaleString(undefined, { dateStyle: 'medium', timeStyle: 'short' })}
+                      </div>
+                      <div className="mt-4">
+                        <div className="mb-1.5 flex items-center justify-between gap-2 text-[11px]">
+                          <span className="text-[#000000]">{submittedCount} of {squadSize} phones submitted</span>
+                          <span className="font-semibold">{completion}%</span>
+                        </div>
+                        <div role="progressbar" aria-label={`Squad ${session.squad} handover completion`} aria-valuemin={0} aria-valuemax={100} aria-valuenow={completion} className="h-1.5 overflow-hidden rounded-full bg-[#EFEEE8]">
+                          <div className="h-full rounded-full bg-[#EF0606] transition-all duration-200" style={{ width: `${completion}%` }} />
+                        </div>
+                      </div>
+                      <div className="mt-4 grid grid-cols-2 gap-2">
                         {session.mentor_id === user.id && (
                           <button
                             type="button"
@@ -451,14 +522,14 @@ export default function MentorPage() {
                               setReportSessionId(session.id)
                               setActiveView('reports')
                             }}
-                            className="inline-flex min-h-11 items-center justify-center rounded-md border border-[#D3CCC7] px-4 text-sm font-medium text-[#000000] hover:bg-[#EFEEE8]"
+                            className="inline-flex min-h-11 items-center justify-center rounded-xl border border-[#D3CCC7] bg-[#EFEEE8] px-3 text-xs font-semibold text-[#000000] transition-all duration-200 active:scale-95"
                           >View report</button>
                         )}
                         {session.status === 'active' && session.mentor_id === user.id && (
                           <button
                             type="button"
                             onClick={() => endSession(session.id)}
-                            className="inline-flex min-h-11 items-center justify-center rounded-md border border-[#D3CCC7] px-4 text-sm font-medium text-[#000000] hover:bg-[#EFEEE8]"
+                            className="inline-flex min-h-11 items-center justify-center rounded-xl bg-[#EF0606] px-3 text-xs font-semibold text-[#000000] transition-all duration-200 active:scale-95"
                           >End session</button>
                         )}
                         {session.status === 'active' && session.mentor_id !== user.id && (
@@ -466,7 +537,8 @@ export default function MentorPage() {
                         )}
                       </div>
                     </article>
-                  ))}
+                    )
+                  })}
                   {sessions.length === 0 && <p className="rounded-lg border border-dashed border-[#D3CCC7] px-4 py-8 text-center text-sm text-[#000000]">No sessions yet.</p>}
                 </div>
                 <div className="hidden overflow-hidden rounded-lg border border-[#D3CCC7] bg-[#EFEEE8] lg:block">
@@ -552,7 +624,7 @@ export default function MentorPage() {
               <div className="mb-6 flex items-start justify-between gap-4">
                 <div>
                   <p className="mb-2 text-xs font-bold uppercase tracking-[0.16em] text-[#000000]">Mentor workspace</p>
-                  <h1 className="text-3xl font-bold">{reportSession ? `${reportSession.name} report` : 'Recent handovers'}</h1>
+                  <h1 className="text-2xl font-bold sm:text-3xl">{reportSession ? `${reportSession.name} report` : 'Recent handovers'}</h1>
                   <p className="mt-2 text-sm text-[#000000]">
                     {reportSession ? `Squad ${reportSession.squad} handover statuses for this session.` : 'A record of recent student phone handovers.'}
                   </p>
@@ -574,49 +646,43 @@ export default function MentorPage() {
 
               {reportSession ? (
                 <>
-                  <div className="mb-6 flex flex-wrap gap-3" role="group" aria-label="Handover submission filter">
+                  <div className="mb-4 grid grid-cols-3 gap-2 sm:flex sm:flex-wrap sm:gap-3" role="group" aria-label="Handover submission filter">
                     <button
                       type="button"
                       role="tab"
                       aria-selected={reportFilter === 'submitted'}
                       onClick={() => setReportFilter('submitted')}
-                      className={`min-w-[140px] rounded-md border px-4 py-2 text-sm font-semibold transition-all ${reportFilter === 'submitted' ? 'bg-[#EF0606] border-[#EF0606] text-[#000000]' : 'border-[#D3CCC7] bg-[#EFEEE8] text-[#000000] hover:border-[#D3CCC7]'}`}
+                      className={`flex min-h-[72px] min-w-0 flex-col items-center justify-center gap-1 rounded-2xl border px-2 py-2 text-center text-xs font-semibold transition-all duration-200 active:scale-95 sm:min-h-11 sm:min-w-[140px] sm:flex-row sm:px-4 sm:text-sm ${reportFilter === 'submitted' ? 'bg-[#EF0606] border-[#EF0606] text-[#000000]' : 'border-[#D3CCC7] bg-white text-[#000000] hover:border-[#D3CCC7]'}`}
                     >
-                      <div className="flex items-center gap-1.5">
-                        <Check size={14} strokeWidth={2} />
-                        <span>Submitted</span>
-                        <span className="ml-2 inline-flex items-center rounded-full px-2 py-0.5 bg-[#000000] text-[#EFEEE8] text-[10px]">{submittedStudents.length}</span>
-                      </div>
+                      <Check size={15} strokeWidth={2} />
+                      <span className="leading-tight">Submitted</span>
+                      <span className="inline-flex items-center rounded-full bg-[#000000] px-2 py-0.5 text-[10px] text-[#EFEEE8] sm:ml-1">{submittedStudents.length}</span>
                     </button>
                     <button
                       type="button"
                       role="tab"
                       aria-selected={reportFilter === 'not_submitted'}
                       onClick={() => setReportFilter('not_submitted')}
-                      className={`min-w-[140px] rounded-md border px-4 py-2 text-sm font-semibold transition-all ${reportFilter === 'not_submitted' ? 'bg-[#EF0606] border-[#EF0606] text-[#000000]' : 'border-[#D3CCC7] bg-[#EFEEE8] text-[#000000] hover:border-[#D3CCC7]'}`}
+                      className={`flex min-h-[72px] min-w-0 flex-col items-center justify-center gap-1 rounded-2xl border px-2 py-2 text-center text-xs font-semibold transition-all duration-200 active:scale-95 sm:min-h-11 sm:min-w-[140px] sm:flex-row sm:px-4 sm:text-sm ${reportFilter === 'not_submitted' ? 'bg-[#EF0606] border-[#EF0606] text-[#000000]' : 'border-[#D3CCC7] bg-white text-[#000000] hover:border-[#D3CCC7]'}`}
                     >
-                      <div className="flex items-center gap-1.5">
-                        <X size={14} strokeWidth={2} />
-                        <span>Not Submitted</span>
-                        <span className="ml-2 inline-flex items-center rounded-full px-2 py-0.5 bg-[#000000] text-[#EFEEE8] text-[10px]">{notSubmittedStudents.length}</span>
-                      </div>
+                      <X size={15} strokeWidth={2} />
+                      <span className="leading-tight">Not Submitted</span>
+                      <span className="inline-flex items-center rounded-full bg-[#000000] px-2 py-0.5 text-[10px] text-[#EFEEE8] sm:ml-1">{notSubmittedStudents.length}</span>
                     </button>
                     <button
                       type="button"
                       role="tab"
                       aria-selected={reportFilter === 'not_responded'}
                       onClick={() => setReportFilter('not_responded')}
-                      className={`min-w-[140px] rounded-md border px-4 py-2 text-sm font-semibold transition-all ${reportFilter === 'not_responded' ? 'bg-[#EF0606] border-[#EF0606] text-[#000000]' : 'border-[#D3CCC7] bg-[#EFEEE8] text-[#000000] hover:border-[#D3CCC7]'}`}
+                      className={`flex min-h-[72px] min-w-0 flex-col items-center justify-center gap-1 rounded-2xl border px-2 py-2 text-center text-xs font-semibold transition-all duration-200 active:scale-95 sm:min-h-11 sm:min-w-[140px] sm:flex-row sm:px-4 sm:text-sm ${reportFilter === 'not_responded' ? 'bg-[#EF0606] border-[#EF0606] text-[#000000]' : 'border-[#D3CCC7] bg-white text-[#000000] hover:border-[#D3CCC7]'}`}
                     >
-                      <div className="flex items-center gap-1.5">
-                        <Clock size={14} strokeWidth={2} />
-                        <span>Not Responded</span>
-                        <span className="ml-2 inline-flex items-center rounded-full px-2 py-0.5 bg-[#000000] text-[#EFEEE8] text-[10px]">{notRespondedStudents.length}</span>
-                      </div>
+                      <Clock size={15} strokeWidth={2} />
+                      <span className="leading-tight">Not Responded</span>
+                      <span className="inline-flex items-center rounded-full bg-[#000000] px-2 py-0.5 text-[10px] text-[#EFEEE8] sm:ml-1">{notRespondedStudents.length}</span>
                     </button>
                   </div>
 
-                  <div className="rounded-lg border border-[#D3CCC7] bg-[#EFEEE8] p-4 sm:p-5">
+                  <div className="rounded-3xl border border-[#D3CCC7] bg-white p-4 shadow-sm sm:p-5">
                     {reportFilter === null ? (
                       <p className="text-sm text-[#000000] text-center">Select Submitted, Not Submitted or Not Responded above to view students.</p>
                     ) : reportFilter === 'submitted' ? (
@@ -683,7 +749,40 @@ export default function MentorPage() {
                 </>
               ) : (
                 reportHandovers.length ? (
-                  <div className="overflow-hidden rounded-lg border border-[#D3CCC7] bg-[#EFEEE8]">
+                  <>
+                  <div className="space-y-2 sm:hidden">
+                    {reportHandovers.map((handover) => {
+                      const session = sessions.find((item) => item.id === handover.session_id)
+                      return (
+                        <article key={handover.id} className="rounded-2xl border border-[#D3CCC7] bg-white p-4 shadow-sm">
+                          <div className="flex items-start justify-between gap-3">
+                            <div className="min-w-0">
+                              <h2 className="break-words text-sm font-semibold">{handover.student?.full_name || 'Student'}</h2>
+                              <p className="mt-1 text-xs text-[#000000]">{session ? `${session.name} · Squad ${session.squad}` : 'Handover session'}</p>
+                            </div>
+                            <span className="shrink-0 rounded-full bg-[#EFEEE8] px-2.5 py-1 text-xs font-semibold capitalize">
+                              {handover.status.replaceAll('_', ' ')}
+                            </span>
+                          </div>
+                          <dl className="mt-3 grid grid-cols-2 gap-x-3 gap-y-2 text-sm">
+                            <div className="min-w-0">
+                              <dt className="text-[11px] text-[#000000]">Phone</dt>
+                              <dd className="break-words">{handover.phone_model || '—'}</dd>
+                            </div>
+                            <div className="min-w-0">
+                              <dt className="text-[11px] text-[#000000]">Updated</dt>
+                              <dd className="text-xs">{new Date(handover.updated_at).toLocaleString(undefined, { dateStyle: 'medium', timeStyle: 'short' })}</dd>
+                            </div>
+                            <div className="col-span-2 min-w-0">
+                              <dt className="text-[11px] text-[#000000]">Reason</dt>
+                              <dd className="break-words">{handover.reason || '—'}</dd>
+                            </div>
+                          </dl>
+                        </article>
+                      )
+                    })}
+                  </div>
+                  <div className="hidden overflow-hidden rounded-2xl border border-[#D3CCC7] bg-white sm:block">
                     <div className="overflow-x-auto">
                       <table className="w-full min-w-[760px] text-left text-sm">
                         <thead className="bg-[#EFEEE8] text-xs text-[#000000]">
@@ -719,6 +818,7 @@ export default function MentorPage() {
                       </table>
                     </div>
                   </div>
+                  </>
                 ) : (
                   <p className="rounded-lg border border-dashed border-[#D3CCC7] px-4 py-8 text-center text-sm text-[#000000]">No handovers to report yet.</p>
                 )
@@ -746,8 +846,8 @@ export default function MentorPage() {
             </section>
           )}
         </main>
-        <nav aria-label="Mentor workspace" className="fixed inset-x-0 bottom-0 z-40 border-t border-[#000000] bg-[#000000] pb-[env(safe-area-inset-bottom)] lg:hidden">
-          <div className="mx-auto grid h-16 max-w-md grid-cols-4 items-center gap-2 px-4">
+        <nav aria-label="Mentor workspace" className="fixed inset-x-0 bottom-0 z-40 mx-auto max-w-md border-t border-[#D3CCC7] bg-[#EFEEE8]/95 pb-[env(safe-area-inset-bottom)] shadow-[0_-8px_24px_rgba(0,0,0,0.06)] backdrop-blur-md lg:hidden">
+          <div className="grid h-[4.25rem] grid-cols-4 items-center gap-1 px-3">
             {navigation.map(({ id, label, icon: Icon }) => (
               <button
                 key={id}
@@ -759,9 +859,10 @@ export default function MentorPage() {
                   setActiveView(id)
                   if (id === 'reports') setReportSessionId(null)
                 }}
-                className={`mx-auto grid size-12 place-items-center rounded-xl transition-colors ${activeView === id ? 'bg-[#EF0606] text-[#000000]' : 'text-[#D3CCC7] hover:bg-[#000000] hover:text-[#EFEEE8]'}`}
+                className={`flex h-full min-w-0 flex-col items-center justify-center gap-1 rounded-xl transition-all duration-200 active:scale-95 ${activeView === id ? 'bg-[#EF0606]/10 font-semibold text-[#EF0606]' : 'text-[#000000] hover:bg-[#D3CCC7]/40'}`}
               >
-                <Icon size={21} strokeWidth={1.9} />
+                <Icon size={19} strokeWidth={1.9} />
+                <span className="text-[10px] font-medium leading-none">{label}</span>
               </button>
             ))}
           </div>
