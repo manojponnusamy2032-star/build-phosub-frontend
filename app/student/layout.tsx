@@ -4,7 +4,7 @@ export const dynamic = 'force-dynamic'
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
-import { LayoutDashboard, History, User, HelpCircle, LogOut } from 'lucide-react'
+import { LayoutDashboard, History, User, HelpCircle, LogOut, Settings } from 'lucide-react'
 import { useAuth, LoadingSpinner } from '@/components/providers'
 import { createClient as createSupabaseClient } from '@/lib/supabase/client'
 import { getAccessToken } from '@/lib/supabase/auth-token'
@@ -69,7 +69,7 @@ export default function StudentLayout({ children }: { children: React.ReactNode 
   const squad = profile?.squad ?? '-'
 
   return (
-    <div className="min-h-screen bg-[#EFEEE8] text-[#000000]">
+    <div className="mx-auto min-h-screen w-full max-w-md bg-[#EFEEE8] text-[#000000] lg:max-w-none">
       <aside className="fixed inset-y-0 left-0 z-30 hidden w-56 flex-col border-r border-[#D3CCC7] bg-[#EFEEE8] px-5 py-5 lg:flex">
         <Link href="/student" className="mb-9 flex items-center gap-2.5 px-0.5">
           <span className="grid size-7 place-items-center rounded-md bg-[#EF0606] text-[#000000]">
@@ -111,28 +111,39 @@ export default function StudentLayout({ children }: { children: React.ReactNode 
         </div>
       </aside>
 
-      <div className="min-h-screen lg:pl-56">
-        <header className="sticky top-0 z-20 flex h-14 items-center justify-between border-b border-[#000000] bg-[#000000] px-4 text-[#EFEEE8] sm:px-6 lg:h-16">
-          <div className="flex items-center gap-2 text-sm text-[#D3CCC7]">
-            <span className="font-bold text-[#EFEEE8] lg:hidden">phosub</span>
-            <span className="hidden lg:inline">Student workspace</span>
+      <div className="min-h-screen w-full lg:pl-56">
+        <header className="sticky top-0 z-20 border-b border-[#D3CCC7] bg-[#EFEEE8]/95 px-4 text-[#000000] backdrop-blur-md lg:flex lg:h-16 lg:items-center lg:justify-between lg:border-[#000000] lg:bg-[#000000] lg:px-6 lg:text-[#EFEEE8]">
+          <div className="mx-auto flex h-16 max-w-md items-center justify-between lg:hidden">
+            <Link href="/student/profile" aria-label="Open student profile" className="flex min-w-0 items-center gap-3">
+              <ProfileAvatar avatarUrl={profile?.avatar_url} name={profile?.full_name || user.email || 'Student'} />
+              <span className="min-w-0">
+                <span className="block text-xs text-[#000000]">Good morning,</span>
+                <span className="block truncate text-sm font-semibold">{profile?.full_name?.trim() || 'Student'}</span>
+              </span>
+            </Link>
+            <Link href="/student/profile" title="Settings" aria-label="Open settings" className="grid size-10 shrink-0 place-items-center rounded-full border border-[#D3CCC7] bg-[#EFEEE8] text-[#000000] transition-all duration-200 active:scale-95">
+              <Settings size={18} aria-hidden="true" />
+            </Link>
+          </div>
+          <div className="hidden items-center gap-2 text-sm text-[#D3CCC7] lg:flex">
+            <span className="font-medium text-[#EFEEE8]">Student workspace</span>
             <span aria-hidden="true">/</span>
             <span className="font-medium text-[#EFEEE8]">{navItems.find((item) => isActive(pathname ?? '', item.href))?.label ?? 'Dashboard'}</span>
           </div>
-          <Link href="/student/profile" aria-label="Open my profile" className="flex min-w-0 items-center gap-2.5 rounded-lg px-2 py-1 hover:bg-[#000000]">
+          <Link href="/student/profile" aria-label="Open my profile" className="hidden min-w-0 items-center gap-2.5 rounded-lg px-2 py-1 hover:bg-[#000000] lg:flex">
             <ProfileAvatar avatarUrl={profile?.avatar_url} name={profile?.full_name || user.email || 'Student'} />
-            <span className="hidden min-w-0 text-right sm:block">
+            <span className="min-w-0 text-right">
               <span className="block max-w-40 truncate text-xs font-semibold text-[#EFEEE8]">{profile?.full_name || 'My profile'}</span>
               <span className="block text-[11px] text-[#D3CCC7]">Squad {squad}</span>
             </span>
           </Link>
         </header>
 
-        <main className="mx-auto max-w-6xl px-5 py-8">{children}</main>
+        <main className="mx-auto w-full max-w-md px-4 pb-[calc(6rem+env(safe-area-inset-bottom))] pt-5 sm:px-5 sm:pt-8 lg:max-w-6xl lg:px-10 lg:pb-12">{children}</main>
       </div>
 
-      <nav aria-label="Student navigation" className="fixed inset-x-0 bottom-0 z-40 border-t border-[#000000] bg-[#000000] pb-[env(safe-area-inset-bottom)] lg:hidden">
-        <div className="mx-auto grid h-16 max-w-md grid-cols-4 items-center gap-2 px-4">
+      <nav aria-label="Student navigation" className="fixed inset-x-0 bottom-0 z-40 mx-auto max-w-md border-t border-[#D3CCC7] bg-[#EFEEE8]/95 pb-[env(safe-area-inset-bottom)] shadow-[0_-8px_24px_rgba(0,0,0,0.06)] backdrop-blur-md lg:hidden">
+        <div className="grid h-[4.25rem] grid-cols-4 items-center gap-1 px-3">
           {navItems.map(({ href, label, icon: Icon }) => {
             const active = isActive(pathname ?? '', href)
             return (
@@ -142,9 +153,10 @@ export default function StudentLayout({ children }: { children: React.ReactNode 
                 title={label}
                 aria-label={label}
                 aria-current={active ? 'page' : undefined}
-                className={`mx-auto grid size-12 place-items-center rounded-xl transition-colors ${active ? 'bg-[#EF0606] text-[#000000]' : 'text-[#D3CCC7] hover:bg-[#000000] hover:text-[#EFEEE8]'}`}
+                className={`flex h-full min-w-0 flex-col items-center justify-center gap-1 rounded-xl transition-all duration-200 active:scale-95 ${active ? 'bg-[#EF0606]/10 font-semibold text-[#EF0606]' : 'text-[#000000] hover:bg-[#D3CCC7]/40'}`}
               >
-                <Icon size={21} strokeWidth={1.9} />
+                <Icon size={19} strokeWidth={1.9} />
+                <span className="text-[10px] font-medium leading-none">{label === 'Dashboard' ? 'Home' : label === 'My History' ? 'History' : label === 'My Profile' ? 'Profile' : 'Help'}</span>
               </Link>
             )
           })}
