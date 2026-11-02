@@ -15,14 +15,28 @@ export async function GET(request: Request) {
   }
   if (!profile) return NextResponse.json({ error: 'Profile not found' }, { status: 404 })
   const query = profile.role === 'mentor'
-    ? admin.from('sessions').select('id, squad, name, status, started_at, ended_at, mentor_id').or(`mentor_id.eq.${userId},status.eq.active`).order('started_at', { ascending: false })
+    ? admin.from('sessions').select('id, squad, name, status, started_at, ended_at, mentor_id').order('started_at', { ascending: false })
     : admin.from('sessions').select('id, squad, name, status, started_at, ended_at').eq('squad', profile.squad).eq('status', 'active').order('started_at', { ascending: false }).limit(1)
   const { data, error } = await query
   if (error) {
     console.error('Unable to load sessions', { code: error.code })
     return NextResponse.json({ error: 'Unable to load sessions' }, { status: 500 })
   }
-  return NextResponse.json({ sessions: data ?? [], profile })
+  if (profile.role !== 'mentor') return NextResponse.json({ sessions: data ?? [], profile })
+
+  const mentorIds = [...new Set((data ?? []).flatMap((session) => 'mentor_id' in session ? [session.mentor_id] : []))]
+  const { data: mentors, error: mentorsError } = mentorIds.length
+    ? await admin.from('profiles').select('id, full_name').in('id', mentorIds)
+    : { data: [], error: null }
+  if (mentorsError) {
+    console.error('Unable to load session starter names', { code: mentorsError.code })
+    return NextResponse.json({ error: 'Unable to load session starters' }, { status: 500 })
+  }
+  const mentorNames = new Map((mentors ?? []).map((mentor) => [mentor.id, mentor.full_name]))
+  const sessions = (data ?? []).map((session) => 'mentor_id' in session
+    ? { ...session, mentor_name: mentorNames.get(session.mentor_id) ?? 'Another mentor' }
+    : session)
+  return NextResponse.json({ sessions, profile })
 }
 
 export async function POST(request: Request) {
@@ -67,11 +81,18 @@ export async function PATCH(request: Request) {
   if (!userId) return NextResponse.json({ error: 'Authentication required' }, { status: 401 })
   const { createAdminClient } = await import('@/lib/supabase/admin')
   const admin = createAdminClient()
-  const { data, error } = await admin.from('sessions').update({ status: 'ended', ended_at: new Date().toISOString() }).eq('id', body.id).eq('mentor_id', userId).eq('status', 'active').select().maybeSingle()
+  const { data: profile, error: profileError } = await admin.from('profiles').select('role').eq('id', userId).maybeSingle()
+  if (profileError) {
+    console.error('Unable to verify session stopper role', { code: profileError.code })
+    return NextResponse.json({ error: 'Unable to verify mentor access' }, { status: 500 })
+  }
+  if (profile?.role !== 'mentor') return NextResponse.json({ error: 'Only mentors can end sessions' }, { status: 403 })
+
+  const { data, error } = await admin.from('sessions').update({ status: 'ended', ended_at: new Date().toISOString() }).eq('id', body.id).eq('status', 'active').select().maybeSingle()
   if (error) {
     console.error('Unable to end session', { code: error.code })
     return NextResponse.json({ error: 'Unable to end session' }, { status: 500 })
   }
-  if (!data) return NextResponse.json({ error: 'Session is not active or not owned by you' }, { status: 409 })
+  if (!data) return NextResponse.json({ error: 'Session is not active' }, { status: 409 })
   return NextResponse.json({ session: data })
 }
