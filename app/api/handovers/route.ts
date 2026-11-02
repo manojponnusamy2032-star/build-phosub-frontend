@@ -24,7 +24,6 @@ export async function GET(request: Request) {
     const { data: sessions, error: sessionsError } = await admin
       .from('sessions')
       .select('id')
-      .eq('mentor_id', userId)
     if (sessionsError) {
       console.error('Unable to load mentor sessions for handovers', { code: sessionsError.code })
       return NextResponse.json({ error: 'Unable to load sessions' }, { status: 500 })
