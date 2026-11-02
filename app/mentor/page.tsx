@@ -23,7 +23,7 @@ import { createClient as createSupabaseClient } from '@/lib/supabase/client'
 import { getAccessToken } from '@/lib/supabase/auth-token'
 import { ProfileAvatar, ProfilePhotoEditor } from '@/components/profile-photo'
 
-type Session = { id: string; squad: string; name: string; status: string; started_at: string; mentor_id: string }
+type Session = { id: string; squad: string; name: string; status: string; started_at: string; mentor_id: string; mentor_name?: string }
 type Handover = { id: string; student_id: string; session_id: string; status: string; reason: string | null; phone_model: string | null; updated_at: string; student?: { full_name: string } }
 type StudentAccount = { id: string; full_name: string; squad: string | null; created_at: string }
 type View = 'sessions' | 'reports' | 'squads' | 'profile'
@@ -145,6 +145,10 @@ export default function MentorPage() {
 
   async function endSession(sessionId: string) {
     const session = sessions.find((s) => s.id === sessionId)
+    if (session && user && session.mentor_id !== user.id) {
+      const starterName = session.mentor_name || 'another mentor'
+      if (!window.confirm(`This session was started by ${starterName}. Shall we stop it?`)) return
+    }
     setError('')
     setNotice('')
     try {
@@ -247,15 +251,15 @@ export default function MentorPage() {
 
   return (
     <div className="mx-auto min-h-screen w-full max-w-md bg-[#EFEEE8] text-[#000000] lg:max-w-none">
-      <aside className="fixed inset-y-0 left-0 z-30 hidden w-56 flex-col border-r border-[#D3CCC7] bg-[#EFEEE8] px-5 py-5 lg:flex">
+      <aside className="fixed inset-y-0 left-0 z-30 hidden w-56 flex-col border-r border-[#262626] bg-[#000000] px-5 py-5 text-[#EFEEE8] lg:flex">
         <a href="#sessions" onClick={() => setActiveView('sessions')} className="mb-9 flex items-center gap-2.5 px-0.5">
           <span className="grid size-7 place-items-center rounded-md bg-[#EF0606] text-[#000000]">
             <svg width="15" height="15" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 12h6m-6 0v7m0-7 4 4m-4-4 4-4m12 4h-6m6 0v-7m0 7-4-4m4 4-4 4" /></svg>
           </span>
-          <span className="text-lg font-bold tracking-tight">phosub</span>
+          <span className="text-lg font-bold tracking-tight text-[#EFEEE8]">phosub</span>
         </a>
 
-        <p className="mb-3 px-2 text-xs font-bold uppercase tracking-[0.16em] text-[#000000]">Workspace</p>
+        <p className="mb-3 px-2 text-xs font-bold uppercase tracking-[0.16em] text-[#D3CCC7]">Workspace</p>
         <nav aria-label="Mentor workspace" className="space-y-1.5">
           {navigation.map(({ id, label, icon: Icon }) => (
             <button
@@ -266,7 +270,7 @@ export default function MentorPage() {
                 if (id === 'reports') setReportSessionId(null)
               }}
               aria-current={activeView === id ? 'page' : undefined}
-              className={`flex h-11 w-full items-center gap-3 rounded-lg px-3 text-left text-sm transition-colors ${activeView === id ? 'bg-[#EFEEE8] font-semibold text-[#000000]' : 'text-[#000000] hover:bg-[#EFEEE8] hover:text-[#000000]'}`}
+              className={`flex h-11 w-full items-center gap-3 rounded-lg px-3 text-left text-sm transition-colors ${activeView === id ? 'bg-[#EF0606] font-semibold text-[#000000]' : 'text-[#EFEEE8] hover:bg-[#202020] hover:text-white'}`}
             >
               <Icon size={17} strokeWidth={1.8} />
               {label}
@@ -275,14 +279,14 @@ export default function MentorPage() {
         </nav>
 
         <div className="mt-auto">
-          <div className="rounded-lg bg-[#EFEEE8] px-3 py-3">
+          <div className="rounded-lg bg-[#181818] px-3 py-3">
             <p className="text-xs font-semibold">Mentor workspace</p>
-            <p className="mt-1 truncate text-xs text-[#000000]">Connected workspace</p>
+            <p className="mt-1 truncate text-xs text-[#D3CCC7]">Connected workspace</p>
           </div>
           <button
             type="button"
             onClick={() => createSupabaseClient().auth.signOut().then(() => router.replace('/login'))}
-            className="mt-4 flex h-10 w-full items-center gap-2 px-3 text-sm text-[#000000] hover:text-[#000000]"
+            className="mt-4 flex h-10 w-full items-center gap-2 rounded-lg px-3 text-sm text-[#EFEEE8] hover:bg-[#202020] hover:text-white"
           >
             <LogOut size={16} /> Sign out
           </button>
@@ -290,35 +294,69 @@ export default function MentorPage() {
       </aside>
 
       <div className="min-h-screen w-full lg:pl-56">
-        <header className="sticky top-0 z-20 border-b border-[#D3CCC7] bg-[#EFEEE8]/95 px-4 text-[#000000] backdrop-blur-md lg:flex lg:h-16 lg:items-center lg:justify-between lg:border-[#000000] lg:bg-[#000000] lg:px-6 lg:text-[#EFEEE8]">
+        <header className="sticky top-0 z-20 border-b border-[#262626] bg-[#000000]/95 px-4 text-[#EFEEE8] backdrop-blur-md lg:flex lg:h-16 lg:items-center lg:justify-between lg:border-[#000000] lg:bg-[#000000] lg:px-6 lg:text-[#EFEEE8]">
           <div className="mx-auto flex h-16 max-w-md items-center justify-between lg:hidden">
             <div className="flex min-w-0 items-center gap-3">
               <ProfileAvatar avatarUrl={profile?.avatar_url} name={displayName} />
               <span className="min-w-0">
-                <span className="block text-xs text-[#000000]">Good morning,</span>
+                <span className="block text-xs text-[#D3CCC7]">Good morning,</span>
                 <span className="block truncate text-sm font-semibold">{displayName}</span>
               </span>
             </div>
-            <div className="relative">
-              <button
-                type="button"
-                aria-label="Notifications"
-                aria-expanded={notificationsOpen}
-                onClick={() => {
-                  setNotificationsOpen(!notificationsOpen)
-                  setAccountMenuOpen(false)
-                }}
-                className="relative grid size-10 place-items-center rounded-full border border-[#D3CCC7] bg-white text-[#000000] transition-all duration-200 active:scale-95"
-              >
-                <Bell size={18} strokeWidth={1.7} />
-                <span className="absolute right-2 top-2 size-2 rounded-full bg-[#EF0606] ring-2 ring-white" />
-              </button>
-              {notificationsOpen && (
-                <div className="absolute right-0 top-12 z-40 w-64 rounded-2xl border border-[#D3CCC7] bg-white p-4 text-sm text-[#000000] shadow-lg">
-                  <p className="font-semibold">Notifications</p>
-                  <p className="mt-1 text-[#000000]">You’re all caught up.</p>
-                </div>
-              )}
+            <div className="flex items-center gap-2">
+              <div className="relative">
+                <button
+                  type="button"
+                  aria-label="Notifications"
+                  aria-expanded={notificationsOpen}
+                  onClick={() => {
+                    setNotificationsOpen(!notificationsOpen)
+                    setAccountMenuOpen(false)
+                  }}
+                  className="relative grid size-10 place-items-center rounded-full border border-[#303030] bg-[#181818] text-[#EFEEE8] transition-all duration-200 active:scale-95"
+                >
+                  <Bell size={18} strokeWidth={1.7} />
+                  <span className="absolute right-2 top-2 size-2 rounded-full bg-[#EF0606] ring-2 ring-[#181818]" />
+                </button>
+                {notificationsOpen && (
+                  <div className="absolute right-0 top-12 z-40 w-64 rounded-xl border border-[#303030] bg-[#000000] p-4 text-sm text-[#EFEEE8] shadow-lg">
+                    <p className="font-semibold">Notifications</p>
+                    <p className="mt-1 text-[#D3CCC7]">You’re all caught up.</p>
+                  </div>
+                )}
+              </div>
+              <div className="relative">
+                <button
+                  type="button"
+                  aria-label="Account"
+                  aria-expanded={accountMenuOpen}
+                  onClick={() => {
+                    setAccountMenuOpen(!accountMenuOpen)
+                    setNotificationsOpen(false)
+                  }}
+                  className="grid size-10 place-items-center rounded-full border border-[#303030] bg-[#181818] text-[#EFEEE8] transition-all duration-200 active:scale-95"
+                >
+                  <UserRound size={18} strokeWidth={1.7} />
+                </button>
+                {accountMenuOpen && (
+                  <div className="absolute right-0 top-12 z-40 w-64 rounded-xl border border-[#303030] bg-[#000000] p-3 text-[#EFEEE8] shadow-lg">
+                    <p className="truncate px-2 py-1 text-xs text-[#D3CCC7]">{email}</p>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setActiveView('profile')
+                        setAccountMenuOpen(false)
+                      }}
+                      className="mt-1 flex min-h-10 w-full items-center gap-2 rounded-md px-2 text-left text-sm hover:bg-[#202020]"
+                    ><UserRound size={16} /> My Profile</button>
+                    <button
+                      type="button"
+                      onClick={() => createSupabaseClient().auth.signOut().then(() => router.replace('/login'))}
+                      className="mt-1 flex min-h-10 w-full items-center gap-2 rounded-md px-2 text-left text-sm hover:bg-[#202020]"
+                    ><LogOut size={16} /> Sign out</button>
+                  </div>
+                )}
+              </div>
             </div>
           </div>
           <div className="hidden items-center gap-2 text-sm text-[#D3CCC7] lg:flex">
@@ -460,7 +498,7 @@ export default function MentorPage() {
                         setSelectedSquad(squad)
                         setError('')
                       }}
-                      className={`min-h-12 w-full rounded-2xl border px-2 text-xs transition-all duration-200 active:scale-95 sm:text-sm ${activeSquads.includes(squad) ? 'border-[#EF0606] bg-[#EF0606]/10 font-semibold text-[#EF0606]' : selectedSquad === squad ? 'border-[#EF0606] bg-[#EFEEE8] font-semibold text-[#000000]' : 'border-[#D3CCC7] bg-[#EFEEE8] text-[#000000] hover:border-[#D3CCC7] hover:bg-white'}`}
+                      className={`min-h-12 w-full rounded-2xl border px-2 text-xs transition-all duration-200 ease-out active:scale-95 motion-reduce:transition-none sm:text-sm ${selectedSquad === squad ? 'scale-[1.03] border-[#EF0606] bg-[#EF0606] font-semibold text-[#000000] shadow-[0_6px_16px_rgba(239,6,6,0.2)]' : activeSquads.includes(squad) ? 'border-[#EF0606] bg-[#EF0606]/10 font-semibold text-[#EF0606]' : 'border-[#D3CCC7] bg-[#EFEEE8] text-[#000000] hover:-translate-y-0.5 hover:border-[#EF0606]/60 hover:bg-white'}`}
                     >Squad {squad}</button>
                   ))}
                 </div>
@@ -515,25 +553,20 @@ export default function MentorPage() {
                         </div>
                       </div>
                       <div className="mt-4 grid grid-cols-2 gap-2">
-                        {session.mentor_id === user.id && (
-                          <button
-                            type="button"
-                            onClick={() => {
-                              setReportSessionId(session.id)
-                              setActiveView('reports')
-                            }}
-                            className="inline-flex min-h-11 items-center justify-center rounded-xl border border-[#D3CCC7] bg-[#EFEEE8] px-3 text-xs font-semibold text-[#000000] transition-all duration-200 active:scale-95"
-                          >View report</button>
-                        )}
-                        {session.status === 'active' && session.mentor_id === user.id && (
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setReportSessionId(session.id)
+                            setActiveView('reports')
+                          }}
+                          className="inline-flex min-h-11 items-center justify-center rounded-xl border border-[#D3CCC7] bg-[#EFEEE8] px-3 text-xs font-semibold text-[#000000] transition-all duration-200 active:scale-95"
+                        >View report</button>
+                        {session.status === 'active' && (
                           <button
                             type="button"
                             onClick={() => endSession(session.id)}
                             className="inline-flex min-h-11 items-center justify-center rounded-xl bg-[#EF0606] px-3 text-xs font-semibold text-[#000000] transition-all duration-200 active:scale-95"
                           >End session</button>
-                        )}
-                        {session.status === 'active' && session.mentor_id !== user.id && (
-                          <p className="self-center text-sm text-[#000000]">Managed by another mentor</p>
                         )}
                       </div>
                     </article>
@@ -544,28 +577,41 @@ export default function MentorPage() {
                 <div className="hidden overflow-hidden rounded-lg border border-[#D3CCC7] bg-[#EFEEE8] lg:block">
                   <div className="overflow-x-auto">
                     <table className="w-full min-w-[720px] text-left text-sm">
-                      <thead className="bg-[#EFEEE8] text-xs text-[#000000]"><tr><th className="px-5 py-4 font-medium">Squad</th><th className="px-5 py-4 font-medium">Status</th><th className="px-5 py-4 font-medium">Started</th><th className="px-5 py-4 font-medium">Report</th></tr></thead>
+                      <thead className="bg-[#EFEEE8] text-xs text-[#000000]"><tr><th className="px-5 py-4 font-medium">Squad</th><th className="px-5 py-4 font-medium">Status</th><th className="px-5 py-4 font-medium">Started</th><th className="px-5 py-4 font-medium">Submitted</th><th className="px-5 py-4 font-medium">Actions</th></tr></thead>
                       <tbody>
-                        {sessions.map((session) => (
-                          <tr key={session.id} className="border-t border-[#D3CCC7]">
-                            <td className="px-5 py-4 font-semibold">Squad {session.squad}</td>
-                            <td className="px-5 py-4"><span className={`rounded-full px-2.5 py-1 text-xs font-semibold ${session.status === 'active' ? 'bg-[#EFEEE8] text-[#000000]' : 'bg-[#D3CCC7] text-[#000000]'}`}>{session.status}</span></td>
-                            <td className="px-5 py-4 text-[#000000]">{new Date(session.started_at).toLocaleString(undefined, { hour12: true })}</td>
-                            <td className="whitespace-nowrap px-5 py-4">
-                              {session.mentor_id === user.id ? (
-                                <button
-                                  type="button"
-                                  onClick={() => {
-                                    setReportSessionId(session.id)
-                                    setActiveView('reports')
-                                  }}
-                                  className="inline-flex min-h-10 min-w-28 items-center justify-center rounded-md bg-[#EF0606] px-3 text-sm font-medium text-[#000000] hover:bg-[#EF0606] transition-colors"
-                                >View report</button>
-                              ) : <span className="text-[#000000]">—</span>}
-                            </td>
-                          </tr>
-                        ))}
-                        {sessions.length === 0 && <tr><td colSpan={4} className="px-5 py-10 text-center text-sm text-[#000000]">No sessions yet.</td></tr>}
+                        {sessions.map((session) => {
+                          const squadSize = students.filter((student) => student.squad === session.squad).length
+                          const submittedCount = handovers.filter((handover) => handover.session_id === session.id && handover.status === 'submitted').length
+                          const completion = squadSize ? Math.round((submittedCount / squadSize) * 100) : 0
+                          return (
+                            <tr key={session.id} className="border-t border-[#D3CCC7]">
+                              <td className="px-5 py-4 font-semibold">Squad {session.squad}</td>
+                              <td className="px-5 py-4"><span className={`rounded-full px-2.5 py-1 text-xs font-semibold ${session.status === 'active' ? 'bg-[#EFEEE8] text-[#000000]' : 'bg-[#D3CCC7] text-[#000000]'}`}>{session.status}</span></td>
+                              <td className="px-5 py-4 text-[#000000]">{new Date(session.started_at).toLocaleString(undefined, { hour12: true })}</td>
+                              <td className="whitespace-nowrap px-5 py-4 text-sm">{submittedCount} of {squadSize} ({completion}%)</td>
+                              <td className="whitespace-nowrap px-5 py-4">
+                                <div className="flex items-center gap-2">
+                                  <button
+                                    type="button"
+                                    onClick={() => {
+                                      setReportSessionId(session.id)
+                                      setActiveView('reports')
+                                    }}
+                                    className="inline-flex min-h-10 min-w-28 items-center justify-center rounded-md bg-[#EF0606] px-3 text-sm font-medium text-[#000000] hover:bg-[#EF0606] transition-colors"
+                                  >View report</button>
+                                  {session.status === 'active' && (
+                                    <button
+                                      type="button"
+                                      onClick={() => endSession(session.id)}
+                                      className="inline-flex min-h-10 items-center justify-center rounded-md border border-[#EF0606] px-3 text-sm font-medium text-[#EF0606] transition-colors hover:bg-[#EF0606]/10"
+                                    >End session</button>
+                                  )}
+                                </div>
+                              </td>
+                            </tr>
+                          )
+                        })}
+                        {sessions.length === 0 && <tr><td colSpan={5} className="px-5 py-10 text-center text-sm text-[#000000]">No sessions yet.</td></tr>}
                       </tbody>
                     </table>
                   </div>
@@ -579,7 +625,7 @@ export default function MentorPage() {
               <p className="mb-6 mt-2 text-sm text-[#000000]">Choose a squad when starting a handover session.</p>
               <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
                 {squads.map((squad) => (
-                  <button key={squad} type="button" onClick={() => { setSelectedSquad(squad); setActiveView('sessions') }} className="min-h-32 rounded-lg border border-[#D3CCC7] bg-[#EFEEE8] p-5 text-left transition-colors hover:border-[#D3CCC7]">
+                  <button key={squad} type="button" onClick={() => { setSelectedSquad(squad); setActiveView('sessions') }} className="min-h-32 rounded-lg border border-[#D3CCC7] bg-[#EFEEE8] p-5 text-left transition-all duration-200 ease-out hover:-translate-y-0.5 hover:border-[#EF0606]/60 hover:bg-white active:scale-[0.98] motion-reduce:transition-none">
                     <UsersRound size={20} className="mb-4 text-[#000000]" />
                     <span className="block text-base font-semibold">Squad {squad}</span>
                     <span className="mt-1.5 block text-sm text-[#000000]">{sessions.filter((session) => session.squad === squad && session.status === 'active').length} active sessions</span>
@@ -846,7 +892,7 @@ export default function MentorPage() {
             </section>
           )}
         </main>
-        <nav aria-label="Mentor workspace" className="fixed inset-x-0 bottom-0 z-40 mx-auto max-w-md border-t border-[#D3CCC7] bg-[#EFEEE8]/95 pb-[env(safe-area-inset-bottom)] shadow-[0_-8px_24px_rgba(0,0,0,0.06)] backdrop-blur-md lg:hidden">
+        <nav aria-label="Mentor workspace" className="fixed inset-x-0 bottom-0 z-40 mx-auto max-w-md border-t border-[#262626] bg-[#000000]/95 pb-[env(safe-area-inset-bottom)] shadow-[0_-8px_24px_rgba(0,0,0,0.3)] backdrop-blur-md lg:hidden">
           <div className="grid h-[4.25rem] grid-cols-4 items-center gap-1 px-3">
             {navigation.map(({ id, label, icon: Icon }) => (
               <button
@@ -859,7 +905,7 @@ export default function MentorPage() {
                   setActiveView(id)
                   if (id === 'reports') setReportSessionId(null)
                 }}
-                className={`flex h-full min-w-0 flex-col items-center justify-center gap-1 rounded-xl transition-all duration-200 active:scale-95 ${activeView === id ? 'bg-[#EF0606]/10 font-semibold text-[#EF0606]' : 'text-[#000000] hover:bg-[#D3CCC7]/40'}`}
+                className={`flex h-full min-w-0 flex-col items-center justify-center gap-1 rounded-xl transition-all duration-200 active:scale-95 ${activeView === id ? 'bg-[#EF0606] font-semibold text-[#000000]' : 'text-[#EFEEE8] hover:bg-[#202020]'}`}
               >
                 <Icon size={19} strokeWidth={1.9} />
                 <span className="text-[10px] font-medium leading-none">{label}</span>
