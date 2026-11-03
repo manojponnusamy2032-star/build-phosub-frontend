@@ -4,6 +4,7 @@ export const dynamic = 'force-dynamic'
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
+import { AlertCircle, Calendar, CheckCircle2, Phone, Play, UserCheck } from 'lucide-react'
 import { useAuth, LoadingSpinner } from '@/components/providers'
 import { createClient as createSupabaseClient } from '@/lib/supabase/client'
 import { getAccessToken } from '@/lib/supabase/auth-token'
@@ -11,6 +12,41 @@ import { getAccessToken } from '@/lib/supabase/auth-token'
 type Session = { id: string; squad: string; name: string; status: string; started_at: string }
 type Handover = { id: string; status: string; reason: string | null; phone_model: string | null; updated_at: string }
 type HandoverStatus = 'submitted' | 'not_submitted' | 'retrieved'
+
+function StatCard({ title, value, subtitle, icon: Icon }: { title: string; value: string | number; subtitle: string; icon: React.ComponentType<{ className?: string }> }) {
+  return (
+    <div className="rounded-2xl border border-[#E5E5E5] bg-[#FFFFFF] p-4">
+      <div className="flex items-center justify-between">
+        <div>
+          <p className="text-xs font-semibold text-[#737373] uppercase tracking-[0.12em]">{title}</p>
+          <p className="mt-1 text-2xl font-bold text-[#171717]">{value}</p>
+          <p className="mt-0.5 text-xs text-[#737373]">{subtitle}</p>
+        </div>
+        <div className="size-8 rounded-full bg-[#F5F5F5] flex items-center justify-center text-[#D71920]">
+          <Icon className="size-4" />
+        </div>
+      </div>
+    </div>
+  )
+}
+
+function ProgressRing({ percent }: { percent: number }) {
+  const radius = 42
+  const circumference = 2 * Math.PI * radius
+  const offset = circumference - (percent / 100) * circumference
+  return (
+    <div className="relative size-32">
+      <svg className="size-full transform -rotate-90">
+        <circle cx={radius} cy={radius} r={radius} stroke="#E5E5E5" strokeWidth="10" fill="none" />
+        <circle cx={radius} cy={radius} r={radius} stroke="#D71920" strokeWidth="10" fill="none" strokeDasharray={circumference} strokeDashoffset={offset} strokeLinecap="round" className="transition-all duration-700 ease-out" />
+      </svg>
+      <div className="absolute inset-0 flex flex-col items-center justify-center">
+        <span className="text-2xl font-bold text-[#171717]">{percent}%</span>
+        <span className="text-xs text-[#737373]">of squad submitted</span>
+      </div>
+    </div>
+  )
+}
 
 export default function StudentPage() {
   const router = useRouter()
@@ -105,12 +141,12 @@ export default function StudentPage() {
 
   if (!user) {
     return (
-      <div className="max-w-md rounded-xl border border-[#D3CCC7] bg-[#EFEEE8] p-6 text-center">
-        <h2 className="mb-2 text-lg font-bold text-[#000000]">Not signed in</h2>
-        <p className="mb-4 text-sm text-[#000000]">Please sign in to access your dashboard.</p>
+      <div className="max-w-md rounded-2xl border border-[#E5E5E5] bg-[#FFFFFF] p-6 text-center">
+        <h2 className="mb-2 text-lg font-bold text-[#171717]">Not signed in</h2>
+        <p className="mb-4 text-sm text-[#171717]">Please sign in to access your dashboard.</p>
         <button
           onClick={() => router.push('/login')}
-          className="w-full py-2 rounded-lg bg-[#EF0606] text-[#000000] font-semibold hover:bg-[#EF0606] transition-colors"
+          className="w-full py-2 rounded-2xl bg-[#D71920] text-white font-semibold hover:bg-[#D71920] transition-colors"
         >
           Go to Sign In
         </button>
@@ -124,74 +160,75 @@ export default function StudentPage() {
   return (
     <>
       {notice && (
-        <div role="status" aria-live="polite" className="mb-6 rounded-lg border border-[#D3CCC7] bg-[#D3CCC7] p-4 text-sm text-[#000000]">
+        <div role="status" aria-live="polite" className="mb-6 rounded-2xl border border-[#E5E5E5] bg-[#E5E5E5] p-4 text-sm text-[#171717]">
           {notice}
         </div>
       )}
       {error && (
-        <div role="alert" className="mb-6 rounded-lg border border-[#D3CCC7] bg-[#EFEEE8] p-4 text-sm text-[#000000]">
+        <div role="alert" className="mb-6 rounded-2xl border border-[#E5E5E5] bg-[#FFFFFF] p-4 text-sm text-[#171717]">
           {error}
         </div>
       )}
       {!isStudent && (
-        <div className="rounded-lg border border-[#D3CCC7] bg-[#EFEEE8] p-6">
-          <p className="text-[#000000]">Your account is not registered as a student.</p>
+        <div className="rounded-2xl border border-[#E5E5E5] bg-[#FFFFFF] p-6">
+          <p className="text-[#171717]">Your account is not registered as a student.</p>
         </div>
       )}
       {isStudent && (
         <>
-          <div className="mb-8 rounded-xl border border-[#D3CCC7] bg-[#EFEEE8] p-6">
+          <div className="lg:grid lg:grid-cols-[1.1fr_0.9fr] lg:items-start lg:gap-6">
+          <div className="dashboard-float-card mb-8 rounded-2xl border border-[#E5E5E5] bg-[#FFFFFF] p-6">
             <h2 className="mb-4 text-lg font-bold">Active Session</h2>
             {session && hasActiveSession ? (
-              <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-                <div className="rounded-lg border border-[#D3CCC7] bg-[#EFEEE8] p-4">
-                  <p className="text-xs text-[#000000]">Session</p>
+              <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-2">
+                <div className="rounded-2xl border border-[#E5E5E5] bg-[#FFFFFF] p-4">
+                  <p className="text-xs text-[#171717]">Session</p>
                   <p className="font-semibold">{session.name || 'Phone handover'}</p>
                 </div>
-                <div className="rounded-lg border border-[#D3CCC7] bg-[#EFEEE8] p-4">
-                  <p className="text-xs text-[#000000]">Squad</p>
+                <div className="rounded-2xl border border-[#E5E5E5] bg-[#FFFFFF] p-4">
+                  <p className="text-xs text-[#171717]">Squad</p>
                   <p className="font-semibold">{session.squad}</p>
                 </div>
-                <div className="rounded-lg border border-[#D3CCC7] bg-[#EFEEE8] p-4">
-                  <p className="text-xs text-[#000000]">Status</p>
-                  <p className="font-semibold text-[#000000]">{session.status}</p>
+                <div className="rounded-2xl border border-[#E5E5E5] bg-[#FFFFFF] p-4">
+                  <p className="text-xs text-[#171717]">Status</p>
+                  <p className="font-semibold text-[#171717]">{session.status}</p>
                 </div>
-                <div className="rounded-lg border border-[#D3CCC7] bg-[#EFEEE8] p-4">
-                  <p className="text-xs text-[#000000]">Started</p>
+                <div className="rounded-2xl border border-[#E5E5E5] bg-[#FFFFFF] p-4">
+                  <p className="text-xs text-[#171717]">Started</p>
                   <p className="font-medium">{new Date(session.started_at).toLocaleString()}</p>
                 </div>
               </div>
             ) : (
-              <div className="rounded-lg border border-dashed border-[#D3CCC7] bg-[#EFEEE8] p-6 text-center">
-                <p className="font-semibold text-[#000000]">No active session for your squad.</p>
-                <p className="mt-1 text-sm text-[#000000]">Status updates are disabled until a mentor starts a session.</p>
+              <div className="rounded-2xl border border-dashed border-[#E5E5E5] bg-[#FFFFFF] p-6 text-center">
+                <p className="font-semibold text-[#171717]">No active session for your squad.</p>
+                <p className="mt-1 text-sm text-[#171717]">Status updates are disabled until a mentor starts a session.</p>
               </div>
             )}
           </div>
-          <div className="mb-8 rounded-xl border border-[#D3CCC7] bg-[#EFEEE8] p-6">
+          <div className="dashboard-float-card mb-8 rounded-2xl border border-[#E5E5E5] bg-[#FFFFFF] p-6">
             <h2 className="mb-4 text-lg font-bold">Your Phone Handover</h2>
             {handovers.length > 0 ? (
               <div className="space-y-3">
-                <div className="flex items-center justify-between px-4 py-3 rounded-lg border border-[#D3CCC7] bg-[#EFEEE8]">
+                <div className="flex items-center justify-between px-4 py-3 rounded-2xl border border-[#E5E5E5] bg-[#FFFFFF]">
                   <span className="text-sm font-semibold">Status</span>
                   <span className="text-sm font-semibold">{handovers[0].status}</span>
                 </div>
                 {handovers[0].reason && (
-                  <div className="px-4 py-3 rounded-lg border border-[#D3CCC7] bg-[#EFEEE8]">
-                    <p className="text-sm text-[#000000]">{handovers[0].reason}</p>
+                  <div className="px-4 py-3 rounded-2xl border border-[#E5E5E5] bg-[#FFFFFF]">
+                    <p className="text-sm text-[#171717]">{handovers[0].reason}</p>
                   </div>
                 )}
                 {handovers[0].phone_model && (
-                  <div className="flex items-center justify-between gap-4 px-4 py-3 rounded-lg border border-[#D3CCC7] bg-[#EFEEE8]">
+                  <div className="flex items-center justify-between gap-4 px-4 py-3 rounded-2xl border border-[#E5E5E5] bg-[#FFFFFF]">
                     <span className="text-sm font-semibold">Phone model</span>
                     <span className="text-right text-sm">{handovers[0].phone_model}</span>
                   </div>
                 )}
               </div>
             ) : (
-              <p className="text-[#000000]">No handover submitted yet.</p>
+              <p className="text-[#171717]">No handover submitted yet.</p>
             )}
-            <div className="mt-6 flex flex-wrap gap-3">
+            <div id="handover-actions" className="mt-6 flex flex-wrap gap-3 scroll-mt-24">
               <button
                 type="button"
                 onClick={() => {
@@ -201,7 +238,7 @@ export default function StudentPage() {
                   setNotice('')
                 }}
                 disabled={!hasActiveSession || Boolean(updatingStatus)}
-                className="min-h-11 rounded-lg bg-[#EF0606] px-4 py-2 font-semibold text-[#000000] transition-colors hover:bg-[#EF0606] "
+                className="min-h-11 rounded-2xl bg-[#D71920] px-4 py-2 font-semibold text-white transition-colors hover:bg-[#D71920] "
               >
                 Mark Submitted
               </button>
@@ -214,7 +251,7 @@ export default function StudentPage() {
                   setNotice('')
                 }}
                 disabled={!hasActiveSession || Boolean(updatingStatus)}
-                className="min-h-11 rounded-lg border border-[#D3CCC7] bg-[#EFEEE8] px-4 py-2 font-semibold text-[#000000] transition-colors hover:border-[#000000] hover:bg-[#EFEEE8] "
+                className="min-h-11 rounded-2xl border border-[#E5E5E5] bg-[#FFFFFF] px-4 py-2 font-semibold text-[#171717] transition-colors hover:border-[#171717] hover:bg-[#FFFFFF] "
               >
                 Mark Not Submitted
               </button>
@@ -227,14 +264,14 @@ export default function StudentPage() {
                   setNotice('')
                 }}
                 disabled={!hasActiveSession || Boolean(updatingStatus)}
-                className="min-h-11 rounded-lg border border-[#D3CCC7] bg-[#EFEEE8] px-4 py-2 font-semibold text-[#000000] transition-colors hover:border-[#000000] hover:bg-[#EFEEE8] "
+                className="min-h-11 rounded-2xl border border-[#E5E5E5] bg-[#FFFFFF] px-4 py-2 font-semibold text-[#171717] transition-colors hover:border-[#171717] hover:bg-[#FFFFFF] "
               >
                 Mark Retrieved
               </button>
             </div>
             {reasonStatus && (
               <form
-                className="mt-5 max-w-xl rounded-lg border border-[#D3CCC7] bg-[#EFEEE8] p-4"
+                className="mt-5 max-w-xl rounded-2xl border border-[#E5E5E5] bg-[#FFFFFF] p-4"
                 onSubmit={(event) => {
                   event.preventDefault()
                   void updateHandover(reasonStatus, reason, phoneModel)
@@ -253,9 +290,9 @@ export default function StudentPage() {
                       value={phoneModel}
                       onChange={(event) => setPhoneModel(event.target.value)}
                       disabled={Boolean(updatingStatus)}
-                      className="mt-2 block min-h-11 w-full rounded-lg border border-[#D3CCC7] bg-[#EFEEE8] px-3 py-2 text-sm focus:border-[#EF0606] focus:ring-1 focus:ring-[#EF0606] disabled:bg-[#D3CCC7]"
+                      className="mt-2 block min-h-11 w-full rounded-2xl border border-[#E5E5E5] bg-[#FFFFFF] px-3 py-2 text-sm focus:border-[#D71920] focus:ring-1 focus:ring-[#D71920] disabled:bg-[#E5E5E5]"
                     />
-                    <p className="mt-1 text-right text-xs text-[#000000]">{phoneModel.length}/100</p>
+                    <p className="mt-1 text-right text-xs text-[#171717]">{phoneModel.length}/100</p>
                   </>
                 ) : (
                   <>
@@ -270,16 +307,16 @@ export default function StudentPage() {
                       value={reason}
                       onChange={(event) => setReason(event.target.value)}
                       disabled={Boolean(updatingStatus)}
-                      className="mt-2 block w-full rounded-lg border border-[#D3CCC7] bg-[#EFEEE8] px-3 py-2 text-sm focus:border-[#EF0606] focus:ring-1 focus:ring-[#EF0606] disabled:bg-[#D3CCC7]"
+                      className="mt-2 block w-full rounded-2xl border border-[#E5E5E5] bg-[#FFFFFF] px-3 py-2 text-sm focus:border-[#D71920] focus:ring-1 focus:ring-[#D71920] disabled:bg-[#E5E5E5]"
                     />
-                    <p className="mt-1 text-right text-xs text-[#000000]">{reason.length}/500</p>
+                    <p className="mt-1 text-right text-xs text-[#171717]">{reason.length}/500</p>
                   </>
                 )}
                 <div className="mt-3 flex flex-wrap gap-2">
                   <button
                     type="submit"
                     disabled={Boolean(updatingStatus) || (reasonStatus === 'submitted' ? !phoneModel.trim() : !reason.trim())}
-                    className="min-h-11 rounded-lg bg-[#EF0606] px-4 text-sm font-semibold text-[#000000] hover:bg-[#EF0606] disabled:cursor-not-allowed"
+                    className="min-h-11 rounded-2xl bg-[#D71920] px-4 text-sm font-semibold text-white hover:bg-[#D71920] disabled:cursor-not-allowed"
                   >
                     {updatingStatus === reasonStatus ? 'Saving...' : reasonStatus === 'submitted' ? 'Confirm submission' : 'Save status'}
                   </button>
@@ -292,7 +329,7 @@ export default function StudentPage() {
                       setPhoneModel('')
                       setError('')
                     }}
-                    className="min-h-11 rounded-lg border border-[#D3CCC7] px-4 text-sm font-semibold hover:bg-[#EFEEE8] "
+                    className="min-h-11 rounded-2xl border border-[#E5E5E5] px-4 text-sm font-semibold hover:bg-[#FFFFFF] "
                   >
                     Cancel
                   </button>
@@ -300,19 +337,20 @@ export default function StudentPage() {
               </form>
             )}
           </div>
-          <div className="rounded-xl border border-[#D3CCC7] bg-[#EFEEE8] p-6">
+          </div>
+          <div className="dashboard-float-card rounded-2xl border border-[#E5E5E5] bg-[#FFFFFF] p-6">
             <div className="mb-4 flex items-center justify-between">
               <h2 className="text-lg font-bold">Recent Activity</h2>
-              <Link href="/student/history" className="text-sm font-semibold text-[#000000] hover:underline">
+              <Link href="/student/history" className="text-sm font-semibold text-[#171717] hover:underline">
                 View full history
               </Link>
             </div>
             {handovers.length === 0 ? (
-              <p className="text-[#000000]">No handover activity yet.</p>
+              <p className="text-[#171717]">No handover activity yet.</p>
             ) : (
               <div className="overflow-x-auto">
                 <table className="w-full text-left text-sm">
-                  <thead className="bg-[#EFEEE8] text-xs text-[#000000]">
+                  <thead className="bg-[#FFFFFF] text-xs text-[#171717]">
                     <tr>
                       <th className="px-4 py-3">Status</th>
                       <th className="px-4 py-3">Phone model</th>
@@ -322,11 +360,11 @@ export default function StudentPage() {
                   </thead>
                   <tbody>
                     {handovers.slice(0, 5).map((h) => (
-                      <tr key={h.id} className="border-t border-[#D3CCC7]">
+                      <tr key={h.id} className="border-t border-[#E5E5E5]">
                         <td className="px-4 py-3 font-semibold">{h.status}</td>
                         <td className="px-4 py-3">{h.phone_model || '—'}</td>
-                        <td className="px-4 py-3 text-[#000000]">{h.reason || '—'}</td>
-                        <td className="px-4 py-3 text-[#000000]">{new Date(h.updated_at).toLocaleString()}</td>
+                        <td className="px-4 py-3 text-[#171717]">{h.reason || '—'}</td>
+                        <td className="px-4 py-3 text-[#171717]">{new Date(h.updated_at).toLocaleString()}</td>
                       </tr>
                     ))}
                   </tbody>

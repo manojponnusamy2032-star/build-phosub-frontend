@@ -50,35 +50,35 @@ export default function ProfileSetup({
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-[#EFEEE8] p-6">
-      <div className="w-full max-w-md rounded-xl border border-[#D3CCC7] bg-[#EFEEE8] p-6">
+    <div className="min-h-screen flex items-center justify-center bg-[#FFFFFF] p-6">
+      <div className="w-full max-w-md rounded-xl border border-[#E5E5E5] bg-[#FFFFFF] p-6">
         <h1 className="mb-2 text-lg font-bold">Complete your profile</h1>
-        <p className="mb-6 text-sm text-[#000000]">Your account is signed in. Add the details needed to finish setting it up.</p>
+        <p className="mb-6 text-sm text-[#171717]">Your account is signed in. Add the details needed to finish setting it up.</p>
         {error && (
-          <div className="mb-5 rounded-lg border border-[#D3CCC7] bg-[#EFEEE8] p-3 text-sm text-[#000000]">
+          <div className="mb-5 rounded-lg border border-[#E5E5E5] bg-[#FFFFFF] p-3 text-sm text-[#171717]">
             {error}
           </div>
         )}
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
-            <label htmlFor="full-name" className="block text-sm font-semibold text-[#000000]">Full name</label>
+            <label htmlFor="full-name" className="block text-sm font-semibold text-[#171717]">Full name</label>
             <input
               id="full-name"
               type="text"
               required
               autoComplete="name"
-              className="mt-1 block w-full rounded-lg border border-[#D3CCC7] bg-[#EFEEE8] px-3 py-2 text-sm focus:border-[#EF0606] focus:ring-1 focus:ring-[#EF0606]"
+              className="mt-1 block w-full rounded-lg border border-[#E5E5E5] bg-[#FFFFFF] px-3 py-2 text-sm focus:border-[#D71920] focus:ring-1 focus:ring-[#D71920]"
               value={fullName}
               onChange={(event) => setFullName(event.target.value)}
             />
           </div>
           {!isMentor && (
             <div>
-              <label htmlFor="squad" className="block text-sm font-semibold text-[#000000]">Squad</label>
+              <label htmlFor="squad" className="block text-sm font-semibold text-[#171717]">Squad</label>
               <select
                 id="squad"
                 required
-                className="mt-1 block w-full rounded-lg border border-[#D3CCC7] bg-[#EFEEE8] px-3 py-2 text-sm focus:border-[#EF0606] focus:ring-1 focus:ring-[#EF0606]"
+                className="mt-1 block w-full rounded-lg border border-[#E5E5E5] bg-[#FFFFFF] px-3 py-2 text-sm focus:border-[#D71920] focus:ring-1 focus:ring-[#D71920]"
                 value={squad}
                 onChange={(event) => setSquad(event.target.value)}
               >
@@ -90,7 +90,7 @@ export default function ProfileSetup({
           <button
             type="submit"
             disabled={submitting}
-            className="w-full rounded-lg bg-[#EF0606] py-2.5 font-semibold text-[#000000] transition-colors hover:bg-[#EF0606] disabled:cursor-not-allowed"
+            className="w-full rounded-lg bg-[#D71920] py-2.5 font-semibold text-white transition-colors hover:bg-[#D71920] disabled:cursor-not-allowed"
           >
             {submitting ? 'Saving profile...' : 'Continue'}
           </button>

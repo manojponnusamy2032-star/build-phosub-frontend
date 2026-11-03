@@ -8,59 +8,88 @@ const feedbackEmail = 'manoj.ponnusamy.s.138@kalvium.community'
 export default function SiteFooter() {
   const pathname = usePathname()
   const isDashboard = pathname?.startsWith('/student') || pathname?.startsWith('/mentor')
+  const isAuthPage = pathname === '/login' || pathname === '/signup' || pathname?.startsWith('/auth/')
 
-  if (isDashboard) {
-    return (
-      <footer className="border-t border-[#000000] bg-[#000000] text-[#EFEEE8]">
-        <div className="mx-auto flex max-w-6xl flex-col gap-2 px-5 py-3 text-sm sm:flex-row sm:items-center sm:justify-between sm:px-8">
-          <span className="font-bold tracking-tight text-[#D3CCC7]">phosub</span>
-          <nav aria-label="Project links" className="flex flex-wrap items-center gap-x-4 gap-y-1">
-            <a href={repositoryUrl} target="_blank" rel="noreferrer" className="hover:text-[#EFEEE8]">GitHub</a>
-            <a href={`mailto:${feedbackEmail}?subject=Phosub%20bug%20or%20feature%20report`} className="break-all hover:text-[#EFEEE8]">
-              Report a bug or request a feature
-            </a>
-          </nav>
-          <span className="text-[#D3CCC7]">(c) {new Date().getFullYear()} Phosub</span>
-        </div>
-      </footer>
-    )
-  }
+  if (isDashboard || isAuthPage) return null
 
   return (
-    <footer className="border-t border-[#000000] bg-[#000000] text-[#EFEEE8]">
-      <div className="mx-auto grid max-w-6xl gap-8 px-5 py-8 sm:grid-cols-[1.4fr_1fr_1fr] sm:px-8">
+    <footer className="public-footer-stage">
+      <div className="public-footer-card">
+        <div className="grid gap-8 sm:grid-cols-[1.4fr_1fr_1fr]">
         <div>
-          <a href="/" className="text-xl font-bold tracking-tight text-[#D3CCC7]">phosub</a>
-          <p className="mt-2 max-w-sm text-sm leading-6 text-[#D3CCC7]">
+          <a href="/" className="text-xl font-bold tracking-tight text-[#171717]">phosub</a>
+          <p className="mt-2 max-w-sm text-sm leading-6 text-[#737373]">
             Phone handovers, clearly recorded for students and mentors.
           </p>
         </div>
         <div>
-          <h2 className="text-sm font-semibold">Project</h2>
+          <h2 className="text-sm font-semibold text-[#171717]">Project</h2>
           <a
             href={repositoryUrl}
             target="_blank"
             rel="noreferrer"
-            className="mt-3 inline-block text-sm text-[#D3CCC7] transition-colors hover:text-[#EFEEE8]"
+            className="mt-3 inline-block text-sm text-[#737373] transition-colors hover:text-[#B5121B]"
           >
             GitHub repository
           </a>
         </div>
         <div>
-          <h2 className="text-sm font-semibold">Feedback</h2>
-          <p className="mt-3 text-sm text-[#D3CCC7]">Report a bug or request a feature</p>
+          <h2 className="text-sm font-semibold text-[#171717]">Support</h2>
           <a
             href={`mailto:${feedbackEmail}?subject=Phosub%20bug%20or%20feature%20report`}
-            className="mt-1 inline-block break-all text-sm text-[#D3CCC7] transition-colors hover:text-[#EFEEE8]"
+            className="mt-3 inline-block break-all text-sm text-[#737373] transition-colors hover:text-[#B5121B]"
           >
-            {feedbackEmail}
+            Report a bug or request a feature
           </a>
         </div>
       </div>
-      <div className="border-t border-[#000000]">
-        <p className="mx-auto max-w-6xl px-5 py-4 text-xs text-[#D3CCC7] sm:px-8">
-          (c) {new Date().getFullYear()} Phosub
+      <div className="mt-8 flex flex-col gap-3 border-t border-[#E9E0DE] pt-5 text-xs text-[#737373] sm:flex-row sm:items-center sm:justify-between">
+        <p>
+          (c) {new Date().getFullYear()} Phosub. All rights reserved.
         </p>
+        <span>Phone handovers, clearly recorded.</span>
+      </div>
+      </div>
+    </footer>
+  )
+}
+
+export function DashboardFooter() {
+  return (
+    <footer className="mt-10 rounded-[28px] border border-white/90 bg-white/85 p-6 shadow-[0_16px_40px_rgba(39,31,29,0.12)] backdrop-blur-xl sm:p-8 lg:p-10">
+      <div className="grid gap-8 sm:grid-cols-2 lg:grid-cols-[1.5fr_repeat(3,minmax(0,1fr))] lg:gap-10">
+        <div>
+          <a href="/" className="text-xl font-bold tracking-tight text-[#171717]">phosub</a>
+          <p className="mt-3 max-w-sm text-sm leading-6 text-[#737373]">
+            Phone handovers, clearly recorded for students and mentors.
+          </p>
+        </div>
+        <div>
+          <h2 className="text-sm font-semibold text-[#171717]">Workspace</h2>
+          <nav aria-label="Workspace links" className="mt-3 flex flex-col items-start gap-2.5 text-sm text-[#737373]">
+            <a href="/student" className="transition-colors hover:text-[#B5121B]">Student dashboard</a>
+            <a href="/mentor" className="transition-colors hover:text-[#B5121B]">Mentor dashboard</a>
+          </nav>
+        </div>
+        <div>
+          <h2 className="text-sm font-semibold text-[#171717]">Project</h2>
+          <nav aria-label="Project links" className="mt-3 flex flex-col items-start gap-2.5 text-sm text-[#737373]">
+            <a href={repositoryUrl} target="_blank" rel="noreferrer" className="transition-colors hover:text-[#B5121B]">GitHub repository</a>
+          </nav>
+        </div>
+        <div>
+          <h2 className="text-sm font-semibold text-[#171717]">Support</h2>
+          <a
+            href={`mailto:${feedbackEmail}?subject=Phosub%20bug%20or%20feature%20report`}
+            className="mt-3 inline-block break-all text-sm leading-6 text-[#737373] transition-colors hover:text-[#B5121B]"
+          >
+            Report a bug or request a feature
+          </a>
+        </div>
+      </div>
+      <div className="mt-8 flex flex-col gap-3 border-t border-[#E9E0DE] pt-5 text-xs text-[#737373] sm:flex-row sm:items-center sm:justify-between">
+        <span>(c) {new Date().getFullYear()} Phosub. All rights reserved.</span>
+        <span>Phone handovers, clearly recorded.</span>
       </div>
     </footer>
   )

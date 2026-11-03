@@ -67,11 +67,17 @@ export async function PATCH(request: Request) {
   if (!userId) return NextResponse.json({ error: 'Authentication required' }, { status: 401 })
   const { createAdminClient } = await import('@/lib/supabase/admin')
   const admin = createAdminClient()
-  const { data, error } = await admin.from('sessions').update({ status: 'ended', ended_at: new Date().toISOString() }).eq('id', body.id).eq('mentor_id', userId).eq('status', 'active').select().maybeSingle()
+  const { data: profile, error: profileError } = await admin.from('profiles').select('role').eq('id', userId).maybeSingle()
+  if (profileError) {
+    console.error('Unable to load session stopper profile', { code: profileError.code })
+    return NextResponse.json({ error: 'Unable to load profile' }, { status: 500 })
+  }
+  if (profile?.role !== 'mentor') return NextResponse.json({ error: 'Only mentors can end sessions' }, { status: 403 })
+  const { data, error } = await admin.from('sessions').update({ status: 'ended', ended_at: new Date().toISOString() }).eq('id', body.id).eq('status', 'active').select().maybeSingle()
   if (error) {
     console.error('Unable to end session', { code: error.code })
     return NextResponse.json({ error: 'Unable to end session' }, { status: 500 })
   }
-  if (!data) return NextResponse.json({ error: 'Session is not active or not owned by you' }, { status: 409 })
+  if (!data) return NextResponse.json({ error: 'Session is not active or no longer exists' }, { status: 409 })
   return NextResponse.json({ session: data })
 }

@@ -7,13 +7,13 @@ import { getAccessToken } from '@/lib/supabase/auth-token'
 type ProfileAvatarProps = {
   avatarUrl?: string | null
   name: string
-  size?: 'small' | 'large'
+  size?: 'small' | 'medium' | 'large'
 }
 
 export function ProfileAvatar({ avatarUrl, name, size = 'small' }: ProfileAvatarProps) {
   const [imageFailed, setImageFailed] = useState(false)
   const initials = name.trim().split(/\s+/).map((part) => part[0]).join('').slice(0, 2).toUpperCase() || '?'
-  const sizeClass = size === 'large' ? 'size-24 text-2xl' : 'size-9 text-xs'
+  const sizeClass = size === 'large' ? 'size-24 text-2xl' : size === 'medium' ? 'size-11 text-sm' : 'size-9 text-xs'
 
   useEffect(() => setImageFailed(false), [avatarUrl])
 
@@ -21,7 +21,7 @@ export function ProfileAvatar({ avatarUrl, name, size = 'small' }: ProfileAvatar
     <span
       role="img"
       aria-label={`${name || 'User'} profile photo`}
-      className={`grid shrink-0 place-items-center overflow-hidden rounded-full bg-[#EFEEE8] font-bold text-[#000000] ${sizeClass}`}
+      className={`grid shrink-0 place-items-center overflow-hidden rounded-full bg-[#FFFFFF] font-bold text-[#171717] ${sizeClass}`}
     >
       {avatarUrl && !imageFailed ? (
         <img src={avatarUrl} alt="" onError={() => setImageFailed(true)} className="size-full object-cover" />
@@ -87,13 +87,13 @@ export function ProfilePhotoEditor({
         />
         <label
           htmlFor={inputId}
-          className={`inline-flex min-h-10 cursor-pointer items-center gap-2 rounded-md border border-[#D3CCC7] px-3 text-sm font-semibold text-[#000000] hover:bg-[#EFEEE8] ${uploading ? 'pointer-events-none' : ''}`}
+          className={`inline-flex min-h-10 cursor-pointer items-center gap-2 rounded-md border border-[#E5E5E5] px-3 text-sm font-semibold text-[#171717] hover:bg-[#FFFFFF] ${uploading ? 'pointer-events-none' : ''}`}
         >
           <Camera size={16} /> {uploading ? 'Uploading...' : 'Change photo'}
         </label>
-        <p className="mt-2 text-xs text-[#000000]">JPEG, PNG, or WebP up to 5 MB</p>
-        {message && <p role="status" className="mt-2 text-sm text-[#000000]">{message}</p>}
-        {error && <p role="alert" className="mt-2 text-sm text-[#000000]">{error}</p>}
+        <p className="mt-2 text-xs text-[#171717]">JPEG, PNG, or WebP up to 5 MB</p>
+        {message && <p role="status" className="mt-2 text-sm text-[#171717]">{message}</p>}
+        {error && <p role="alert" className="mt-2 text-sm text-[#171717]">{error}</p>}
       </div>
     </div>
   )

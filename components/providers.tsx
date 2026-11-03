@@ -19,10 +19,10 @@ export function Providers({ children }: { children: ReactNode }) {
 
   if (!supabase) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-[#EFEEE8] p-6">
-        <div className="max-w-md rounded-xl border border-[#D3CCC7] bg-[#EFEEE8] p-6 text-center">
-          <h2 className="mb-2 text-lg font-bold text-[#000000]">Configuration Error</h2>
-          <p className="mb-4 text-sm text-[#000000]">Failed to initialize Supabase client. Make sure .env.local has NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_ANON_KEY set.</p>
+      <div className="min-h-screen flex items-center justify-center bg-[#FFFFFF] p-6">
+        <div className="max-w-md rounded-xl border border-[#E5E5E5] bg-[#FFFFFF] p-6 text-center">
+          <h2 className="mb-2 text-lg font-bold text-[#171717]">Configuration Error</h2>
+          <p className="mb-4 text-sm text-[#171717]">Failed to initialize Supabase client. Make sure .env.local has NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_ANON_KEY set.</p>
         </div>
       </div>
     )
@@ -82,12 +82,12 @@ export function useAuth() {
 
 export function LoadingSpinner() {
   return (
-    <div role="status" aria-live="polite" className="flex min-h-screen flex-col items-center justify-center gap-4 bg-[#EFEEE8]">
+    <div role="status" aria-live="polite" className="flex min-h-screen flex-col items-center justify-center gap-4 bg-[#FFFFFF]">
       <span className="relative grid size-14 place-items-center">
-        <span aria-hidden="true" className="absolute inset-0 animate-spin rounded-full border-[3px] border-[#D3CCC7] border-t-[#EF0606]" />
-        <span aria-hidden="true" className="text-lg font-black text-[#000000]">K</span>
+        <span aria-hidden="true" className="absolute inset-0 animate-spin rounded-full border-[3px] border-[#E5E5E5] border-t-[#D71920]" />
+        <span aria-hidden="true" className="text-lg font-black text-[#171717]">P</span>
       </span>
-      <span aria-hidden="true" className="text-sm font-black tracking-[0.18em] text-[#000000]">KALVIUM</span>
+      <span aria-hidden="true" className="text-sm font-black tracking-[0.18em] text-[#171717]">PHOSUB</span>
       <span className="sr-only">Loading...</span>
     </div>
   )
