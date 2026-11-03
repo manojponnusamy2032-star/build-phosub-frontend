@@ -2,7 +2,7 @@
 
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { Bell, LayoutDashboard, History, User, HelpCircle, LogOut, Plus, type LucideIcon } from 'lucide-react'
+import { LayoutDashboard, History, User, HelpCircle, LogOut, type LucideIcon } from 'lucide-react'
 import { useAuth } from '@/components/providers'
 import { ProfileAvatar } from '@/components/profile-photo'
 import { cn } from '@/lib/utils'
@@ -15,15 +15,14 @@ const STUDENT_NAV = [
 ]
 
 interface TopBarProps {
-  showActions?: boolean
   name?: string
   avatarUrl?: string | null
-  actionHref?: string
-  onAction?: () => void
+  profileHref?: string
+  onProfileClick?: () => void
   className?: string
 }
 
-export function TopBar({ showActions = true, name, avatarUrl, actionHref, onAction, className }: TopBarProps) {
+export function TopBar({ name, avatarUrl, profileHref, onProfileClick, className }: TopBarProps) {
   const { user } = useAuth()
   const displayName = name?.trim() || user?.email?.split('@')[0] || 'User'
   const hour = new Date().getHours()
@@ -36,30 +35,18 @@ export function TopBar({ showActions = true, name, avatarUrl, actionHref, onActi
         className
       )}
     >
-      <div className="mx-auto flex h-[84px] max-w-6xl items-center justify-between px-4 sm:px-6">
-        <div className="flex min-w-0 items-center gap-3">
-          <ProfileAvatar avatarUrl={avatarUrl ?? null} name={displayName} size="medium" />
-          <div className="min-w-0">
-            <p className="truncate text-sm font-semibold leading-5">{greeting}</p>
-            <p className="truncate text-xs text-[#737373]">{displayName}</p>
-          </div>
-        </div>
-        <div className="flex shrink-0 items-center gap-2.5">
-          {actionHref ? (
-            <Link href={actionHref} aria-label="Quick action" className="grid size-10 place-items-center rounded-full bg-[#D71920] text-white transition-colors hover:bg-[#B5121B]">
-              <Plus size={19} strokeWidth={2} />
-            </Link>
-          ) : onAction ? (
-            <button type="button" aria-label="Quick action" onClick={onAction} className="grid size-10 place-items-center rounded-full bg-[#D71920] text-white transition-colors hover:bg-[#B5121B]">
-              <Plus size={19} strokeWidth={2} />
-            </button>
-          ) : null}
-          {showActions && (
-            <button type="button" aria-label="Notifications" className="grid size-10 place-items-center rounded-full border border-[#E9E0DE] bg-white text-[#171717] transition-colors hover:bg-[#F8F5F4]">
-              <Bell size={18} strokeWidth={1.8} />
-            </button>
-          )}
-        </div>
+      <div className="mx-auto flex h-[68px] max-w-6xl items-center justify-start px-4 sm:px-6 lg:h-[72px]">
+        {profileHref ? (
+          <Link href={profileHref} aria-label="Open profile" title="Open profile" className="flex min-w-0 items-center gap-3 rounded-full pr-4 text-left transition-colors hover:bg-white/70 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#D71920]">
+            <ProfileAvatar avatarUrl={avatarUrl ?? null} name={displayName} size="medium" />
+            <span className="truncate text-sm font-semibold leading-5">{greeting}</span>
+          </Link>
+        ) : (
+          <button type="button" aria-label="Open profile" title="Open profile" onClick={onProfileClick} className="flex min-w-0 items-center gap-3 rounded-full pr-4 text-left transition-colors hover:bg-white/70 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#D71920]">
+            <ProfileAvatar avatarUrl={avatarUrl ?? null} name={displayName} size="medium" />
+            <span className="truncate text-sm font-semibold leading-5">{greeting}</span>
+          </button>
+        )}
       </div>
     </header>
   )
@@ -91,7 +78,7 @@ export function DashboardSidebar({ items = STUDENT_NAV, activeId, onSelect, onSi
         </span>
         <span className="text-lg font-bold tracking-tight">phosub</span>
       </Link>
-      <p className="mb-3 px-2 text-[10px] font-bold uppercase tracking-[0.16em] text-[#737373]">Workspace</p>
+      <p className="mb-3 px-2 text-[10px] font-bold uppercase tracking-[0.16em] text-[#5F5755]">Workspace</p>
       <nav aria-label={label} className="space-y-1">
         {items.map(({ id, href, label: itemLabel, icon: Icon }) => {
           const active = href
@@ -111,7 +98,7 @@ export function DashboardSidebar({ items = STUDENT_NAV, activeId, onSelect, onSi
         })}
       </nav>
       {onSignOut && (
-        <button type="button" onClick={onSignOut} className="mt-auto flex min-h-11 items-center gap-3 rounded-xl px-3 text-sm font-medium text-[#737373] transition-colors hover:bg-[#F8F5F4] hover:text-[#B5121B]">
+        <button type="button" onClick={onSignOut} className="mt-auto flex min-h-11 items-center gap-3 rounded-xl px-3 text-sm font-medium text-[#5F5755] transition-colors hover:bg-[#F8F5F4] hover:text-[#B5121B]">
           <LogOut size={18} /> Sign out
         </button>
       )}
@@ -145,7 +132,7 @@ export function BottomNav({ items = STUDENT_NAV, activeId, onSelect, label = 'Pr
             : activeId === id
           const itemClass = cn(
             'flex h-11 shrink-0 items-center justify-center rounded-full font-medium transition-colors',
-            active ? 'flex-row gap-2 bg-[#D71920] px-3 text-white' : 'min-w-[56px] flex-col gap-0.5 px-2 text-[#737373] hover:bg-[#F8F5F4] hover:text-[#171717]'
+            active ? 'flex-row gap-2 bg-[#D71920] px-3 text-white' : 'min-w-[56px] flex-col gap-0.5 px-2 text-[#5F5755] hover:bg-[#F8F5F4] hover:text-[#171717]'
           )
           const content = (
             <>

@@ -6,9 +6,11 @@ import { useRouter } from 'next/navigation'
 import {
   CalendarDays,
   Check,
+  CheckCircle2,
   ChartNoAxesColumn,
   ClipboardCheck,
   Clock3,
+  CircleHelp,
   FileSpreadsheet,
   LogOut,
   Play,
@@ -28,6 +30,9 @@ type Session = { id: string; squad: string; name: string; status: string; starte
 type Handover = { id: string; student_id: string; session_id: string; status: string; reason: string | null; phone_model: string | null; updated_at: string; student?: { full_name: string } }
 type StudentAccount = { id: string; full_name: string; squad: string | null; created_at: string }
 type View = 'sessions' | 'reports' | 'squads' | 'profile'
+type SessionConfirmation =
+  | { action: 'start'; squad: string }
+  | { action: 'end'; sessionId: string; squad: string; starterName?: string }
 
 const squads = ['138', '139', '183']
 const navigation: { id: View; label: string; icon: LucideIcon }[] = [
@@ -40,7 +45,7 @@ const navigation: { id: View; label: string; icon: LucideIcon }[] = [
 function SessionBadge({ status }: { status: string }) {
   const variants: Record<string, string> = {
     active: 'bg-[#D71920] text-white',
-    ended: 'bg-[#F5F5F5] text-[#737373]',
+    ended: 'bg-[#F5F5F5] text-[#5F5755]',
   }
   return (
     <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold capitalize ${variants[status] || variants.ended}`}>
@@ -52,7 +57,7 @@ function SessionBadge({ status }: { status: string }) {
 function HandoverBadge({ status }: { status: string }) {
   const variants: Record<string, string> = {
     submitted: 'bg-[#D71920] text-white',
-    not_submitted: 'bg-[#F5F5F5] text-[#737373]',
+    not_submitted: 'bg-[#F5F5F5] text-[#5F5755]',
     retrieved: 'bg-[#D71920] text-white',
   }
   return (
@@ -100,9 +105,10 @@ export default function MentorPage() {
   const [selectedSquad, setSelectedSquad] = useState('')
   const [activeSquads, setActiveSquads] = useState<string[]>([])
   const [starting, setStarting] = useState(false)
+  const [sessionConfirmation, setSessionConfirmation] = useState<SessionConfirmation | null>(null)
   const [downloadingReport, setDownloadingReport] = useState(false)
   const [reportSessionId, setReportSessionId] = useState<string | null>(null)
-  const [reportFilter, setReportFilter] = useState<'submitted' | 'not_submitted' | 'not_responded' | null>(null)
+  const [reportFilter, setReportFilter] = useState<'submitted' | 'not_submitted' | 'not_responded' | null>('submitted')
   const [activeView, setActiveView] = useState<View>('sessions')
 
   useEffect(() => {
@@ -159,8 +165,8 @@ export default function MentorPage() {
     }
   }
 
-  async function startSession() {
-    if (!selectedSquad) return
+  async function startSession(squad: string) {
+    if (!squad) return
     setError('')
     setNotice('')
     setStarting(true)
@@ -174,7 +180,7 @@ export default function MentorPage() {
           Authorization: `Bearer ${token}`,
         },
         credentials: 'include',
-        body: JSON.stringify({ squad: selectedSquad }),
+        body: JSON.stringify({ squad }),
       })
       const result = await response.json().catch(() => ({}))
       if (!response.ok) {
@@ -183,8 +189,8 @@ export default function MentorPage() {
         throw new Error(result.error || 'Unable to start session')
       }
       await loadData(false)
-      setActiveSquads((prev) => [...prev, selectedSquad].sort())
-      setNotice(`Session for Squad ${selectedSquad} started.`)
+      setActiveSquads((prev) => [...prev, squad].sort())
+      setNotice(`Session for Squad ${squad} started successfully.`)
     } catch (startError) {
       setError(startError instanceof Error ? startError.message : 'Unable to start session')
     } finally {
@@ -194,10 +200,6 @@ export default function MentorPage() {
 
   async function endSession(sessionId: string) {
     const session = sessions.find((s) => s.id === sessionId)
-    if (session && user && session.mentor_id !== user.id) {
-      const starterName = session.mentor_name || 'another mentor'
-      if (!window.confirm(`This session was started by ${starterName}. Shall we stop it?`)) return
-    }
     setError('')
     setNotice('')
     try {
@@ -216,7 +218,7 @@ export default function MentorPage() {
       if (!res.ok) throw new Error(result.error || 'Failed to end session')
       await loadData(false)
       setActiveSquads((prev) => prev.filter((s) => s !== session?.squad))
-      setNotice(result.session?.squad ? `Session for Squad ${result.session.squad} ended.` : 'Session ended.')
+      setNotice(result.session?.squad ? `Session for Squad ${result.session.squad} ended successfully.` : 'Session ended successfully.')
     } catch (endError) {
       setError(endError instanceof Error ? endError.message : 'Failed to end session')
     }
@@ -316,15 +318,18 @@ export default function MentorPage() {
       <TopBar
         name={displayName}
         avatarUrl={profile?.avatar_url}
-        onAction={() => {
-          setActiveView('sessions')
-          window.setTimeout(() => document.getElementById('start-session-title')?.scrollIntoView({ behavior: 'smooth', block: 'center' }), 0)
-        }}
+        onProfileClick={() => setActiveView('profile')}
       />
       <main className="dashboard-web-main mx-auto w-full max-w-[1200px] px-4 pb-[calc(6rem+env(safe-area-inset-bottom))] pt-6 sm:px-8 sm:pt-8 lg:max-w-none lg:px-8 xl:px-10">
           {notice && (
-            <div role="status" aria-live="polite" className="mb-5 rounded-2xl border border-[#E5E5E5] bg-[#E5E5E5] px-4 py-3 text-sm text-[#171717]">
-              {notice}
+            <div role="status" aria-live="polite" className="mb-5 flex items-center justify-between gap-4 rounded-2xl border border-[#B9D8C1] bg-[#EDF7EF] px-4 py-3 text-sm text-[#285C36] shadow-sm">
+              <span className="flex min-w-0 items-center gap-2.5">
+                <CheckCircle2 size={18} className="shrink-0" aria-hidden="true" />
+                <span>{notice}</span>
+              </span>
+              <button type="button" aria-label="Dismiss confirmation" onClick={() => setNotice('')} className="grid size-8 shrink-0 place-items-center rounded-full text-[#285C36] transition-colors hover:bg-[#DCEFE0]">
+                <X size={16} aria-hidden="true" />
+              </button>
             </div>
           )}
           {error && (
@@ -343,7 +348,7 @@ export default function MentorPage() {
                 <div>
                   <h1 className="max-w-xl text-[30px] font-semibold leading-tight tracking-tight sm:text-4xl">Let’s make today productive</h1>
                 </div>
-                <p className="inline-flex items-center gap-2 pb-1 text-sm font-medium text-[#737373]">
+                <p className="inline-flex items-center gap-2 pb-1 text-sm font-medium text-[#5F5755]">
                   <CalendarDays size={16} className="text-[#D71920]" />
                   {new Date().toLocaleDateString(undefined, { weekday: 'short', month: 'long', day: 'numeric' })}
                 </p>
@@ -382,7 +387,7 @@ export default function MentorPage() {
 
                 <section aria-labelledby="start-session-title" className="dashboard-float-card rounded-2xl border border-[#E9E0DE] bg-white p-5 sm:p-6">
                   <h2 id="start-session-title" className="text-lg font-semibold">Start a session</h2>
-                  <p className="mt-1 text-sm text-[#737373]">Choose the squad you are teaching today.</p>
+                  <p className="mt-1 text-sm text-[#5F5755]">Choose the squad you are teaching today.</p>
                   <div className="mt-4 grid grid-cols-3 gap-2" role="group" aria-label="Choose squad">
                     {squads.map((squad) => (
                       <button
@@ -399,7 +404,7 @@ export default function MentorPage() {
                   </div>
                   <button
                     type="button"
-                    onClick={startSession}
+                    onClick={() => setSessionConfirmation({ action: 'start', squad: selectedSquad })}
                     disabled={!selectedSquad || starting}
                     className="mt-4 inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-xl bg-[#D71920] px-4 text-sm font-semibold text-white transition-colors hover:bg-[#B5121B] disabled:cursor-not-allowed disabled:opacity-50"
                   >
@@ -412,7 +417,7 @@ export default function MentorPage() {
                 <div className="mb-4 flex items-end justify-between gap-3">
                   <div>
                     <h2 id="sessions-title" className="text-xl font-semibold">Sessions</h2>
-                    <p className="mt-1 text-sm text-[#737373]">Phone handovers across your squads.</p>
+                    <p className="mt-1 text-sm text-[#5F5755]">Phone handovers across your squads.</p>
                   </div>
                   <span className="rounded-full bg-[#FCEBED] px-3 py-1 text-xs font-semibold text-[#B5121B]">{sessions.length} total</span>
                 </div>
@@ -420,7 +425,7 @@ export default function MentorPage() {
                   {sessions.map((session) => (
                     <article key={session.id} className="dashboard-float-card rounded-2xl border border-[#E9E0DE] bg-white p-4 shadow-[0_2px_8px_rgba(80,30,30,0.04)] sm:p-5">
                       <div className="flex items-start gap-3">
-                        <span className={`mt-0.5 grid size-10 shrink-0 place-items-center rounded-full ${session.status === 'active' ? 'bg-[#FCEBED] text-[#D71920]' : 'bg-[#F5F2F1] text-[#737373]'}`}>
+                        <span className={`mt-0.5 grid size-10 shrink-0 place-items-center rounded-full ${session.status === 'active' ? 'bg-[#FCEBED] text-[#D71920]' : 'bg-[#F5F2F1] text-[#5F5755]'}`}>
                           <UsersRound size={18} />
                         </span>
                         <div className="min-w-0 flex-1">
@@ -428,7 +433,7 @@ export default function MentorPage() {
                             <h3 className="text-base font-semibold">Squad {session.squad}</h3>
                             <SessionBadge status={session.status} />
                           </div>
-                          <p className="mt-1 inline-flex items-center gap-1.5 text-xs text-[#737373]">
+                          <p className="mt-1 inline-flex items-center gap-1.5 text-xs text-[#5F5755]">
                             <Clock3 size={13} /> {new Date(session.started_at).toLocaleString(undefined, { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' })}
                           </p>
                         </div>
@@ -447,17 +452,22 @@ export default function MentorPage() {
                         {session.status === 'active' && (
                           <button
                             type="button"
-                            onClick={() => endSession(session.id)}
+                            onClick={() => setSessionConfirmation({
+                              action: 'end',
+                              sessionId: session.id,
+                              squad: session.squad,
+                              starterName: session.mentor_id !== user.id ? session.mentor_name : undefined,
+                            })}
                             className="inline-flex min-h-10 items-center justify-center rounded-xl bg-[#FCEBED] px-3 text-sm font-semibold text-[#B5121B] transition-colors hover:bg-[#F7DADD]"
                           >End session</button>
                         )}
                         {session.status === 'active' && session.mentor_id !== user.id && (
-                          <p className="self-center text-sm text-[#737373]">Started by another mentor</p>
+                          <p className="self-center text-sm text-[#5F5755]">Started by another mentor</p>
                         )}
                       </div>
                     </article>
                   ))}
-                  {sessions.length === 0 && <p className="dashboard-float-card rounded-2xl border border-dashed border-[#D9CECB] bg-white px-4 py-10 text-center text-sm text-[#737373] xl:col-span-2">No sessions yet. Choose a squad above to get started.</p>}
+                  {sessions.length === 0 && <p className="dashboard-float-card rounded-2xl border border-dashed border-[#D9CECB] bg-white px-4 py-10 text-center text-sm text-[#5F5755] xl:col-span-2">No sessions yet. Choose a squad above to get started.</p>}
                 </div>
               </section>
             </>
@@ -511,35 +521,8 @@ export default function MentorPage() {
           ) : activeView === 'reports' ? (
             <section>
               <p className="mb-2 text-xs font-bold uppercase tracking-[0.16em] text-[#171717]">Mentor workspace</p>
-              <h1 className="text-3xl font-bold">{reportSession ? `${reportSession.name} report` : 'Recent handovers'}</h1>
-              <p className="mb-6 mt-2 text-sm text-[#171717]">
-                {reportSession ? `Squad ${reportSession.squad} handover statuses for this session.` : 'A record of recent student phone handovers.'}
-              </p>
-              <div className="space-y-3 lg:hidden">
-                {reportHandovers.map((handover) => (
-                  <article key={handover.id} className="dashboard-float-card rounded-2xl border border-[#E5E5E5] bg-[#FFFFFF] p-4">
-                    <div className="flex items-start justify-between gap-3">
-                      <h2 className="text-base font-semibold">{handover.student?.full_name || 'Student'}</h2>
-                      <span className="shrink-0 rounded-full bg-[#E5E5E5] px-2.5 py-1 text-xs font-semibold capitalize text-[#171717]">{handover.status.replace('_', ' ')}</span>
-                    </div>
-                    <p className="mt-3 text-sm text-[#171717]">{handover.reason || 'No reason provided'}</p>
-                    <p className="mt-2 text-xs text-[#171717]">Updated {new Date(handover.updated_at).toLocaleString()}</p>
-                  </article>
-                ))}
-                {reportHandovers.length === 0 && <p className="rounded-2xl border border-dashed border-[#E5E5E5] px-4 py-8 text-center text-sm text-[#171717]">{reportSession ? 'No handovers recorded for this session yet.' : 'No handovers to report yet.'}</p>}
-              </div>
-              <div className="dashboard-float-card hidden overflow-hidden rounded-2xl border border-[#E5E5E5] bg-[#FFFFFF] lg:block">
-                <div className="overflow-x-auto">
-                  <table className="w-full min-w-[680px] text-left text-sm">
-                    <thead className="bg-[#FFFFFF] text-xs text-[#171717]"><tr><th className="px-5 py-4 font-medium">Student</th><th className="px-5 py-4 font-medium">Status</th><th className="px-5 py-4 font-medium">Reason</th><th className="px-5 py-4 font-medium">Updated</th></tr></thead>
-                    <tbody>
-                      {reportHandovers.map((handover) => (
-                        <tr key={handover.id} className="border-t border-[#E5E5E5]"><td className="px-5 py-4 font-semibold">{handover.student?.full_name || 'Student'}</td><td className="px-5 py-4 capitalize">{handover.status.replace('_', ' ')}</td><td className="px-5 py-4 text-[#171717]">{handover.reason || '—'}</td><td className="px-5 py-4 text-[#171717]">{new Date(handover.updated_at).toLocaleString()}</td></tr>
-                      ))}
-                      {reportHandovers.length === 0 && <tr><td colSpan={4} className="px-5 py-10 text-center text-sm text-[#171717]">{reportSession ? 'No handovers recorded for this session yet.' : 'No handovers to report yet.'}</td></tr>}
-                    </tbody>
-                  </table>
-                </div>
+              <div className="flex items-start justify-between gap-4">
+                <h1 className="text-3xl font-bold">{reportSession ? `${reportSession.name} report` : 'Recent handovers'}</h1>
                 {reportSession?.status === 'ended' && (
                   <button
                     type="button"
@@ -548,12 +531,45 @@ export default function MentorPage() {
                     aria-busy={downloadingReport}
                     disabled={downloadingReport}
                     onClick={() => void downloadSessionReport(reportSession)}
-                    className="mt-1 grid size-11 shrink-0 place-items-center rounded-md border border-[#D3CCC7] bg-[#EFEEE8] text-[#000000] transition-colors hover:bg-[#D3CCC7] disabled:cursor-wait disabled:opacity-60"
+                    className="grid size-11 shrink-0 place-items-center rounded-xl border border-[#E9E0DE] bg-white text-[#525252] shadow-sm transition-colors hover:border-[#D71920] hover:text-[#B5121B] disabled:cursor-wait disabled:opacity-60"
                   >
                     <FileSpreadsheet size={19} aria-hidden="true" />
                   </button>
                 )}
               </div>
+              <p className="mb-6 mt-2 text-sm text-[#171717]">
+                {reportSession ? `Squad ${reportSession.squad} handover statuses for this session.` : 'A record of recent student phone handovers.'}
+              </p>
+              {!reportSession && (
+                <>
+                  <div className="space-y-3 lg:hidden">
+                    {reportHandovers.map((handover) => (
+                      <article key={handover.id} className="dashboard-float-card rounded-2xl border border-[#E5E5E5] bg-[#FFFFFF] p-4">
+                        <div className="flex items-start justify-between gap-3">
+                          <h2 className="text-base font-semibold">{handover.student?.full_name || 'Student'}</h2>
+                          <span className="shrink-0 rounded-full bg-[#E5E5E5] px-2.5 py-1 text-xs font-semibold capitalize text-[#171717]">{handover.status.replace('_', ' ')}</span>
+                        </div>
+                        <p className="mt-3 text-sm text-[#171717]">{handover.reason || 'No reason provided'}</p>
+                        <p className="mt-2 text-xs text-[#171717]">Updated {new Date(handover.updated_at).toLocaleString()}</p>
+                      </article>
+                    ))}
+                    {reportHandovers.length === 0 && <p className="rounded-2xl border border-dashed border-[#E5E5E5] px-4 py-8 text-center text-sm text-[#171717]">No handovers to report yet.</p>}
+                  </div>
+                  <div className="dashboard-float-card hidden overflow-hidden rounded-2xl border border-[#E5E5E5] bg-[#FFFFFF] lg:block">
+                    <div className="overflow-x-auto">
+                      <table className="w-full min-w-[680px] text-left text-sm">
+                        <thead className="bg-[#FFFFFF] text-xs text-[#171717]"><tr><th className="px-5 py-4 font-medium">Student</th><th className="px-5 py-4 font-medium">Status</th><th className="px-5 py-4 font-medium">Reason</th><th className="px-5 py-4 font-medium">Updated</th></tr></thead>
+                        <tbody>
+                          {reportHandovers.map((handover) => (
+                            <tr key={handover.id} className="border-t border-[#E5E5E5]"><td className="px-5 py-4 font-semibold">{handover.student?.full_name || 'Student'}</td><td className="px-5 py-4 capitalize">{handover.status.replace('_', ' ')}</td><td className="px-5 py-4 text-[#171717]">{handover.reason || '—'}</td><td className="px-5 py-4 text-[#171717]">{new Date(handover.updated_at).toLocaleString()}</td></tr>
+                          ))}
+                          {reportHandovers.length === 0 && <tr><td colSpan={4} className="px-5 py-10 text-center text-sm text-[#171717]">No handovers to report yet.</td></tr>}
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+                </>
+              )}
 
               {reportSession ? (
                 <>
@@ -736,10 +752,10 @@ export default function MentorPage() {
               )}
             </section>
           ) : (
-            <section>
+            <section className="mx-auto w-full max-w-2xl">
               <p className="mb-2 text-xs font-bold uppercase tracking-[0.16em] text-[#171717]">Mentor workspace</p>
               <h1 className="text-3xl font-bold">Profile</h1>
-              <div className="dashboard-float-card mt-6 max-w-2xl rounded-2xl border border-[#E5E5E5] bg-[#FFFFFF] p-5 sm:p-6">
+              <div className="dashboard-float-card mt-6 rounded-2xl border border-[#E5E5E5] bg-[#FFFFFF] p-5 sm:p-6">
                 <div className="mb-6 border-b border-[#E5E5E5] pb-6">
                   <ProfilePhotoEditor
                     avatarUrl={profile?.avatar_url}
@@ -766,6 +782,63 @@ export default function MentorPage() {
           <DashboardFooter />
         </main>
       </div>
+      {sessionConfirmation && (
+        <div
+          className="fixed inset-0 z-[70] flex items-center justify-center bg-[#211D1C]/45 p-4 backdrop-blur-sm"
+          onMouseDown={(event) => {
+            if (event.target === event.currentTarget) setSessionConfirmation(null)
+          }}
+        >
+          <section
+            role="alertdialog"
+            aria-modal="true"
+            aria-labelledby="session-confirmation-title"
+            aria-describedby="session-confirmation-description"
+            onKeyDown={(event) => {
+              if (event.key === 'Escape') setSessionConfirmation(null)
+            }}
+            className="w-full max-w-[420px] rounded-[26px] border border-white/90 bg-white/95 p-6 shadow-[0_24px_70px_rgba(27,20,19,0.28)] backdrop-blur-xl sm:p-7"
+          >
+            <div className="flex items-start gap-4">
+              <span className="grid size-11 shrink-0 place-items-center rounded-full bg-[#FCEBED] text-[#B5121B]">
+                <CircleHelp size={21} strokeWidth={1.8} aria-hidden="true" />
+              </span>
+              <div className="min-w-0 pt-0.5">
+                <h2 id="session-confirmation-title" className="text-lg font-semibold text-[#211D1C]">
+                  {sessionConfirmation.action === 'start' ? 'Start this session?' : 'End this session?'}
+                </h2>
+                <p id="session-confirmation-description" className="mt-2 text-sm leading-6 text-[#6D6664]">
+                  {sessionConfirmation.action === 'start'
+                    ? `Start a phone handover session for Squad ${sessionConfirmation.squad}?`
+                    : `End the phone handover session for Squad ${sessionConfirmation.squad}?`}
+                </p>
+                {sessionConfirmation.action === 'end' && sessionConfirmation.starterName && (
+                  <p className="mt-2 text-xs text-[#5F5755]">Started by {sessionConfirmation.starterName}</p>
+                )}
+              </div>
+            </div>
+            <div className="mt-7 flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
+              <button
+                type="button"
+                autoFocus
+                onClick={() => setSessionConfirmation(null)}
+                className="min-h-11 rounded-xl border border-[#E9E0DE] px-4 text-sm font-semibold text-[#5D5553] transition-colors hover:bg-[#F8F5F4]"
+              >Cancel</button>
+              <button
+                type="button"
+                disabled={starting}
+                onClick={() => {
+                  const confirmation = sessionConfirmation
+                  setSessionConfirmation(null)
+                  if (confirmation.action === 'start') void startSession(confirmation.squad)
+                  else void endSession(confirmation.sessionId)
+                }}
+                className="min-h-11 rounded-xl bg-[#D71920] px-4 text-sm font-semibold text-white transition-colors hover:bg-[#B5121B] disabled:cursor-not-allowed disabled:opacity-60"
+              >{sessionConfirmation.action === 'start' ? 'Start session' : 'End session'}</button>
+            </div>
+          </section>
+        </div>
+      )}
       <BottomNav
         items={navigation}
         activeId={activeView}

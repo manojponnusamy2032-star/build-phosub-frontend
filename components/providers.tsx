@@ -82,13 +82,24 @@ export function useAuth() {
 
 export function LoadingSpinner() {
   return (
-    <div role="status" aria-live="polite" className="flex min-h-screen flex-col items-center justify-center gap-4 bg-[#FFFFFF]">
-      <span className="relative grid size-14 place-items-center">
-        <span aria-hidden="true" className="absolute inset-0 animate-spin rounded-full border-[3px] border-[#E5E5E5] border-t-[#D71920]" />
-        <span aria-hidden="true" className="text-lg font-black text-[#171717]">P</span>
-      </span>
-      <span aria-hidden="true" className="text-sm font-black tracking-[0.18em] text-[#171717]">PHOSUB</span>
-      <span className="sr-only">Loading...</span>
+    <div role="status" aria-live="polite" className="loading-screen">
+      <section className="loading-card">
+        <div className="loading-emblem" aria-hidden="true">
+          <span className="loading-orbit loading-orbit-outer" />
+          <span className="loading-orbit loading-orbit-inner" />
+          <span className="loading-emblem-core">P</span>
+          <span className="loading-emblem-spark" />
+        </div>
+        <div className="loading-copy">
+          <span className="loading-eyebrow">PHOSUB WORKSPACE</span>
+          <h1>Preparing your workspace</h1>
+          <p>Getting everything ready for you.</p>
+        </div>
+        <div className="loading-progress" aria-hidden="true">
+          <span />
+        </div>
+        <span className="sr-only">Loading...</span>
+      </section>
     </div>
   )
 }

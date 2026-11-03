@@ -18,9 +18,9 @@ function StatCard({ title, value, subtitle, icon: Icon }: { title: string; value
     <div className="rounded-2xl border border-[#E5E5E5] bg-[#FFFFFF] p-4">
       <div className="flex items-center justify-between">
         <div>
-          <p className="text-xs font-semibold text-[#737373] uppercase tracking-[0.12em]">{title}</p>
+          <p className="text-xs font-semibold text-[#5F5755] uppercase tracking-[0.12em]">{title}</p>
           <p className="mt-1 text-2xl font-bold text-[#171717]">{value}</p>
-          <p className="mt-0.5 text-xs text-[#737373]">{subtitle}</p>
+          <p className="mt-0.5 text-xs text-[#5F5755]">{subtitle}</p>
         </div>
         <div className="size-8 rounded-full bg-[#F5F5F5] flex items-center justify-center text-[#D71920]">
           <Icon className="size-4" />
@@ -42,7 +42,7 @@ function ProgressRing({ percent }: { percent: number }) {
       </svg>
       <div className="absolute inset-0 flex flex-col items-center justify-center">
         <span className="text-2xl font-bold text-[#171717]">{percent}%</span>
-        <span className="text-xs text-[#737373]">of squad submitted</span>
+        <span className="text-xs text-[#5F5755]">of squad submitted</span>
       </div>
     </div>
   )
