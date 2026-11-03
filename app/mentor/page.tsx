@@ -12,6 +12,7 @@ import {
   Play,
   UserRound,
   UsersRound,
+  X,
   type LucideIcon,
 } from 'lucide-react'
 import { useAuth, LoadingSpinner } from '@/components/providers'
@@ -21,8 +22,8 @@ import { ProfilePhotoEditor } from '@/components/profile-photo'
 import { BottomNav, DashboardSidebar, TopBar } from '@/components/navigation/top-bar'
 import { DashboardFooter } from '@/components/site-footer'
 
-type Session = { id: string; squad: string; name: string; status: string; started_at: string; mentor_id: string }
-type Handover = { id: string; student_id: string; session_id: string; status: string; reason: string | null; updated_at: string; student?: { full_name: string } }
+type Session = { id: string; squad: string; name: string; status: string; started_at: string; mentor_id: string; mentor_name?: string }
+type Handover = { id: string; student_id: string; session_id: string; status: string; reason: string | null; phone_model: string | null; updated_at: string; student?: { full_name: string } }
 type StudentAccount = { id: string; full_name: string; squad: string | null; created_at: string }
 type View = 'sessions' | 'reports' | 'squads' | 'profile'
 
@@ -95,8 +96,11 @@ export default function MentorPage() {
   const [error, setError] = useState('')
   const [notice, setNotice] = useState('')
   const [selectedSquad, setSelectedSquad] = useState('')
-  const [reportSessionId, setReportSessionId] = useState<string | null>(null)
+  const [activeSquads, setActiveSquads] = useState<string[]>([])
   const [starting, setStarting] = useState(false)
+  const [downloadingReport, setDownloadingReport] = useState(false)
+  const [reportSessionId, setReportSessionId] = useState<string | null>(null)
+  const [reportFilter, setReportFilter] = useState<'submitted' | 'not_submitted' | 'not_responded' | null>(null)
   const [activeView, setActiveView] = useState<View>('sessions')
 
   useEffect(() => {
@@ -177,6 +181,7 @@ export default function MentorPage() {
         throw new Error(result.error || 'Unable to start session')
       }
       await loadData(false)
+      setActiveSquads((prev) => [...prev, selectedSquad].sort())
       setNotice(`Session for Squad ${selectedSquad} started.`)
     } catch (startError) {
       setError(startError instanceof Error ? startError.message : 'Unable to start session')
@@ -186,6 +191,11 @@ export default function MentorPage() {
   }
 
   async function endSession(sessionId: string) {
+    const session = sessions.find((s) => s.id === sessionId)
+    if (session && user && session.mentor_id !== user.id) {
+      const starterName = session.mentor_name || 'another mentor'
+      if (!window.confirm(`This session was started by ${starterName}. Shall we stop it?`)) return
+    }
     setError('')
     setNotice('')
     try {
@@ -203,9 +213,42 @@ export default function MentorPage() {
       const result = await res.json().catch(() => ({}))
       if (!res.ok) throw new Error(result.error || 'Failed to end session')
       await loadData(false)
+      setActiveSquads((prev) => prev.filter((s) => s !== session?.squad))
       setNotice(result.session?.squad ? `Session for Squad ${result.session.squad} ended.` : 'Session ended.')
     } catch (endError) {
       setError(endError instanceof Error ? endError.message : 'Failed to end session')
+    }
+  }
+
+  async function downloadSessionReport(session: Session) {
+    setError('')
+    setNotice('')
+    setDownloadingReport(true)
+    try {
+      const token = await getAccessToken()
+      if (!token) throw new Error('Your sign-in has expired. Please sign in again.')
+      const response = await fetch(`/api/sessions/report?session_id=${encodeURIComponent(session.id)}`, {
+        credentials: 'include',
+        headers: { Authorization: `Bearer ${token}` },
+      })
+      if (!response.ok) {
+        const result = await response.json().catch(() => ({}))
+        throw new Error(result.error || 'Unable to download session report')
+      }
+
+      const reportUrl = URL.createObjectURL(await response.blob())
+      const downloadLink = document.createElement('a')
+      downloadLink.href = reportUrl
+      downloadLink.download = `squad-${session.squad}-handover-report.xlsx`
+      document.body.append(downloadLink)
+      downloadLink.click()
+      downloadLink.remove()
+      window.setTimeout(() => URL.revokeObjectURL(reportUrl), 1000)
+      setNotice('Excel report downloaded.')
+    } catch (downloadError) {
+      setError(downloadError instanceof Error ? downloadError.message : 'Unable to download session report')
+    } finally {
+      setDownloadingReport(false)
     }
   }
 
@@ -280,7 +323,6 @@ export default function MentorPage() {
               )}
             </div>
           )}
-
           {!isMentor ? (
             <div className="rounded-2xl border border-[#E5E5E5] bg-[#FFFFFF] p-6 text-base text-[#171717]">Your account is not registered as a mentor.</div>
           ) : activeView === 'sessions' ? (
@@ -486,7 +528,200 @@ export default function MentorPage() {
                     </tbody>
                   </table>
                 </div>
+                {reportSession?.status === 'ended' && (
+                  <button
+                    type="button"
+                    title="Download Excel report"
+                    aria-label="Download Excel report"
+                    aria-busy={downloadingReport}
+                    disabled={downloadingReport}
+                    onClick={() => void downloadSessionReport(reportSession)}
+                    className="mt-1 grid size-11 shrink-0 place-items-center rounded-md border border-[#D3CCC7] bg-[#EFEEE8] text-[#000000] transition-colors hover:bg-[#D3CCC7] disabled:cursor-wait disabled:opacity-60"
+                  >
+                    <FileSpreadsheet size={19} aria-hidden="true" />
+                  </button>
+                )}
               </div>
+
+              {reportSession ? (
+                <>
+                  <div className="mb-4 grid grid-cols-3 gap-2 sm:flex sm:flex-wrap sm:gap-3" role="group" aria-label="Handover submission filter">
+                    <button
+                      type="button"
+                      role="tab"
+                      aria-selected={reportFilter === 'submitted'}
+                      onClick={() => setReportFilter('submitted')}
+                      className={`flex min-h-[72px] min-w-0 flex-col items-center justify-center gap-1 rounded-2xl border px-2 py-2 text-center text-xs font-semibold transition-all duration-200 active:scale-95 sm:min-h-11 sm:min-w-[140px] sm:flex-row sm:px-4 sm:text-sm ${reportFilter === 'submitted' ? 'bg-[#EF0606] border-[#EF0606] text-[#000000]' : 'border-[#D3CCC7] bg-white text-[#000000] hover:border-[#D3CCC7]'}`}
+                    >
+                      <Check size={15} strokeWidth={2} />
+                      <span className="leading-tight">Submitted</span>
+                      <span className="inline-flex items-center rounded-full bg-[#000000] px-2 py-0.5 text-[10px] text-[#EFEEE8] sm:ml-1">{submittedStudents.length}</span>
+                    </button>
+                    <button
+                      type="button"
+                      role="tab"
+                      aria-selected={reportFilter === 'not_submitted'}
+                      onClick={() => setReportFilter('not_submitted')}
+                      className={`flex min-h-[72px] min-w-0 flex-col items-center justify-center gap-1 rounded-2xl border px-2 py-2 text-center text-xs font-semibold transition-all duration-200 active:scale-95 sm:min-h-11 sm:min-w-[140px] sm:flex-row sm:px-4 sm:text-sm ${reportFilter === 'not_submitted' ? 'bg-[#EF0606] border-[#EF0606] text-[#000000]' : 'border-[#D3CCC7] bg-white text-[#000000] hover:border-[#D3CCC7]'}`}
+                    >
+                      <X size={15} strokeWidth={2} />
+                      <span className="leading-tight">Not Submitted</span>
+                      <span className="inline-flex items-center rounded-full bg-[#000000] px-2 py-0.5 text-[10px] text-[#EFEEE8] sm:ml-1">{notSubmittedStudents.length}</span>
+                    </button>
+                    <button
+                      type="button"
+                      role="tab"
+                      aria-selected={reportFilter === 'not_responded'}
+                      onClick={() => setReportFilter('not_responded')}
+                      className={`flex min-h-[72px] min-w-0 flex-col items-center justify-center gap-1 rounded-2xl border px-2 py-2 text-center text-xs font-semibold transition-all duration-200 active:scale-95 sm:min-h-11 sm:min-w-[140px] sm:flex-row sm:px-4 sm:text-sm ${reportFilter === 'not_responded' ? 'bg-[#EF0606] border-[#EF0606] text-[#000000]' : 'border-[#D3CCC7] bg-white text-[#000000] hover:border-[#D3CCC7]'}`}
+                    >
+                      <Clock size={15} strokeWidth={2} />
+                      <span className="leading-tight">Not Responded</span>
+                      <span className="inline-flex items-center rounded-full bg-[#000000] px-2 py-0.5 text-[10px] text-[#EFEEE8] sm:ml-1">{notRespondedStudents.length}</span>
+                    </button>
+                  </div>
+
+                  <div className="rounded-3xl border border-[#D3CCC7] bg-white p-4 shadow-sm sm:p-5">
+                    {reportFilter === null ? (
+                      <p className="text-sm text-[#000000] text-center">Select Submitted, Not Submitted or Not Responded above to view students.</p>
+                    ) : reportFilter === 'submitted' ? (
+                      <>
+                        <h3 className="mb-2 text-xs font-bold uppercase tracking-[0.16em] text-[#000000]">Submitted</h3>
+                        {submittedStudents.length ? (
+                          <ul className="divide-y divide-[#D3CCC7]">
+                            {submittedStudents.map((student) => {
+                              const handover = reportHandovers.find((h) => h.student_id === student.id)
+                              return (
+                                <li key={student.id} className="py-3 first:pt-1 last:pb-1 flex items-start justify-between gap-3">
+                                  <div>
+                                    <p className="text-sm font-medium">{student.full_name}</p>
+                                    <p className="mt-0.5 text-xs text-[#000000]">Phone {handover?.phone_model || '—'}</p>
+                                  </div>
+                                  <span className="shrink-0 rounded-full bg-[#EFEEE8] px-2.5 py-1 text-xs font-semibold text-[#000000]">Submitted</span>
+                                </li>
+                              )
+                            })}
+                          </ul>
+                        ) : (
+                          <p className="py-4 text-center text-sm text-[#000000]">No students have submitted yet.</p>
+                        )}
+                      </>
+                    ) : reportFilter === 'not_submitted' ? (
+                      <>
+                        <h3 className="mb-2 text-xs font-bold uppercase tracking-[0.16em] text-[#000000]">Not Submitted</h3>
+                        {notSubmittedStudents.length ? (
+                          <ul className="divide-y divide-[#D3CCC7]">
+                            {notSubmittedStudents.map((student) => {
+                              const handover = reportHandovers.find((h) => h.student_id === student.id)
+                              return (
+                                <li key={student.id} className="py-3 first:pt-1 last:pb-1 flex items-start justify-between gap-3">
+                                  <div>
+                                    <p className="text-sm font-medium">{student.full_name}</p>
+                                    <p className="mt-0.5 text-xs text-[#000000]">Reason {handover?.reason || '—'}</p>
+                                  </div>
+                                  <span className="shrink-0 rounded-full bg-[#D3CCC7] px-2.5 py-1 text-xs font-semibold text-[#000000]">Not Submitted</span>
+                                </li>
+                              )
+                            })}
+                          </ul>
+                        ) : (
+                          <p className="py-4 text-center text-sm text-[#000000]">All students have submitted.</p>
+                        )}
+                      </>
+                    ) : (
+                      <>
+                        <h3 className="mb-2 text-xs font-bold uppercase tracking-[0.16em] text-[#000000]">Not Responded</h3>
+                        {notRespondedStudents.length ? (
+                          <ul className="divide-y divide-[#D3CCC7]">
+                            {notRespondedStudents.map((student) => (
+                              <li key={student.id} className="py-3 first:pt-1 last:pb-1 flex items-start justify-between gap-3">
+                                <p className="text-sm font-medium">{student.full_name}</p>
+                              </li>
+                            ))}
+                          </ul>
+                        ) : (
+                          <p className="py-4 text-center text-sm text-[#000000]">All students have responded.</p>
+                        )}
+                      </>
+                    )}
+                  </div>
+                </>
+              ) : (
+                reportHandovers.length ? (
+                  <>
+                  <div className="space-y-2 sm:hidden">
+                    {reportHandovers.map((handover) => {
+                      const session = sessions.find((item) => item.id === handover.session_id)
+                      return (
+                        <article key={handover.id} className="rounded-2xl border border-[#D3CCC7] bg-white p-4 shadow-sm">
+                          <div className="flex items-start justify-between gap-3">
+                            <div className="min-w-0">
+                              <h2 className="break-words text-sm font-semibold">{handover.student?.full_name || 'Student'}</h2>
+                              <p className="mt-1 text-xs text-[#000000]">{session ? `${session.name} · Squad ${session.squad}` : 'Handover session'}</p>
+                            </div>
+                            <span className="shrink-0 rounded-full bg-[#EFEEE8] px-2.5 py-1 text-xs font-semibold capitalize">
+                              {handover.status.replaceAll('_', ' ')}
+                            </span>
+                          </div>
+                          <dl className="mt-3 grid grid-cols-2 gap-x-3 gap-y-2 text-sm">
+                            <div className="min-w-0">
+                              <dt className="text-[11px] text-[#000000]">Phone</dt>
+                              <dd className="break-words">{handover.phone_model || '—'}</dd>
+                            </div>
+                            <div className="min-w-0">
+                              <dt className="text-[11px] text-[#000000]">Updated</dt>
+                              <dd className="text-xs">{new Date(handover.updated_at).toLocaleString(undefined, { dateStyle: 'medium', timeStyle: 'short' })}</dd>
+                            </div>
+                            <div className="col-span-2 min-w-0">
+                              <dt className="text-[11px] text-[#000000]">Reason</dt>
+                              <dd className="break-words">{handover.reason || '—'}</dd>
+                            </div>
+                          </dl>
+                        </article>
+                      )
+                    })}
+                  </div>
+                  <div className="hidden overflow-hidden rounded-2xl border border-[#D3CCC7] bg-white sm:block">
+                    <div className="overflow-x-auto">
+                      <table className="w-full min-w-[760px] text-left text-sm">
+                        <thead className="bg-[#EFEEE8] text-xs text-[#000000]">
+                          <tr>
+                            <th className="px-5 py-4 font-medium">Session</th>
+                            <th className="px-5 py-4 font-medium">Student</th>
+                            <th className="px-5 py-4 font-medium">Status</th>
+                            <th className="px-5 py-4 font-medium">Phone</th>
+                            <th className="px-5 py-4 font-medium">Reason</th>
+                            <th className="px-5 py-4 font-medium">Updated</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {reportHandovers.map((handover) => {
+                            const session = sessions.find((item) => item.id === handover.session_id)
+                            return (
+                              <tr key={handover.id} className="border-t border-[#D3CCC7]">
+                                <td className="px-5 py-4">
+                                  <p className="font-medium">{session?.name || 'Handover session'}</p>
+                                  {session && <p className="mt-1 text-xs text-[#000000]">Squad {session.squad}</p>}
+                                </td>
+                                <td className="px-5 py-4">{handover.student?.full_name || 'Student'}</td>
+                                <td className="px-5 py-4 capitalize">{handover.status.replaceAll('_', ' ')}</td>
+                                <td className="px-5 py-4">{handover.phone_model || '—'}</td>
+                                <td className="px-5 py-4">{handover.reason || '—'}</td>
+                                <td className="whitespace-nowrap px-5 py-4 text-[#000000]">
+                                  {new Date(handover.updated_at).toLocaleString(undefined, { hour12: true })}
+                                </td>
+                              </tr>
+                            )
+                          })}
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+                  </>
+                ) : (
+                  <p className="rounded-lg border border-dashed border-[#D3CCC7] px-4 py-8 text-center text-sm text-[#000000]">No handovers to report yet.</p>
+                )
+              )}
             </section>
           ) : (
             <section>

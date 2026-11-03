@@ -348,6 +348,22 @@ export default function StudentPage() {
             {handovers.length === 0 ? (
               <p className="text-[#171717]">No handover activity yet.</p>
             ) : (
+              <>
+              <ul className="divide-y divide-[#D3CCC7] sm:hidden">
+                {handovers.slice(0, 5).map((handover) => (
+                  <li key={handover.id} className="py-3 first:pt-1 last:pb-1">
+                    <div className="flex items-center justify-between gap-3">
+                      <span className="text-sm font-semibold capitalize">{handover.status.replaceAll('_', ' ')}</span>
+                      <time className="shrink-0 text-right text-xs text-[#000000]">
+                        {new Date(handover.updated_at).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}
+                      </time>
+                    </div>
+                    {handover.phone_model && <p className="mt-1 text-sm">{handover.phone_model}</p>}
+                    {handover.reason && <p className="mt-1 break-words text-sm text-[#000000]">{handover.reason}</p>}
+                  </li>
+                ))}
+              </ul>
+              <div className="hidden overflow-x-auto sm:block">
               <div className="overflow-x-auto">
                 <table className="w-full text-left text-sm">
                   <thead className="bg-[#FFFFFF] text-xs text-[#171717]">
@@ -370,8 +386,10 @@ export default function StudentPage() {
                   </tbody>
                 </table>
               </div>
+              </div>
+              </>
             )}
-          </div>
+          </section>
         </>
       )}
     </>

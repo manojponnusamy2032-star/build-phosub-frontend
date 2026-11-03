@@ -121,7 +121,7 @@ export default function StudentHistoryPage() {
               <option value="pending">Pending</option>
             </select>
           </label>
-          <label className="text-sm">
+          <label className="min-w-0 text-sm">
             <span className="mb-1 block font-semibold">From</span>
             <input
               type="date"
@@ -130,7 +130,7 @@ export default function StudentHistoryPage() {
               className="min-h-11 rounded-lg border border-[#E5E5E5] bg-[#FFFFFF] px-3 py-2 text-sm"
             />
           </label>
-          <label className="text-sm">
+          <label className="min-w-0 text-sm">
             <span className="mb-1 block font-semibold">To</span>
             <input
               type="date"
@@ -163,7 +163,42 @@ export default function StudentHistoryPage() {
             <p className="mt-1 text-sm text-[#171717]">Records appear here after you participate in a session.</p>
           </div>
         ) : (
-          <div className="overflow-x-auto">
+          <>
+          <div className="divide-y divide-[#D3CCC7] sm:hidden">
+            {filteredHandovers.map((handover) => {
+              const session = sessionOf(handover)
+              return (
+                <article key={handover.id} className="space-y-2 py-4 first:pt-1 last:pb-1">
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="min-w-0">
+                      <h3 className="break-words text-sm font-semibold">{session?.name || 'Phone handover'}</h3>
+                      <p className="mt-0.5 text-xs text-[#000000]">
+                        {session ? `Squad ${session.squad} · ${session.status}` : 'Session details unavailable'}
+                      </p>
+                    </div>
+                    <span className="shrink-0 rounded-full bg-[#EFEEE8] px-2.5 py-1 text-xs font-semibold capitalize">
+                      {handover.status.replaceAll('_', ' ')}
+                    </span>
+                  </div>
+                  <dl className="grid grid-cols-2 gap-x-3 gap-y-2 text-sm">
+                    <div className="min-w-0">
+                      <dt className="text-xs text-[#000000]">Phone model</dt>
+                      <dd className="break-words">{handover.phone_model || '—'}</dd>
+                    </div>
+                    <div className="min-w-0">
+                      <dt className="text-xs text-[#000000]">Updated</dt>
+                      <dd className="text-xs">{new Date(handover.updated_at).toLocaleString(undefined, { dateStyle: 'medium', timeStyle: 'short' })}</dd>
+                    </div>
+                    <div className="col-span-2 min-w-0">
+                      <dt className="text-xs text-[#000000]">Reason</dt>
+                      <dd className="break-words">{handover.reason || '—'}</dd>
+                    </div>
+                  </dl>
+                </article>
+              )
+            })}
+          </div>
+          <div className="hidden overflow-x-auto sm:block">
             <table className="w-full text-left text-sm">
               <thead className="bg-[#FFFFFF] text-xs text-[#171717]">
                 <tr>
@@ -194,15 +229,30 @@ export default function StudentHistoryPage() {
               </tbody>
             </table>
           </div>
+          </>
         )}
-      </div>
+      </section>
 
       <div className="rounded-xl border border-[#E5E5E5] bg-[#FFFFFF] p-6">
         <h2 className="mb-4 text-lg font-bold">Status Change History</h2>
         {events.length === 0 ? (
           <p className="text-[#171717]">No recorded status changes are available.</p>
         ) : (
-          <div className="overflow-x-auto">
+          <>
+          <ol className="divide-y divide-[#D3CCC7] sm:hidden">
+            {events.map((event) => (
+              <li key={event.id} className="space-y-1.5 py-3 first:pt-1 last:pb-1">
+                <div className="flex items-start justify-between gap-3">
+                  <p className="text-sm font-semibold capitalize">{event.status.replaceAll('_', ' ')}</p>
+                  <time className="shrink-0 text-right text-xs text-[#000000]">
+                    {new Date(event.changed_at).toLocaleString(undefined, { dateStyle: 'medium', timeStyle: 'short' })}
+                  </time>
+                </div>
+                {event.reason && <p className="break-words text-sm text-[#000000]">{event.reason}</p>}
+              </li>
+            ))}
+          </ol>
+          <div className="hidden overflow-x-auto sm:block">
             <table className="w-full text-left text-sm">
               <thead className="bg-[#FFFFFF] text-xs text-[#171717]">
                 <tr>
@@ -222,8 +272,9 @@ export default function StudentHistoryPage() {
               </tbody>
             </table>
           </div>
+          </>
         )}
-      </div>
+      </section>
     </>
   )
 }
