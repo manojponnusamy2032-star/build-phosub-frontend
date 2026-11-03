@@ -5,9 +5,11 @@ import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import {
   CalendarDays,
+  Check,
   ChartNoAxesColumn,
   ClipboardCheck,
   Clock3,
+  FileSpreadsheet,
   LogOut,
   Play,
   UserRound,
@@ -278,6 +280,16 @@ export default function MentorPage() {
   const reportHandovers = reportSessionId
     ? handovers.filter((handover) => handover.session_id === reportSessionId)
     : handovers.slice(0, 10)
+  const reportStudents = reportSession
+    ? students.filter((student) => student.squad === reportSession.squad)
+    : []
+  const reportHandoversByStudent = new Map(reportHandovers.map((handover) => [handover.student_id, handover]))
+  const submittedStudents = reportStudents.filter((student) => reportHandoversByStudent.get(student.id)?.status === 'submitted')
+  const notSubmittedStudents = reportStudents.filter((student) => reportHandoversByStudent.get(student.id)?.status === 'not_submitted')
+  const notRespondedStudents = reportStudents.filter((student) => {
+    const handover = reportHandoversByStudent.get(student.id)
+    return !handover || handover.status === 'pending'
+  })
 
   const activeSession = sessions.find((s) => s.status === 'active')
   const sessionHandovers = activeSession ? handovers.filter((h) => h.session_id === activeSession.id) : []
@@ -575,7 +587,7 @@ export default function MentorPage() {
                       onClick={() => setReportFilter('not_responded')}
                       className={`flex min-h-[72px] min-w-0 flex-col items-center justify-center gap-1 rounded-2xl border px-2 py-2 text-center text-xs font-semibold transition-all duration-200 active:scale-95 sm:min-h-11 sm:min-w-[140px] sm:flex-row sm:px-4 sm:text-sm ${reportFilter === 'not_responded' ? 'bg-[#EF0606] border-[#EF0606] text-[#000000]' : 'border-[#D3CCC7] bg-white text-[#000000] hover:border-[#D3CCC7]'}`}
                     >
-                      <Clock size={15} strokeWidth={2} />
+                      <Clock3 size={15} strokeWidth={2} />
                       <span className="leading-tight">Not Responded</span>
                       <span className="inline-flex items-center rounded-full bg-[#000000] px-2 py-0.5 text-[10px] text-[#EFEEE8] sm:ml-1">{notRespondedStudents.length}</span>
                     </button>

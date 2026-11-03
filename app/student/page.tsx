@@ -389,7 +389,7 @@ export default function StudentPage() {
               </div>
               </>
             )}
-          </section>
+          </div>
         </>
       )}
     </>

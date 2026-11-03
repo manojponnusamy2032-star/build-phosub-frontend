@@ -231,7 +231,7 @@ export default function StudentHistoryPage() {
           </div>
           </>
         )}
-      </section>
+      </div>
 
       <div className="rounded-xl border border-[#E5E5E5] bg-[#FFFFFF] p-6">
         <h2 className="mb-4 text-lg font-bold">Status Change History</h2>
@@ -274,7 +274,7 @@ export default function StudentHistoryPage() {
           </div>
           </>
         )}
-      </section>
+      </div>
     </>
   )
 }
