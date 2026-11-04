@@ -106,6 +106,10 @@ export default function MentorPage() {
   const [selectedSquad, setSelectedSquad] = useState('')
   const [activeSquads, setActiveSquads] = useState<string[]>([])
   const [starting, setStarting] = useState(false)
+  const [sessionAutoEndEnabled, setSessionAutoEndEnabled] = useState<boolean | null>(null)
+  const [sessionAutoEndError, setSessionAutoEndError] = useState('')
+  const [updatingSessionAutoEnd, setUpdatingSessionAutoEnd] = useState(false)
+  const [sessionAutoEndConfirmation, setSessionAutoEndConfirmation] = useState<boolean | null>(null)
   const [deletingSession, setDeletingSession] = useState(false)
   const [sessionConfirmation, setSessionConfirmation] = useState<SessionConfirmation | null>(null)
   const [downloadingReport, setDownloadingReport] = useState(false)
@@ -160,6 +164,21 @@ export default function MentorPage() {
       setHandovers(hand.handovers ?? [])
       setStudents(studentData.students ?? [])
       setError('')
+      if (prof.profile?.role === 'mentor') {
+        try {
+          const automationRes = await fetch('/api/session-automation', { credentials: 'include', headers })
+          const automation = await automationRes.json()
+          if (!automationRes.ok) throw new Error(automation.error || 'Unable to load session automation setting')
+          setSessionAutoEndEnabled(automation.enabled)
+          setSessionAutoEndError('')
+        } catch (automationError) {
+          setSessionAutoEndEnabled(null)
+          setSessionAutoEndError(automationError instanceof Error ? automationError.message : 'Unable to load session automation setting')
+        }
+      } else {
+        setSessionAutoEndEnabled(null)
+        setSessionAutoEndError('')
+      }
     } catch (err: any) {
       setError(err.message || 'Failed to load data')
     } finally {
@@ -223,6 +242,31 @@ export default function MentorPage() {
       setNotice(result.session?.squad ? `Session for Squad ${result.session.squad} ended successfully.` : 'Session ended successfully.')
     } catch (endError) {
       setError(endError instanceof Error ? endError.message : 'Failed to end session')
+    }
+  }
+
+  async function toggleSessionAutoEnd() {
+    if (sessionAutoEndEnabled === null || updatingSessionAutoEnd) return
+    setError('')
+    setNotice('')
+    setUpdatingSessionAutoEnd(true)
+    try {
+      const token = await getAccessToken()
+      if (!token) throw new Error('Your sign-in has expired. Please sign in again.')
+      const response = await fetch('/api/session-automation', {
+        method: 'PATCH',
+        headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ enabled: !sessionAutoEndEnabled }),
+      })
+      const result = await response.json()
+      if (!response.ok) throw new Error(result.error || 'Unable to update session automation')
+      setSessionAutoEndEnabled(result.enabled)
+      setSessionAutoEndError('')
+      setSessionAutoEndConfirmation(result.enabled)
+    } catch (automationError) {
+      setError(automationError instanceof Error ? automationError.message : 'Unable to update session automation')
+    } finally {
+      setUpdatingSessionAutoEnd(false)
     }
   }
 
@@ -444,12 +488,29 @@ export default function MentorPage() {
               </div>
 
               <section className="mt-8" aria-labelledby="sessions-title">
-                <div className="mb-4 flex items-end justify-between gap-3">
+                <div className="mb-4 flex flex-wrap items-end justify-between gap-3">
                   <div>
                     <h2 id="sessions-title" className="text-xl font-semibold">Sessions</h2>
                     <p className="mt-1 text-sm text-[#5F5755]">Phone handovers across your squads.</p>
+                    {sessionAutoEndError && <p role="alert" className="mt-2 text-sm font-medium text-[#B5121B]">{sessionAutoEndError}</p>}
                   </div>
-                  <span className="rounded-full bg-[#FCEBED] px-3 py-1 text-xs font-semibold text-[#B5121B]">{sessions.length} total</span>
+                  <div className="flex shrink-0 items-center gap-2">
+                    <button
+                      type="button"
+                      role="switch"
+                      aria-label="Automatic session ending for squads 138 and 139"
+                      aria-checked={sessionAutoEndEnabled ?? false}
+                      aria-busy={updatingSessionAutoEnd}
+                      disabled={sessionAutoEndEnabled === null || updatingSessionAutoEnd}
+                      onClick={() => void toggleSessionAutoEnd()}
+                      className="inline-flex min-h-11 items-center gap-3 rounded-full border border-[#CFC6C3] bg-white px-4 text-base font-semibold text-[#211D1C] transition-colors hover:border-[#B5121B] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#D71920] disabled:cursor-wait disabled:opacity-60"
+                    >
+                      <span>{sessionAutoEndEnabled === null ? 'Session auto-end unavailable' : `Session auto-end: ${sessionAutoEndEnabled ? 'On' : 'Off'}`}</span>
+                      <span className={`relative h-5 w-9 rounded-full transition-colors ${sessionAutoEndEnabled ? 'bg-[#D71920]' : 'bg-[#6D6664]'}`} aria-hidden="true">
+                        <span className={`absolute left-0.5 top-0.5 size-4 rounded-full bg-white shadow-sm transition-transform duration-200 ${sessionAutoEndEnabled ? 'translate-x-4' : 'translate-x-0'}`} />
+                      </span>
+                    </button>
+                  </div>
                 </div>
                 <div className="grid gap-3 xl:grid-cols-2">
                   {sessions.map((session) => (
@@ -482,16 +543,14 @@ export default function MentorPage() {
                         </div>
                       </div>
                       <div className="mt-4 flex flex-wrap gap-2 border-t border-[#F0E9E7] pt-3">
-                        {session.mentor_id === user.id && (
-                          <button
-                            type="button"
-                            onClick={() => {
-                              setReportSessionId(session.id)
-                              setActiveView('reports')
-                            }}
-                            className="inline-flex min-h-10 items-center justify-center rounded-xl border border-[#E9E0DE] px-3 text-sm font-medium text-[#525252] transition-colors hover:border-[#D71920] hover:text-[#B5121B]"
-                          >View report</button>
-                        )}
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setReportSessionId(session.id)
+                            setActiveView('reports')
+                          }}
+                          className="inline-flex min-h-10 items-center justify-center rounded-xl border border-[#E9E0DE] px-3 text-sm font-medium text-[#525252] transition-colors hover:border-[#D71920] hover:text-[#B5121B]"
+                        >View report</button>
                         {session.status === 'active' && (
                           <button
                             type="button"
@@ -825,6 +884,41 @@ export default function MentorPage() {
           <DashboardFooter />
         </main>
       </div>
+          {sessionAutoEndConfirmation !== null && (
+            <div className="fixed inset-0 z-[70] flex items-center justify-center bg-[#211D1C]/45 p-4 backdrop-blur-sm">
+              <section
+                role="dialog"
+                aria-modal="true"
+                aria-labelledby="session-auto-end-title"
+                aria-describedby="session-auto-end-description"
+                className="w-full max-w-[420px] rounded-[26px] border border-white/90 bg-white/95 p-6 shadow-[0_24px_70px_rgba(27,20,19,0.28)] backdrop-blur-xl sm:p-7"
+              >
+                <div className="flex items-start gap-4">
+                  <span className="grid size-11 shrink-0 place-items-center rounded-full bg-[#EDF7EF] text-[#285C36]">
+                    <CheckCircle2 size={21} aria-hidden="true" />
+                  </span>
+                  <div className="min-w-0 pt-0.5">
+                    <h2 id="session-auto-end-title" className="text-lg font-semibold text-[#211D1C]">
+                      Session auto-end {sessionAutoEndConfirmation ? 'turned on' : 'turned off'}
+                    </h2>
+                    <p id="session-auto-end-description" className="mt-2 text-sm leading-6 text-[#6D6664]">
+                      {sessionAutoEndConfirmation
+                        ? 'Automatic session ending is on for squads 138 and 139. Daily cutoff times are 8:50 AM, 9:40 AM, 10:45 AM, 11:35 AM, 12:25 PM, 2:00 PM, and 2:50 PM IST.'
+                        : 'Automatic session ending is off for squads 138 and 139. Sessions will no longer end automatically at the scheduled cutoff times.'}
+                    </p>
+                  </div>
+                </div>
+                <div className="mt-7 flex justify-end">
+                  <button
+                    type="button"
+                    autoFocus
+                    onClick={() => setSessionAutoEndConfirmation(null)}
+                    className="min-h-11 min-w-20 rounded-xl bg-[#D71920] px-5 text-sm font-semibold text-white transition-colors hover:bg-[#B5121B]"
+                  >OK</button>
+                </div>
+              </section>
+            </div>
+          )}
       {sessionConfirmation && (
         <div
           className="fixed inset-0 z-[70] flex items-center justify-center bg-[#211D1C]/45 p-4 backdrop-blur-sm"
