@@ -2,7 +2,7 @@
 
 export const dynamic = 'force-dynamic'
 
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { useAuth, LoadingSpinner } from '@/components/providers'
 import Link from 'next/link'
@@ -11,19 +11,21 @@ export default function LoginPage() {
   const router = useRouter()
   const { supabase, user, loading } = useAuth()
 
-  // Handle null supabase
-  if (!supabase) {
-    return <p className="text-center text-sm text-[#171717]">Configuration error: Supabase not initialized.</p>
-  }
-
-  // Use non-null supabase reference
-  const supa = supabase
-
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [error, setError] = useState<string | null>(null)
   const [showResend, setShowResend] = useState(false)
   const [submitting, setSubmitting] = useState(false)
+
+  useEffect(() => {
+    if (!loading && user) router.replace('/dashboard')
+  }, [loading, router, user])
+
+  if (!supabase) {
+    return <p className="text-center text-sm text-[#171717]">Configuration error: Supabase not initialized.</p>
+  }
+
+  const supa = supabase
 
   async function handleGoogleSignIn() {
     setError(null)
@@ -47,12 +49,6 @@ export default function LoginPage() {
         : message)
       setSubmitting(false)
     }
-  }
-
-  // If already signed in, go to dashboard
-  if (user) {
-    router.push('/dashboard')
-    return <LoadingSpinner />
   }
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
@@ -81,8 +77,6 @@ export default function LoginPage() {
         return
       }
 
-      // Successful login
-      router.push('/dashboard')
     } catch (err: any) {
       setError(err.message || 'Login failed')
     } finally {
@@ -122,7 +116,7 @@ export default function LoginPage() {
     }
   }
 
-  if (loading) return <LoadingSpinner />
+  if (loading || user) return <LoadingSpinner />
 
   // If there's a resend message showing, include the resend button
   const resendSection = showResend && (

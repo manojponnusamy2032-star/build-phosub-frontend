@@ -33,6 +33,7 @@ type View = 'sessions' | 'reports' | 'squads' | 'profile'
 type SessionConfirmation =
   | { action: 'start'; squad: string }
   | { action: 'end'; sessionId: string; squad: string; starterName?: string }
+  | { action: 'delete'; sessionId: string; squad: string }
 
 const squads = ['138', '139', '183']
 const navigation: { id: View; label: string; icon: LucideIcon }[] = [
@@ -105,6 +106,7 @@ export default function MentorPage() {
   const [selectedSquad, setSelectedSquad] = useState('')
   const [activeSquads, setActiveSquads] = useState<string[]>([])
   const [starting, setStarting] = useState(false)
+  const [deletingSession, setDeletingSession] = useState(false)
   const [sessionConfirmation, setSessionConfirmation] = useState<SessionConfirmation | null>(null)
   const [downloadingReport, setDownloadingReport] = useState(false)
   const [reportSessionId, setReportSessionId] = useState<string | null>(null)
@@ -221,6 +223,34 @@ export default function MentorPage() {
       setNotice(result.session?.squad ? `Session for Squad ${result.session.squad} ended successfully.` : 'Session ended successfully.')
     } catch (endError) {
       setError(endError instanceof Error ? endError.message : 'Failed to end session')
+    }
+  }
+
+  async function deleteSession(sessionId: string) {
+    setError('')
+    setNotice('')
+    setDeletingSession(true)
+    try {
+      const token = await getAccessToken()
+      if (!token) throw new Error('Your sign-in has expired. Please sign in again.')
+      const res = await fetch('/api/sessions', {
+        method: 'DELETE',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+        credentials: 'include',
+        body: JSON.stringify({ id: sessionId }),
+      })
+      const result = await res.json().catch(() => ({}))
+      if (!res.ok) throw new Error(result.error || 'Failed to delete session')
+      await loadData(false)
+      setReportSessionId((current) => current === sessionId ? null : current)
+      setNotice(`Session for Squad ${result.session.squad} and its handover history were deleted.`)
+    } catch (deleteError) {
+      setError(deleteError instanceof Error ? deleteError.message : 'Failed to delete session')
+    } finally {
+      setDeletingSession(false)
     }
   }
 
@@ -431,7 +461,20 @@ export default function MentorPage() {
                         <div className="min-w-0 flex-1">
                           <div className="flex flex-wrap items-center justify-between gap-2">
                             <h3 className="text-base font-semibold">Squad {session.squad}</h3>
-                            <SessionBadge status={session.status} />
+                            <div className="flex items-center gap-2">
+                              <SessionBadge status={session.status} />
+                              {session.status === 'ended' && (
+                                <button
+                                  type="button"
+                                  title={`Delete session for Squad ${session.squad}`}
+                                  aria-label={`Delete session for Squad ${session.squad}`}
+                                  onClick={() => setSessionConfirmation({ action: 'delete', sessionId: session.id, squad: session.squad })}
+                                  className="grid size-8 shrink-0 place-items-center rounded-lg border border-[#E9E0DE] text-[#7C3336] transition-colors hover:border-[#D71920] hover:bg-[#FCEBED] hover:text-[#B5121B] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#D71920]"
+                                >
+                                  <X size={15} aria-hidden="true" />
+                                </button>
+                              )}
+                            </div>
                           </div>
                           <p className="mt-1 inline-flex items-center gap-1.5 text-xs text-[#5F5755]">
                             <Clock3 size={13} /> {new Date(session.started_at).toLocaleString(undefined, { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' })}
@@ -805,12 +848,14 @@ export default function MentorPage() {
               </span>
               <div className="min-w-0 pt-0.5">
                 <h2 id="session-confirmation-title" className="text-lg font-semibold text-[#211D1C]">
-                  {sessionConfirmation.action === 'start' ? 'Start this session?' : 'End this session?'}
+                  {sessionConfirmation.action === 'start' ? 'Start this session?' : sessionConfirmation.action === 'delete' ? 'Delete this session?' : 'End this session?'}
                 </h2>
                 <p id="session-confirmation-description" className="mt-2 text-sm leading-6 text-[#6D6664]">
                   {sessionConfirmation.action === 'start'
                     ? `Start a phone handover session for Squad ${sessionConfirmation.squad}?`
-                    : `End the phone handover session for Squad ${sessionConfirmation.squad}?`}
+                    : sessionConfirmation.action === 'delete'
+                      ? `Permanently delete the ended session for Squad ${sessionConfirmation.squad}, including all handover data and history? This cannot be undone.`
+                      : `End the phone handover session for Squad ${sessionConfirmation.squad}?`}
                 </p>
                 {sessionConfirmation.action === 'end' && sessionConfirmation.starterName && (
                   <p className="mt-2 text-xs text-[#5F5755]">Started by {sessionConfirmation.starterName}</p>
@@ -826,15 +871,16 @@ export default function MentorPage() {
               >Cancel</button>
               <button
                 type="button"
-                disabled={starting}
+                disabled={starting || deletingSession}
                 onClick={() => {
                   const confirmation = sessionConfirmation
                   setSessionConfirmation(null)
                   if (confirmation.action === 'start') void startSession(confirmation.squad)
+                  else if (confirmation.action === 'delete') void deleteSession(confirmation.sessionId)
                   else void endSession(confirmation.sessionId)
                 }}
                 className="min-h-11 rounded-xl bg-[#D71920] px-4 text-sm font-semibold text-white transition-colors hover:bg-[#B5121B] disabled:cursor-not-allowed disabled:opacity-60"
-              >{sessionConfirmation.action === 'start' ? 'Start session' : 'End session'}</button>
+              >{sessionConfirmation.action === 'start' ? 'Start session' : sessionConfirmation.action === 'delete' ? deletingSession ? 'Deleting...' : 'Delete session' : 'End session'}</button>
             </div>
           </section>
         </div>
