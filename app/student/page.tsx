@@ -61,11 +61,18 @@ export default function StudentPage() {
   const [reasonStatus, setReasonStatus] = useState<HandoverStatus | null>(null)
   const [reason, setReason] = useState('')
   const [phoneModel, setPhoneModel] = useState('')
+  const [lastPhoneModel, setLastPhoneModel] = useState('')
 
   useEffect(() => {
     if (authLoading || !user) return
     loadData()
   }, [user, authLoading])
+
+  useEffect(() => {
+    if (!user) return
+    const savedPhoneModel = window.localStorage.getItem(`phosub:last-phone-model:${user.id}`)
+    if (savedPhoneModel) setLastPhoneModel(savedPhoneModel)
+  }, [user])
 
   async function loadData(showLoading = true) {
     if (showLoading) setLoading(true)
@@ -288,10 +295,26 @@ export default function StudentPage() {
                       autoComplete="off"
                       placeholder="For example, Samsung Galaxy A55"
                       value={phoneModel}
-                      onChange={(event) => setPhoneModel(event.target.value)}
+                      onChange={(event) => {
+                        const nextPhoneModel = event.target.value
+                        setPhoneModel(nextPhoneModel)
+                        const trimmedPhoneModel = nextPhoneModel.trim()
+                        if (trimmedPhoneModel && user) {
+                          setLastPhoneModel(trimmedPhoneModel)
+                          window.localStorage.setItem(`phosub:last-phone-model:${user.id}`, trimmedPhoneModel)
+                        }
+                      }}
                       disabled={Boolean(updatingStatus)}
                       className="mt-2 block min-h-11 w-full rounded-2xl border border-[#E5E5E5] bg-[#FFFFFF] px-3 py-2 text-sm focus:border-[#D71920] focus:ring-1 focus:ring-[#D71920] disabled:bg-[#E5E5E5]"
                     />
+                    {lastPhoneModel && lastPhoneModel !== phoneModel.trim() && (
+                      <button
+                        type="button"
+                        onClick={() => setPhoneModel(lastPhoneModel)}
+                        disabled={Boolean(updatingStatus)}
+                        className="mt-2 inline-flex min-h-10 max-w-full items-center rounded-xl border border-[#E9E0DE] bg-[#F8F5F4] px-3 text-left text-sm font-semibold text-[#525252] transition-colors hover:border-[#D71920] hover:bg-[#FCEBED] hover:text-[#B5121B] disabled:opacity-60"
+                      >Use last model: <span className="ml-1 truncate text-[#171717]">{lastPhoneModel}</span></button>
+                    )}
                     <p className="mt-1 text-right text-xs text-[#171717]">{phoneModel.length}/100</p>
                   </>
                 ) : (
