@@ -2,7 +2,7 @@
 export const dynamic = 'force-dynamic'
 
 import { useEffect, useState } from 'react'
-import { useRouter } from 'next/navigation'
+import { useRouter, useSearchParams } from 'next/navigation'
 import {
   CalendarDays,
   Check,
@@ -108,6 +108,7 @@ function ProgressRing({ percent }: { percent: number }) {
 
 export default function MentorPage() {
   const router = useRouter()
+  const searchParams = useSearchParams()
   const { user, loading: authLoading } = useAuth()
   const [sessions, setSessions] = useState<Session[]>([])
   const [handovers, setHandovers] = useState<Handover[]>([])
@@ -130,6 +131,14 @@ export default function MentorPage() {
   const [reportSessionId, setReportSessionId] = useState<string | null>(null)
   const [reportFilter, setReportFilter] = useState<'submitted' | 'not_submitted' | 'not_responded' | null>('submitted')
   const [activeView, setActiveView] = useState<View>('sessions')
+
+  useEffect(() => {
+    const requestedView = searchParams.get('view')
+    if (requestedView === 'reports' || requestedView === 'squads' || requestedView === 'profile' || requestedView === 'sessions') {
+      setActiveView(requestedView)
+      if (requestedView === 'reports') setReportSessionId(null)
+    }
+  }, [searchParams])
 
   useEffect(() => {
     if (authLoading || !user) return

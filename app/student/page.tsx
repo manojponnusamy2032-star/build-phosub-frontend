@@ -184,25 +184,25 @@ export default function StudentPage() {
       {isStudent && (
         <>
           <div className="lg:grid lg:grid-cols-[1.1fr_0.9fr] lg:items-start lg:gap-6">
-          <div className="dashboard-float-card mb-8 rounded-2xl border border-[#E5E5E5] bg-[#FFFFFF] p-6">
+          <div className="dashboard-float-card mb-5 rounded-2xl border border-[#E5E5E5] bg-[#FFFFFF] p-4 sm:mb-8 sm:p-6">
             <h2 className="mb-4 text-lg font-bold">Active Session</h2>
             {session && hasActiveSession ? (
-              <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-2">
-                <div className="rounded-2xl border border-[#E5E5E5] bg-[#FFFFFF] p-4">
+              <div className="grid grid-cols-2 gap-2.5 sm:gap-4 md:grid-cols-2 xl:grid-cols-2">
+                <div className="col-span-2 rounded-2xl border border-[#E5E5E5] bg-[#FFFFFF] p-3.5 sm:col-span-1 sm:p-4">
                   <p className="text-xs text-[#171717]">Session</p>
-                  <p className="font-semibold">{session.name || 'Phone handover'}</p>
+                  <p className="mt-1 break-words text-sm font-semibold sm:text-base">{session.name || 'Phone handover'}</p>
                 </div>
-                <div className="rounded-2xl border border-[#E5E5E5] bg-[#FFFFFF] p-4">
+                <div className="rounded-2xl border border-[#E5E5E5] bg-[#FFFFFF] p-3.5 sm:p-4">
                   <p className="text-xs text-[#171717]">Squad</p>
-                  <p className="font-semibold">{session.squad}</p>
+                  <p className="mt-1 font-semibold">{session.squad}</p>
                 </div>
-                <div className="rounded-2xl border border-[#E5E5E5] bg-[#FFFFFF] p-4">
+                <div className="rounded-2xl border border-[#E5E5E5] bg-[#FFFFFF] p-3.5 sm:p-4">
                   <p className="text-xs text-[#171717]">Status</p>
-                  <p className="font-semibold text-[#171717]">{session.status}</p>
+                  <p className="mt-1 font-semibold text-[#171717]">{session.status}</p>
                 </div>
-                <div className="rounded-2xl border border-[#E5E5E5] bg-[#FFFFFF] p-4">
+                <div className="col-span-2 rounded-2xl border border-[#E5E5E5] bg-[#FFFFFF] p-3.5 sm:col-span-1 sm:p-4">
                   <p className="text-xs text-[#171717]">Started</p>
-                  <p className="font-medium">{new Date(session.started_at).toLocaleString('en-IN', { timeZone: 'Asia/Kolkata', hour12: true })}</p>
+                  <p className="mt-1 text-sm font-medium sm:text-base">{new Date(session.started_at).toLocaleString('en-IN', { timeZone: 'Asia/Kolkata', hour12: true })}</p>
                 </div>
               </div>
             ) : (
@@ -212,7 +212,7 @@ export default function StudentPage() {
               </div>
             )}
           </div>
-          <div className="dashboard-float-card mb-8 rounded-2xl border border-[#E5E5E5] bg-[#FFFFFF] p-6">
+          <div className="dashboard-float-card mb-5 rounded-2xl border border-[#E5E5E5] bg-[#FFFFFF] p-4 sm:mb-8 sm:p-6">
             <h2 className="mb-4 text-lg font-bold">Your Phone Handover</h2>
             {handovers.length > 0 ? (
               <div className="space-y-3">
@@ -235,7 +235,7 @@ export default function StudentPage() {
             ) : (
               <p className="text-[#171717]">No handover submitted yet.</p>
             )}
-            <div id="handover-actions" className="mt-6 flex flex-wrap gap-3 scroll-mt-24">
+            <div id="handover-actions" className="mt-5 grid grid-cols-1 gap-2 scroll-mt-24 sm:mt-6 sm:flex sm:flex-wrap sm:gap-3">
               <button
                 type="button"
                 onClick={() => {
@@ -245,7 +245,7 @@ export default function StudentPage() {
                   setNotice('')
                 }}
                 disabled={!hasActiveSession || Boolean(updatingStatus)}
-                className="min-h-11 rounded-2xl bg-[#D71920] px-4 py-2 font-semibold text-white transition-colors hover:bg-[#D71920] "
+                className="min-h-11 rounded-2xl bg-[#D71920] px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-[#D71920] sm:text-base"
               >
                 Mark Submitted
               </button>
@@ -258,7 +258,7 @@ export default function StudentPage() {
                   setNotice('')
                 }}
                 disabled={!hasActiveSession || Boolean(updatingStatus)}
-                className="min-h-11 rounded-2xl border border-[#E5E5E5] bg-[#FFFFFF] px-4 py-2 font-semibold text-[#171717] transition-colors hover:border-[#171717] hover:bg-[#FFFFFF] "
+                className="min-h-11 rounded-2xl border border-[#E5E5E5] bg-[#FFFFFF] px-4 py-2 text-sm font-semibold text-[#171717] transition-colors hover:border-[#171717] hover:bg-[#FFFFFF] sm:text-base"
               >
                 Mark Not Submitted
               </button>
@@ -271,14 +271,14 @@ export default function StudentPage() {
                   setNotice('')
                 }}
                 disabled={!hasActiveSession || Boolean(updatingStatus)}
-                className="min-h-11 rounded-2xl border border-[#E5E5E5] bg-[#FFFFFF] px-4 py-2 font-semibold text-[#171717] transition-colors hover:border-[#171717] hover:bg-[#FFFFFF] "
+                className="min-h-11 rounded-2xl border border-[#E5E5E5] bg-[#FFFFFF] px-4 py-2 text-sm font-semibold text-[#171717] transition-colors hover:border-[#171717] hover:bg-[#FFFFFF] sm:text-base"
               >
                 Mark Retrieved
               </button>
             </div>
             {reasonStatus && (
               <form
-                className="mt-5 max-w-xl rounded-2xl border border-[#E5E5E5] bg-[#FFFFFF] p-4"
+                className="mt-4 max-w-xl rounded-2xl border border-[#E5E5E5] bg-[#FFFFFF] p-3.5 sm:mt-5 sm:p-4"
                 onSubmit={(event) => {
                   event.preventDefault()
                   void updateHandover(reasonStatus, reason, phoneModel)
@@ -361,7 +361,7 @@ export default function StudentPage() {
             )}
           </div>
           </div>
-          <div className="dashboard-float-card rounded-2xl border border-[#E5E5E5] bg-[#FFFFFF] p-6">
+          <div className="dashboard-float-card rounded-2xl border border-[#E5E5E5] bg-[#FFFFFF] p-4 sm:p-6">
             <div className="mb-4 flex items-center justify-between">
               <h2 className="text-lg font-bold">Recent Activity</h2>
               <Link href="/student/history" className="text-sm font-semibold text-[#171717] hover:underline">

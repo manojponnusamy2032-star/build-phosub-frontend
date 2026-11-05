@@ -60,7 +60,7 @@ export default function StudentLayout({ children }: { children: React.ReactNode 
       <div className="dashboard-web-content min-w-0">
         <TopBar name={profile?.full_name || user.email || 'Student'} avatarUrl={profile?.avatar_url} profileHref="/student/profile" />
 
-        <main className="dashboard-web-main mx-auto max-w-6xl px-5 py-8 pb-[calc(6rem+env(safe-area-inset-bottom))] lg:max-w-none lg:px-8 xl:px-10">
+        <main className="dashboard-web-main mx-auto max-w-6xl px-4 py-5 pb-[calc(6rem+env(safe-area-inset-bottom))] sm:px-5 sm:py-8 lg:max-w-none lg:px-8 xl:px-10">
           {children}
           <DashboardFooter />
         </main>
