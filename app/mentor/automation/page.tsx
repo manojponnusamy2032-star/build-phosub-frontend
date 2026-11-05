@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { CheckCircle2, ChevronDown, Clock3, Plus, Trash2, Zap } from 'lucide-react'
+import { CalendarDays, ChartNoAxesColumn, CheckCircle2, ChevronDown, ClipboardCheck, Clock3, Plus, Trash2, UserRound, UsersRound, Zap } from 'lucide-react'
 import { LoadingSpinner, useAuth } from '@/components/providers'
 import { getAccessToken } from '@/lib/supabase/auth-token'
 import { createClient as createSupabaseClient } from '@/lib/supabase/client'
@@ -11,12 +11,15 @@ import { DashboardFooter } from '@/components/site-footer'
 
 const squads = ['138', '139', '183']
 const weekDays = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday']
+const hourOptions = Array.from({ length: 12 }, (_, index) => { const value = String(index + 1); return { value, label: value } })
+const minuteOptions = Array.from({ length: 12 }, (_, index) => { const value = String(index * 5).padStart(2, '0'); return { value, label: `:${value}` } })
+const periodOptions = [{ value: 'AM', label: 'AM' }, { value: 'PM', label: 'PM' }]
 const navigation = [
-  { id: 'sessions', href: '/mentor', label: 'Sessions', icon: Clock3 },
-  { id: 'reports', href: '/mentor?view=reports', label: 'Reports', icon: CheckCircle2 },
-  { id: 'squads', href: '/mentor?view=squads', label: 'Squads', icon: Zap },
-  { id: 'automation', href: '/mentor/automation', label: 'Automation', icon: Clock3 },
-  { id: 'profile', href: '/mentor?view=profile', label: 'Profile', icon: Zap },
+  { id: 'sessions', href: '/mentor', label: 'Sessions', icon: ClipboardCheck },
+  { id: 'reports', href: '/mentor?view=reports', label: 'Reports', icon: ChartNoAxesColumn },
+  { id: 'squads', href: '/mentor?view=squads', label: 'Squads', icon: UsersRound },
+  { id: 'automation', href: '/mentor/automation', label: 'Automation', icon: CalendarDays },
+  { id: 'profile', href: '/mentor?view=profile', label: 'Profile', icon: UserRound },
 ]
 
 type Schedule = {
@@ -66,12 +69,13 @@ function DarkPicker({ ariaLabel, value, options, onChange }: { ariaLabel: string
   const selectedOption = options.find((option) => option.value === value)
 
   useEffect(() => {
+    if (!open) return
     const closePicker = (event: MouseEvent) => {
       if (!pickerRef.current?.contains(event.target as Node)) setOpen(false)
     }
     document.addEventListener('mousedown', closePicker)
     return () => document.removeEventListener('mousedown', closePicker)
-  }, [])
+  }, [open])
 
   return (
     <div ref={pickerRef} className="relative min-w-0">
@@ -79,7 +83,7 @@ function DarkPicker({ ariaLabel, value, options, onChange }: { ariaLabel: string
         <span className="truncate">{selectedOption?.label}</span>
         <ChevronDown size={14} className={`shrink-0 transition-transform ${open ? 'rotate-180' : ''}`} />
       </button>
-      {open && <div role="listbox" aria-label={ariaLabel} className="absolute inset-x-0 top-[calc(100%+6px)] z-30 max-h-56 overflow-y-auto rounded-xl border border-white/20 bg-[#302B2A] p-1 shadow-[0_16px_30px_rgba(0,0,0,0.3)]">{options.map((option) => <button key={option.value} type="button" role="option" aria-selected={value === option.value} onClick={() => { onChange(option.value); setOpen(false) }} className={`block w-full rounded-lg px-2.5 py-2 text-left text-sm transition-colors ${value === option.value ? 'bg-[#F7DADD] font-semibold text-[#8F1D24]' : 'text-[#F4E9E7] hover:bg-white/10'}`}>{option.label}</button>)}</div>}
+      {open && <div role="listbox" aria-label={ariaLabel} className="absolute inset-x-0 top-[calc(100%+6px)] z-30 max-h-56 touch-pan-y overflow-y-auto overscroll-contain rounded-xl border border-white/20 bg-[#302B2A] p-1 shadow-[0_16px_30px_rgba(0,0,0,0.3)]">{options.map((option) => <button key={option.value} type="button" role="option" aria-selected={value === option.value} onClick={() => { onChange(option.value); setOpen(false) }} className={`block min-h-11 w-full rounded-lg px-2.5 py-2 text-left text-sm transition-colors ${value === option.value ? 'bg-[#F7DADD] font-semibold text-[#8F1D24]' : 'text-[#F4E9E7] hover:bg-white/10'}`}>{option.label}</button>)}</div>}
     </div>
   )
 }
@@ -94,12 +98,13 @@ function RecurrencePicker({ value, onChange }: { value: FormState['recurrence'];
   ]
 
   useEffect(() => {
+    if (!open) return
     const closePicker = (event: MouseEvent) => {
       if (!pickerRef.current?.contains(event.target as Node)) setOpen(false)
     }
     document.addEventListener('mousedown', closePicker)
     return () => document.removeEventListener('mousedown', closePicker)
-  }, [])
+  }, [open])
 
   return (
     <div ref={pickerRef} className="relative text-xs font-semibold text-[#F4E9E7]">
@@ -118,12 +123,13 @@ function SquadPicker({ value, onChange }: { value: string; onChange: (value: str
   const pickerRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
+    if (!open) return
     const closePicker = (event: MouseEvent) => {
       if (!pickerRef.current?.contains(event.target as Node)) setOpen(false)
     }
     document.addEventListener('mousedown', closePicker)
     return () => document.removeEventListener('mousedown', closePicker)
-  }, [])
+  }, [open])
 
   return (
     <div ref={pickerRef} className="relative text-xs font-semibold text-[#F4E9E7]">
@@ -148,9 +154,9 @@ function TimePicker({ label, value, onChange }: { label: string; value: string; 
     <fieldset className="min-w-0">
       <legend className="text-xs font-semibold text-[#F4E9E7]">{label}</legend>
       <div className="mt-1.5 grid grid-cols-[1fr_1fr_auto] gap-1.5">
-        <DarkPicker ariaLabel={`${label} hour`} value={parts.hour} options={Array.from({ length: 12 }, (_, index) => { const hour = String(index + 1); return { value: hour, label: hour } })} onChange={(hour) => update('hour', hour)} />
-        <DarkPicker ariaLabel={`${label} minute`} value={parts.minute} options={Array.from({ length: 60 }, (_, minute) => { const value = String(minute).padStart(2, '0'); return { value, label: `:${value}` } })} onChange={(minute) => update('minute', minute)} />
-        <DarkPicker ariaLabel={`${label} AM or PM`} value={parts.period} options={[{ value: 'AM', label: 'AM' }, { value: 'PM', label: 'PM' }]} onChange={(period) => update('period', period)} />
+        <DarkPicker ariaLabel={`${label} hour`} value={parts.hour} options={hourOptions} onChange={(hour) => update('hour', hour)} />
+        <DarkPicker ariaLabel={`${label} minute`} value={parts.minute} options={minuteOptions} onChange={(minute) => update('minute', minute)} />
+        <DarkPicker ariaLabel={`${label} AM or PM`} value={parts.period} options={periodOptions} onChange={(period) => update('period', period)} />
       </div>
     </fieldset>
   )
@@ -161,6 +167,7 @@ export default function MentorAutomationPage() {
   const { user, loading: authLoading } = useAuth()
   const [profile, setProfile] = useState<{ full_name: string; avatar_url: string | null } | null>(null)
   const [schedules, setSchedules] = useState<Schedule[]>([])
+  const [schedulesLoading, setSchedulesLoading] = useState(true)
   const [form, setForm] = useState<FormState>(emptyForm)
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
@@ -188,22 +195,24 @@ export default function MentorAutomationPage() {
   async function loadPage() {
     setLoading(true)
     try {
-      const [profileResponse, schedulesResponse] = await Promise.all([
-        authorizedFetch('/api/profile'),
-        authorizedFetch('/api/session-automation/schedules'),
-      ])
+      const profileResponse = await authorizedFetch('/api/profile')
       const profileData = await profileResponse.json()
-      const schedulesData = await schedulesResponse.json()
       if (!profileResponse.ok) throw new Error(profileData.error || 'Unable to load your profile')
-      if (!schedulesResponse.ok) throw new Error(schedulesData.error || 'Unable to load automation schedules')
       if (profileData.profile?.role !== 'mentor') throw new Error('Only mentors can manage automation schedules')
       setProfile(profileData.profile)
-      setSchedules(schedulesData.schedules ?? [])
       setError('')
+      setLoading(false)
+
+      setSchedulesLoading(true)
+      const schedulesResponse = await authorizedFetch('/api/session-automation/schedules')
+      const schedulesData = await schedulesResponse.json()
+      if (!schedulesResponse.ok) throw new Error(schedulesData.error || 'Unable to load automation schedules')
+      setSchedules(schedulesData.schedules ?? [])
+      setSchedulesLoading(false)
     } catch (loadError) {
       setError(loadError instanceof Error ? loadError.message : 'Unable to load automation schedules')
-    } finally {
       setLoading(false)
+      setSchedulesLoading(false)
     }
   }
 
@@ -313,11 +322,11 @@ export default function MentorAutomationPage() {
             <section className="grid gap-5 md:grid-cols-3">
               {squads.map((squad) => {
                 const squadSchedules = schedules.filter((schedule) => schedule.squad === squad)
-                return <article key={squad} className="rounded-[22px] border border-[#E9E0DE] bg-white p-5 shadow-[0_12px_30px_rgba(54,22,22,0.06)]"><div className="flex items-start justify-between gap-3"><div><p className="text-xs font-bold uppercase tracking-[0.14em] text-[#8F1D24]">Schedule group</p><h2 className="mt-1 text-xl font-bold">Squad {squad}</h2></div><span className="rounded-full bg-[#F8F5F4] px-2.5 py-1 text-xs font-semibold text-[#5F5755]">{squadSchedules.length} {squadSchedules.length === 1 ? 'window' : 'windows'}</span></div><div className="mt-5 space-y-3">{squadSchedules.length === 0 ? <p className="rounded-xl border border-dashed border-[#E9E0DE] px-3 py-5 text-center text-sm text-[#7C7471]">No automated windows yet.</p> : squadSchedules.map((schedule) => <div key={schedule.id} className="rounded-2xl border border-[#EFE8E6] bg-[#FCFBFA] p-3.5"><div className="flex items-center justify-between gap-3"><div className="flex items-center gap-2 text-sm font-bold"><Clock3 size={16} className="text-[#B5121B]" />{displayTime(schedule.start_time)} <span className="font-normal text-[#9A918E]">to</span> {displayTime(schedule.stop_time)}</div><button type="button" aria-label={`${schedule.enabled ? 'Disable' : 'Enable'} Squad ${squad} schedule`} onClick={() => void toggleSchedule(schedule)} disabled={updatingId === schedule.id} className={`relative h-6 w-11 rounded-full transition-colors ${schedule.enabled ? 'bg-[#D71920]' : 'bg-[#D7D1CF]'}`}><span className={`absolute top-1 size-4 rounded-full bg-white transition-transform ${schedule.enabled ? 'translate-x-6' : 'translate-x-1'}`} /></button></div><div className="mt-3 flex items-center justify-between gap-3"><span className={`text-xs font-semibold ${schedule.enabled ? 'text-[#285C36]' : 'text-[#7C7471]'}`}>{schedule.enabled ? recurrenceLabel(schedule) : 'Paused'}</span><button type="button" aria-label={`Delete Squad ${squad} schedule`} onClick={() => void deleteSchedule(schedule)} disabled={deletingId === schedule.id} className="inline-flex items-center gap-1.5 text-xs font-semibold text-[#8F1D24] hover:text-[#D71920] disabled:opacity-50"><Trash2 size={14} /> Remove</button></div></div>)}</div></article>
+                return <article key={squad} className="rounded-[22px] border border-[#E9E0DE] bg-white p-5 shadow-[0_12px_30px_rgba(54,22,22,0.06)]"><div className="flex items-start justify-between gap-3"><div><p className="text-xs font-bold uppercase tracking-[0.14em] text-[#8F1D24]">Schedule group</p><h2 className="mt-1 text-xl font-bold">Squad {squad}</h2></div><span className="rounded-full bg-[#F8F5F4] px-2.5 py-1 text-xs font-semibold text-[#5F5755]">{squadSchedules.length} {squadSchedules.length === 1 ? 'window' : 'windows'}</span></div><div className="mt-5 space-y-3">{schedulesLoading ? <p className="rounded-xl border border-dashed border-[#E9E0DE] px-3 py-5 text-center text-sm text-[#7C7471]">Loading windows...</p> : squadSchedules.length === 0 ? <p className="rounded-xl border border-dashed border-[#E9E0DE] px-3 py-5 text-center text-sm text-[#7C7471]">No automated windows yet.</p> : squadSchedules.map((schedule) => <div key={schedule.id} className="rounded-2xl border border-[#EFE8E6] bg-[#FCFBFA] p-3.5"><div className="flex items-center justify-between gap-3"><div className="flex items-center gap-2 text-sm font-bold"><Clock3 size={16} className="text-[#B5121B]" />{displayTime(schedule.start_time)} <span className="font-normal text-[#9A918E]">to</span> {displayTime(schedule.stop_time)}</div><button type="button" aria-label={`${schedule.enabled ? 'Disable' : 'Enable'} Squad ${squad} schedule`} onClick={() => void toggleSchedule(schedule)} disabled={updatingId === schedule.id} className={`relative h-6 w-11 rounded-full transition-colors ${schedule.enabled ? 'bg-[#D71920]' : 'bg-[#D7D1CF]'}`}><span className={`absolute top-1 size-4 rounded-full bg-white transition-transform ${schedule.enabled ? 'translate-x-6' : 'translate-x-1'}`} /></button></div><div className="mt-3 flex items-center justify-between gap-3"><span className={`text-xs font-semibold ${schedule.enabled ? 'text-[#285C36]' : 'text-[#7C7471]'}`}>{schedule.enabled ? recurrenceLabel(schedule) : 'Paused'}</span><button type="button" aria-label={`Delete Squad ${squad} schedule`} onClick={() => void deleteSchedule(schedule)} disabled={deletingId === schedule.id} className="inline-flex items-center gap-1.5 text-xs font-semibold text-[#8F1D24] hover:text-[#D71920] disabled:opacity-50"><Trash2 size={14} /> Remove</button></div></div>)}</div></article>
               })}
             </section>
+            <DashboardFooter />
           </main>
-          <DashboardFooter />
         </div>
       </div>
       {automationCreatedConfirmation && (

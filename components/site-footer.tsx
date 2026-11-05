@@ -54,9 +54,9 @@ export default function SiteFooter() {
   )
 }
 
-export function DashboardFooter() {
+export function DashboardFooter({ className = '' }: { className?: string }) {
   return (
-    <footer className="mt-10 rounded-[28px] border border-white/90 bg-white/85 p-6 shadow-[0_16px_40px_rgba(39,31,29,0.12)] backdrop-blur-xl sm:p-8 lg:p-10">
+    <footer className={`mt-10 shrink-0 rounded-[28px] border border-white/90 bg-white/85 p-6 shadow-[0_16px_40px_rgba(39,31,29,0.12)] backdrop-blur-xl sm:p-8 lg:p-10 ${className}`}>
       <div className="grid gap-8 sm:grid-cols-2 lg:grid-cols-[1.5fr_repeat(3,minmax(0,1fr))] lg:gap-10">
         <div>
           <a href="/" className="text-xl font-bold tracking-tight text-[#171717]">phosub</a>
