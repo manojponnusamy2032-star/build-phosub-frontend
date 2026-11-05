@@ -4,7 +4,7 @@ export const dynamic = 'force-dynamic'
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
-import { Activity, CalendarDays, Check, Clock3, RotateCcw, Smartphone, UsersRound, X } from 'lucide-react'
+import { AlertCircle, Calendar, CheckCircle2, Phone, Play, UserCheck } from 'lucide-react'
 import { useAuth, LoadingSpinner } from '@/components/providers'
 import { createClient as createSupabaseClient } from '@/lib/supabase/client'
 import { getAccessToken } from '@/lib/supabase/auth-token'
@@ -12,6 +12,41 @@ import { getAccessToken } from '@/lib/supabase/auth-token'
 type Session = { id: string; squad: string; name: string; status: string; started_at: string }
 type Handover = { id: string; status: string; reason: string | null; phone_model: string | null; updated_at: string }
 type HandoverStatus = 'submitted' | 'not_submitted' | 'retrieved'
+
+function StatCard({ title, value, subtitle, icon: Icon }: { title: string; value: string | number; subtitle: string; icon: React.ComponentType<{ className?: string }> }) {
+  return (
+    <div className="rounded-2xl border border-[#E5E5E5] bg-[#FFFFFF] p-4">
+      <div className="flex items-center justify-between">
+        <div>
+          <p className="text-xs font-semibold text-[#5F5755] uppercase tracking-[0.12em]">{title}</p>
+          <p className="mt-1 text-2xl font-bold text-[#171717]">{value}</p>
+          <p className="mt-0.5 text-xs text-[#5F5755]">{subtitle}</p>
+        </div>
+        <div className="size-8 rounded-full bg-[#F5F5F5] flex items-center justify-center text-[#D71920]">
+          <Icon className="size-4" />
+        </div>
+      </div>
+    </div>
+  )
+}
+
+function ProgressRing({ percent }: { percent: number }) {
+  const radius = 42
+  const circumference = 2 * Math.PI * radius
+  const offset = circumference - (percent / 100) * circumference
+  return (
+    <div className="relative size-32">
+      <svg className="size-full transform -rotate-90">
+        <circle cx={radius} cy={radius} r={radius} stroke="#E5E5E5" strokeWidth="10" fill="none" />
+        <circle cx={radius} cy={radius} r={radius} stroke="#D71920" strokeWidth="10" fill="none" strokeDasharray={circumference} strokeDashoffset={offset} strokeLinecap="round" className="transition-all duration-700 ease-out" />
+      </svg>
+      <div className="absolute inset-0 flex flex-col items-center justify-center">
+        <span className="text-2xl font-bold text-[#171717]">{percent}%</span>
+        <span className="text-xs text-[#5F5755]">of squad submitted</span>
+      </div>
+    </div>
+  )
+}
 
 export default function StudentPage() {
   const router = useRouter()
@@ -26,11 +61,18 @@ export default function StudentPage() {
   const [reasonStatus, setReasonStatus] = useState<HandoverStatus | null>(null)
   const [reason, setReason] = useState('')
   const [phoneModel, setPhoneModel] = useState('')
+  const [lastPhoneModel, setLastPhoneModel] = useState('')
 
   useEffect(() => {
     if (authLoading || !user) return
     loadData()
   }, [user, authLoading])
+
+  useEffect(() => {
+    if (!user) return
+    const savedPhoneModel = window.localStorage.getItem(`phosub:last-phone-model:${user.id}`)
+    if (savedPhoneModel) setLastPhoneModel(savedPhoneModel)
+  }, [user])
 
   async function loadData(showLoading = true) {
     if (showLoading) setLoading(true)
@@ -106,12 +148,12 @@ export default function StudentPage() {
 
   if (!user) {
     return (
-      <div className="max-w-md rounded-xl border border-[#D3CCC7] bg-[#EFEEE8] p-6 text-center">
-        <h2 className="mb-2 text-lg font-bold text-[#000000]">Not signed in</h2>
-        <p className="mb-4 text-sm text-[#000000]">Please sign in to access your dashboard.</p>
+      <div className="max-w-md rounded-2xl border border-[#E5E5E5] bg-[#FFFFFF] p-6 text-center">
+        <h2 className="mb-2 text-lg font-bold text-[#171717]">Not signed in</h2>
+        <p className="mb-4 text-sm text-[#171717]">Please sign in to access your dashboard.</p>
         <button
           onClick={() => router.push('/login')}
-          className="w-full py-2 rounded-lg bg-[#EF0606] text-[#000000] font-semibold hover:bg-[#EF0606] transition-colors"
+          className="w-full py-2 rounded-2xl bg-[#D71920] text-white font-semibold hover:bg-[#D71920] transition-colors"
         >
           Go to Sign In
         </button>
@@ -125,132 +167,118 @@ export default function StudentPage() {
   return (
     <>
       {notice && (
-        <div role="status" aria-live="polite" className="mb-6 rounded-lg border border-[#D3CCC7] bg-[#D3CCC7] p-4 text-sm text-[#000000]">
+        <div role="status" aria-live="polite" className="mb-6 rounded-2xl border border-[#E5E5E5] bg-[#E5E5E5] p-4 text-sm text-[#171717]">
           {notice}
         </div>
       )}
       {error && (
-        <div role="alert" className="mb-6 rounded-lg border border-[#D3CCC7] bg-[#EFEEE8] p-4 text-sm text-[#000000]">
+        <div role="alert" className="mb-6 rounded-2xl border border-[#E5E5E5] bg-[#FFFFFF] p-4 text-sm text-[#171717]">
           {error}
         </div>
       )}
       {!isStudent && (
-        <div className="rounded-lg border border-[#D3CCC7] bg-[#EFEEE8] p-6">
-          <p className="text-[#000000]">Your account is not registered as a student.</p>
+        <div className="rounded-2xl border border-[#E5E5E5] bg-[#FFFFFF] p-6">
+          <p className="text-[#171717]">Your account is not registered as a student.</p>
         </div>
       )}
       {isStudent && (
         <>
-          <div className="mb-5">
-            <p className="text-xs font-semibold uppercase tracking-[0.12em] text-[#000000]">Student workspace · Squad {squad}</p>
-            <h1 className="mt-1 text-2xl font-bold leading-tight">Phone handover</h1>
-            <p className="mt-1 text-sm text-[#000000]">Your session and phone status at a glance.</p>
-          </div>
-          <section aria-labelledby="active-session-title" className="mb-5 rounded-3xl border border-[#D3CCC7] bg-white p-4 shadow-sm sm:p-5">
-            <div className="mb-4 flex items-center justify-between gap-3">
-              <div>
-                <p className="text-[11px] font-semibold uppercase tracking-[0.12em] text-[#000000]">Session overview</p>
-                <h2 id="active-session-title" className="mt-1 text-base font-bold">Active session</h2>
-              </div>
-              {session && hasActiveSession && (
-                <span className="inline-flex items-center gap-1.5 rounded-full bg-[#EF0606]/10 px-2.5 py-1 text-xs font-semibold text-[#000000]">
-                  <span className="size-1.5 rounded-full bg-[#EF0606]" /> Live
-                </span>
-              )}
-            </div>
+          <div className="lg:grid lg:grid-cols-[1.1fr_0.9fr] lg:items-start lg:gap-6">
+          <div className="dashboard-float-card mb-5 rounded-2xl border border-[#E5E5E5] bg-[#FFFFFF] p-4 sm:mb-8 sm:p-6">
+            <h2 className="mb-4 text-lg font-bold">Active Session</h2>
             {session && hasActiveSession ? (
-              <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
-                {[
-                  { label: 'Session', value: session.name || 'Phone handover', icon: Smartphone },
-                  { label: 'Squad', value: session.squad, icon: UsersRound },
-                  { label: 'Status', value: 'Active', icon: Activity },
-                  { label: 'Started', value: new Date(session.started_at).toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit' }), icon: Clock3 },
-                ].map(({ label, value, icon: Icon }) => (
-                  <div key={label} className="min-w-0 rounded-2xl border border-[#D3CCC7] bg-[#EFEEE8] p-3">
-                    <span className="mb-3 grid size-8 place-items-center rounded-xl bg-[#EF0606]/10 text-[#EF0606]">
-                      <Icon size={16} aria-hidden="true" />
-                    </span>
-                    <p className="text-[11px] font-medium text-[#000000]">{label}</p>
-                    <p className="mt-1 truncate text-sm font-bold">{value}</p>
-                  </div>
-                ))}
+              <div className="grid grid-cols-2 gap-2.5 sm:gap-4 md:grid-cols-2 xl:grid-cols-2">
+                <div className="col-span-2 rounded-2xl border border-[#E5E5E5] bg-[#FFFFFF] p-3.5 sm:col-span-1 sm:p-4">
+                  <p className="text-xs text-[#171717]">Session</p>
+                  <p className="mt-1 break-words text-sm font-semibold sm:text-base">{session.name || 'Phone handover'}</p>
+                </div>
+                <div className="rounded-2xl border border-[#E5E5E5] bg-[#FFFFFF] p-3.5 sm:p-4">
+                  <p className="text-xs text-[#171717]">Squad</p>
+                  <p className="mt-1 font-semibold">{session.squad}</p>
+                </div>
+                <div className="rounded-2xl border border-[#E5E5E5] bg-[#FFFFFF] p-3.5 sm:p-4">
+                  <p className="text-xs text-[#171717]">Status</p>
+                  <p className="mt-1 font-semibold text-[#171717]">{session.status}</p>
+                </div>
+                <div className="col-span-2 rounded-2xl border border-[#E5E5E5] bg-[#FFFFFF] p-3.5 sm:col-span-1 sm:p-4">
+                  <p className="text-xs text-[#171717]">Started</p>
+                  <p className="mt-1 text-sm font-medium sm:text-base">{new Date(session.started_at).toLocaleString('en-IN', { timeZone: 'Asia/Kolkata', hour12: true })}</p>
+                </div>
               </div>
             ) : (
-              <div className="rounded-2xl border border-dashed border-[#D3CCC7] bg-[#EFEEE8] p-5 text-center">
-                <p className="font-semibold text-[#000000]">No active session for your squad.</p>
-                <p className="mt-1 text-sm text-[#000000]">Status updates are disabled until a mentor starts a session.</p>
+              <div className="rounded-2xl border border-dashed border-[#E5E5E5] bg-[#FFFFFF] p-6 text-center">
+                <p className="font-semibold text-[#171717]">No active session for your squad.</p>
+                <p className="mt-1 text-sm text-[#171717]">Status updates are disabled until a mentor starts a session.</p>
               </div>
             )}
-          </section>
-          <section aria-labelledby="handover-title" className="mb-5 rounded-3xl border border-[#D3CCC7] bg-white p-4 shadow-sm sm:p-5">
-            <div className="mb-4 flex items-center justify-between gap-3">
-              <div>
-                <p className="text-[11px] font-semibold uppercase tracking-[0.12em] text-[#000000]">Your device</p>
-                <h2 id="handover-title" className="mt-1 text-base font-bold">Phone handover</h2>
-              </div>
-              {handovers[0] && (
-                <span className="max-w-[45%] truncate rounded-full bg-[#EFEEE8] px-3 py-1 text-xs font-semibold capitalize">
-                  {handovers[0].status.replaceAll('_', ' ')}
-                </span>
-              )}
-            </div>
+          </div>
+          <div className="dashboard-float-card mb-5 rounded-2xl border border-[#E5E5E5] bg-[#FFFFFF] p-4 sm:mb-8 sm:p-6">
+            <h2 className="mb-4 text-lg font-bold">Your Phone Handover</h2>
             {handovers.length > 0 ? (
-              <div className="grid grid-cols-2 gap-3">
-                <div className="rounded-2xl bg-[#EFEEE8] p-3">
-                  <p className="text-[11px] font-medium text-[#000000]">Phone model</p>
-                  <p className="mt-1 break-words text-sm font-semibold">{handovers[0].phone_model || 'Not entered'}</p>
-                </div>
-                <div className="rounded-2xl bg-[#EFEEE8] p-3">
-                  <p className="text-[11px] font-medium text-[#000000]">Last updated</p>
-                  <p className="mt-1 text-sm font-semibold">{new Date(handovers[0].updated_at).toLocaleString(undefined, { dateStyle: 'medium', timeStyle: 'short' })}</p>
+              <div className="space-y-3">
+                <div className="flex items-center justify-between px-4 py-3 rounded-2xl border border-[#E5E5E5] bg-[#FFFFFF]">
+                  <span className="text-sm font-semibold">Status</span>
+                  <span className="text-sm font-semibold">{handovers[0].status}</span>
                 </div>
                 {handovers[0].reason && (
-                  <div className="col-span-2 rounded-2xl bg-[#EFEEE8] p-3">
-                    <p className="text-[11px] font-medium text-[#000000]">Reason</p>
-                    <p className="mt-1 break-words text-sm">{handovers[0].reason}</p>
+                  <div className="px-4 py-3 rounded-2xl border border-[#E5E5E5] bg-[#FFFFFF]">
+                    <p className="text-sm text-[#171717]">{handovers[0].reason}</p>
+                  </div>
+                )}
+                {handovers[0].phone_model && (
+                  <div className="flex items-center justify-between gap-4 px-4 py-3 rounded-2xl border border-[#E5E5E5] bg-[#FFFFFF]">
+                    <span className="text-sm font-semibold">Phone model</span>
+                    <span className="text-right text-sm">{handovers[0].phone_model}</span>
                   </div>
                 )}
               </div>
             ) : (
-              <p className="rounded-2xl bg-[#EFEEE8] p-3 text-sm text-[#000000]">No handover status recorded yet.</p>
+              <p className="text-[#171717]">No handover submitted yet.</p>
             )}
-            <div className="mt-4 grid gap-2.5">
-              {[
-                { status: 'submitted' as const, title: 'Mark submitted', detail: 'Phone model required', icon: Check, primary: true },
-                { status: 'not_submitted' as const, title: 'Not submitted', detail: 'Add a reason for your status', icon: X, primary: false },
-                { status: 'retrieved' as const, title: 'Phone retrieved', detail: 'Update the handover record', icon: RotateCcw, primary: false },
-              ].map(({ status, title, detail, icon: Icon, primary }) => (
-                <div key={status} className="flex items-center justify-between gap-3 rounded-2xl border border-[#D3CCC7] bg-white p-3">
-                  <div className="flex min-w-0 items-center gap-3">
-                    <span className={`grid size-10 shrink-0 place-items-center rounded-xl ${primary ? 'bg-[#EF0606]/10 text-[#EF0606]' : 'bg-[#EFEEE8] text-[#000000]'}`}>
-                      <Icon size={18} aria-hidden="true" />
-                    </span>
-                    <span className="min-w-0">
-                      <span className="block text-sm font-semibold">{title}</span>
-                      <span className="block truncate text-xs text-[#000000]">{detail}</span>
-                    </span>
-                  </div>
-                  <button
-                    type="button"
-                    aria-label={`${title} status`}
-                    onClick={() => {
-                      setReasonStatus(status)
-                      if (status === 'submitted') setPhoneModel('')
-                      else setReason('')
-                      setError('')
-                      setNotice('')
-                    }}
-                    disabled={!hasActiveSession || Boolean(updatingStatus)}
-                    className={`min-h-10 shrink-0 rounded-xl px-3 text-xs font-semibold transition-all duration-200 active:scale-95 disabled:cursor-not-allowed disabled:opacity-50 ${primary ? 'bg-[#EF0606] text-[#000000]' : 'border border-[#D3CCC7] bg-[#EFEEE8] text-[#000000]'}`}
-                  >
-                    Update
-                  </button>
-                </div>
-              ))}
+            <div id="handover-actions" className="mt-5 grid grid-cols-1 gap-2 scroll-mt-24 sm:mt-6 sm:flex sm:flex-wrap sm:gap-3">
+              <button
+                type="button"
+                onClick={() => {
+                  setReasonStatus('submitted')
+                  setPhoneModel('')
+                  setError('')
+                  setNotice('')
+                }}
+                disabled={!hasActiveSession || Boolean(updatingStatus)}
+                className="min-h-11 rounded-2xl bg-[#D71920] px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-[#D71920] sm:text-base"
+              >
+                Mark Submitted
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setReasonStatus('not_submitted')
+                  setReason('')
+                  setError('')
+                  setNotice('')
+                }}
+                disabled={!hasActiveSession || Boolean(updatingStatus)}
+                className="min-h-11 rounded-2xl border border-[#E5E5E5] bg-[#FFFFFF] px-4 py-2 text-sm font-semibold text-[#171717] transition-colors hover:border-[#171717] hover:bg-[#FFFFFF] sm:text-base"
+              >
+                Mark Not Submitted
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setReasonStatus('retrieved')
+                  setReason('')
+                  setError('')
+                  setNotice('')
+                }}
+                disabled={!hasActiveSession || Boolean(updatingStatus)}
+                className="min-h-11 rounded-2xl border border-[#E5E5E5] bg-[#FFFFFF] px-4 py-2 text-sm font-semibold text-[#171717] transition-colors hover:border-[#171717] hover:bg-[#FFFFFF] sm:text-base"
+              >
+                Mark Retrieved
+              </button>
             </div>
             {reasonStatus && (
               <form
-                className="mt-4 rounded-2xl border border-[#D3CCC7] bg-[#EFEEE8] p-4"
+                className="mt-4 max-w-xl rounded-2xl border border-[#E5E5E5] bg-[#FFFFFF] p-3.5 sm:mt-5 sm:p-4"
                 onSubmit={(event) => {
                   event.preventDefault()
                   void updateHandover(reasonStatus, reason, phoneModel)
@@ -267,11 +295,27 @@ export default function StudentPage() {
                       autoComplete="off"
                       placeholder="For example, Samsung Galaxy A55"
                       value={phoneModel}
-                      onChange={(event) => setPhoneModel(event.target.value)}
+                      onChange={(event) => {
+                        const nextPhoneModel = event.target.value
+                        setPhoneModel(nextPhoneModel)
+                        const trimmedPhoneModel = nextPhoneModel.trim()
+                        if (trimmedPhoneModel && user) {
+                          setLastPhoneModel(trimmedPhoneModel)
+                          window.localStorage.setItem(`phosub:last-phone-model:${user.id}`, trimmedPhoneModel)
+                        }
+                      }}
                       disabled={Boolean(updatingStatus)}
-                      className="mt-2 block min-h-11 w-full rounded-lg border border-[#D3CCC7] bg-[#EFEEE8] px-3 py-2 text-sm focus:border-[#EF0606] focus:ring-1 focus:ring-[#EF0606] disabled:bg-[#D3CCC7]"
+                      className="mt-2 block min-h-11 w-full rounded-2xl border border-[#E5E5E5] bg-[#FFFFFF] px-3 py-2 text-sm focus:border-[#D71920] focus:ring-1 focus:ring-[#D71920] disabled:bg-[#E5E5E5]"
                     />
-                    <p className="mt-1 text-right text-xs text-[#000000]">{phoneModel.length}/100</p>
+                    {lastPhoneModel && lastPhoneModel !== phoneModel.trim() && (
+                      <button
+                        type="button"
+                        onClick={() => setPhoneModel(lastPhoneModel)}
+                        disabled={Boolean(updatingStatus)}
+                        className="mt-2 inline-flex min-h-10 max-w-full items-center rounded-xl border border-[#E9E0DE] bg-[#F8F5F4] px-3 text-left text-sm font-semibold text-[#525252] transition-colors hover:border-[#D71920] hover:bg-[#FCEBED] hover:text-[#B5121B] disabled:opacity-60"
+                      >Use last model: <span className="ml-1 truncate text-[#171717]">{lastPhoneModel}</span></button>
+                    )}
+                    <p className="mt-1 text-right text-xs text-[#171717]">{phoneModel.length}/100</p>
                   </>
                 ) : (
                   <>
@@ -286,16 +330,16 @@ export default function StudentPage() {
                       value={reason}
                       onChange={(event) => setReason(event.target.value)}
                       disabled={Boolean(updatingStatus)}
-                      className="mt-2 block w-full rounded-lg border border-[#D3CCC7] bg-[#EFEEE8] px-3 py-2 text-sm focus:border-[#EF0606] focus:ring-1 focus:ring-[#EF0606] disabled:bg-[#D3CCC7]"
+                      className="mt-2 block w-full rounded-2xl border border-[#E5E5E5] bg-[#FFFFFF] px-3 py-2 text-sm focus:border-[#D71920] focus:ring-1 focus:ring-[#D71920] disabled:bg-[#E5E5E5]"
                     />
-                    <p className="mt-1 text-right text-xs text-[#000000]">{reason.length}/500</p>
+                    <p className="mt-1 text-right text-xs text-[#171717]">{reason.length}/500</p>
                   </>
                 )}
                 <div className="mt-3 flex flex-wrap gap-2">
                   <button
                     type="submit"
                     disabled={Boolean(updatingStatus) || (reasonStatus === 'submitted' ? !phoneModel.trim() : !reason.trim())}
-                    className="min-h-11 rounded-lg bg-[#EF0606] px-4 text-sm font-semibold text-[#000000] hover:bg-[#EF0606] disabled:cursor-not-allowed"
+                    className="min-h-11 rounded-2xl bg-[#D71920] px-4 text-sm font-semibold text-white hover:bg-[#D71920] disabled:cursor-not-allowed"
                   >
                     {updatingStatus === reasonStatus ? 'Saving...' : reasonStatus === 'submitted' ? 'Confirm submission' : 'Save status'}
                   </button>
@@ -308,23 +352,24 @@ export default function StudentPage() {
                       setPhoneModel('')
                       setError('')
                     }}
-                    className="min-h-11 rounded-lg border border-[#D3CCC7] px-4 text-sm font-semibold hover:bg-[#EFEEE8] "
+                    className="min-h-11 rounded-2xl border border-[#E5E5E5] px-4 text-sm font-semibold hover:bg-[#FFFFFF] "
                   >
                     Cancel
                   </button>
                 </div>
               </form>
             )}
-          </section>
-          <section className="rounded-3xl border border-[#D3CCC7] bg-white p-4 shadow-sm sm:p-5">
+          </div>
+          </div>
+          <div className="dashboard-float-card rounded-2xl border border-[#E5E5E5] bg-[#FFFFFF] p-4 sm:p-6">
             <div className="mb-4 flex items-center justify-between">
               <h2 className="text-lg font-bold">Recent Activity</h2>
-              <Link href="/student/history" className="text-sm font-semibold text-[#000000] hover:underline">
+              <Link href="/student/history" className="text-sm font-semibold text-[#171717] hover:underline">
                 View full history
               </Link>
             </div>
             {handovers.length === 0 ? (
-              <p className="text-[#000000]">No handover activity yet.</p>
+              <p className="text-[#171717]">No handover activity yet.</p>
             ) : (
               <>
               <ul className="divide-y divide-[#D3CCC7] sm:hidden">
@@ -344,7 +389,7 @@ export default function StudentPage() {
               <div className="hidden overflow-x-auto sm:block">
               <div className="overflow-x-auto">
                 <table className="w-full text-left text-sm">
-                  <thead className="bg-[#EFEEE8] text-xs text-[#000000]">
+                  <thead className="bg-[#FFFFFF] text-xs text-[#171717]">
                     <tr>
                       <th className="px-4 py-3">Status</th>
                       <th className="px-4 py-3">Phone model</th>
@@ -354,11 +399,11 @@ export default function StudentPage() {
                   </thead>
                   <tbody>
                     {handovers.slice(0, 5).map((h) => (
-                      <tr key={h.id} className="border-t border-[#D3CCC7]">
+                      <tr key={h.id} className="border-t border-[#E5E5E5]">
                         <td className="px-4 py-3 font-semibold">{h.status}</td>
                         <td className="px-4 py-3">{h.phone_model || '—'}</td>
-                        <td className="px-4 py-3 text-[#000000]">{h.reason || '—'}</td>
-                        <td className="px-4 py-3 text-[#000000]">{new Date(h.updated_at).toLocaleString()}</td>
+                        <td className="px-4 py-3 text-[#171717]">{h.reason || '—'}</td>
+                        <td className="px-4 py-3 text-[#171717]">{new Date(h.updated_at).toLocaleString('en-IN', { timeZone: 'Asia/Kolkata', hour12: true })}</td>
                       </tr>
                     ))}
                   </tbody>
@@ -367,7 +412,7 @@ export default function StudentPage() {
               </div>
               </>
             )}
-          </section>
+          </div>
         </>
       )}
     </>

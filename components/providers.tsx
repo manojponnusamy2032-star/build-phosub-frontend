@@ -19,10 +19,10 @@ export function Providers({ children }: { children: ReactNode }) {
 
   if (!supabase) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-[#EFEEE8] p-6">
-        <div className="max-w-md rounded-xl border border-[#D3CCC7] bg-[#EFEEE8] p-6 text-center">
-          <h2 className="mb-2 text-lg font-bold text-[#000000]">Configuration Error</h2>
-          <p className="mb-4 text-sm text-[#000000]">Failed to initialize Supabase client. Make sure .env.local has NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_ANON_KEY set.</p>
+      <div className="min-h-screen flex items-center justify-center bg-[#FFFFFF] p-6">
+        <div className="max-w-md rounded-xl border border-[#E5E5E5] bg-[#FFFFFF] p-6 text-center">
+          <h2 className="mb-2 text-lg font-bold text-[#171717]">Configuration Error</h2>
+          <p className="mb-4 text-sm text-[#171717]">Failed to initialize Supabase client. Make sure .env.local has NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_ANON_KEY set.</p>
         </div>
       </div>
     )
@@ -82,13 +82,22 @@ export function useAuth() {
 
 export function LoadingSpinner() {
   return (
-    <div role="status" aria-live="polite" className="flex min-h-screen flex-col items-center justify-center gap-4 bg-[#EFEEE8]">
-      <span className="relative grid size-14 place-items-center">
-        <span aria-hidden="true" className="absolute inset-0 animate-spin rounded-full border-[3px] border-[#D3CCC7] border-t-[#EF0606]" />
-        <span aria-hidden="true" className="text-lg font-black text-[#000000]">K</span>
-      </span>
-      <span aria-hidden="true" className="text-sm font-black tracking-[0.18em] text-[#000000]">KALVIUM</span>
-      <span className="sr-only">Loading...</span>
+    <div role="status" aria-live="polite" className="loading-screen">
+      <section className="loading-card">
+        <div className="loading-emblem" aria-hidden="true">
+          <span className="loading-orbit loading-orbit-outer" />
+          <span className="loading-orbit loading-orbit-inner" />
+          <span className="loading-emblem-core">P</span>
+          <span className="loading-emblem-spark" />
+        </div>
+        <div className="loading-copy">
+          <p className="loading-label">Loading</p>
+        </div>
+        <div className="loading-progress" aria-hidden="true">
+          <span />
+        </div>
+        <span className="sr-only">Loading...</span>
+      </section>
     </div>
   )
 }

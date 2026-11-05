@@ -25,6 +25,8 @@ Do not commit `.env.local` or any file containing real credentials. The service-
 
 Review `supabase/schema.sql` before setting up a database. It is the repository's current schema definition, not an automatically applied migration. Apply database changes to a disposable local/test project first; this repository does not apply schema changes to a remote project automatically.
 
+The scheduled session auto-end feature requires the `20261105000100_auto_end_scheduled_sessions.sql` migration. It enables the Supabase `pg_cron` extension and ends active sessions for squads 138 and 139 at the listed Asia/Kolkata cutoff times. Mentors can pause or resume the shared automation from the Sessions view.
+
 Start the app:
 
 ```bash

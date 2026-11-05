@@ -21,10 +21,10 @@ export default async function DashboardPage() {
       message: profileError.message,
     })
     return (
-      <div className="min-h-screen flex items-center justify-center bg-[#EFEEE8] p-6">
-        <div className="max-w-md rounded-xl border border-[#D3CCC7] bg-[#EFEEE8] p-6 text-center">
+      <div className="min-h-screen flex items-center justify-center bg-[#FFFFFF] p-6">
+        <div className="max-w-md rounded-xl border border-[#E5E5E5] bg-[#FFFFFF] p-6 text-center">
           <h1 className="mb-2 text-lg font-bold">Could not load your profile</h1>
-          <p className="text-sm text-[#000000]">
+          <p className="text-sm text-[#171717]">
             Please try again in a moment. If the problem continues, contact your administrator.
           </p>
         </div>

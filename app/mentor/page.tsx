@@ -2,14 +2,15 @@
 export const dynamic = 'force-dynamic'
 
 import { useEffect, useState } from 'react'
-import { useRouter } from 'next/navigation'
+import { useRouter, useSearchParams } from 'next/navigation'
 import {
-  Bell,
-  ChartNoAxesColumn,
+  CalendarDays,
   Check,
-  ChevronDown,
-  Clock,
+  CheckCircle2,
+  ChartNoAxesColumn,
   ClipboardCheck,
+  Clock3,
+  CircleHelp,
   FileSpreadsheet,
   LogOut,
   Play,
@@ -21,23 +22,93 @@ import {
 import { useAuth, LoadingSpinner } from '@/components/providers'
 import { createClient as createSupabaseClient } from '@/lib/supabase/client'
 import { getAccessToken } from '@/lib/supabase/auth-token'
-import { ProfileAvatar, ProfilePhotoEditor } from '@/components/profile-photo'
+import { ProfilePhotoEditor } from '@/components/profile-photo'
+import { BottomNav, DashboardSidebar, TopBar } from '@/components/navigation/top-bar'
+import { DashboardFooter } from '@/components/site-footer'
 
-type Session = { id: string; squad: string; name: string; status: string; started_at: string; mentor_id: string; mentor_name?: string }
+type Session = { id: string; squad: string; name: string; status: string; started_at: string; ended_at: string | null; mentor_id: string; automation_schedule_id: string | null; mentor_name?: string }
 type Handover = { id: string; student_id: string; session_id: string; status: string; reason: string | null; phone_model: string | null; updated_at: string; student?: { full_name: string } }
 type StudentAccount = { id: string; full_name: string; squad: string | null; created_at: string }
-type View = 'sessions' | 'reports' | 'squads' | 'profile'
+type View = 'sessions' | 'reports' | 'squads' | 'automation' | 'profile'
+type SessionConfirmation =
+  | { action: 'start'; squad: string }
+  | { action: 'end'; sessionId: string; squad: string; starterName?: string }
+  | { action: 'delete'; sessionId: string; squad: string }
+
+function isAutomatedSession(session: Session) {
+  return Boolean(session.automation_schedule_id) || session.name.toLowerCase().includes('automated')
+}
+
+function formatSessionDate(value: string) {
+  return new Date(value).toLocaleDateString('en-IN', { timeZone: 'Asia/Kolkata', day: 'numeric', month: 'short', year: 'numeric' })
+}
+
+function formatSessionTime(value: string) {
+  return new Date(value).toLocaleTimeString('en-IN', { timeZone: 'Asia/Kolkata', hour: 'numeric', minute: '2-digit', hour12: true })
+}
 
 const squads = ['138', '139', '183']
-const navigation: { id: View; label: string; icon: LucideIcon }[] = [
+const navigation: { id: View; label: string; icon: LucideIcon; href?: string }[] = [
   { id: 'sessions', label: 'Sessions', icon: ClipboardCheck },
   { id: 'reports', label: 'Reports', icon: ChartNoAxesColumn },
   { id: 'squads', label: 'Squads', icon: UsersRound },
+  { id: 'automation', label: 'Automation', icon: CalendarDays, href: '/mentor/automation' },
   { id: 'profile', label: 'Profile', icon: UserRound },
 ]
 
+function SessionBadge({ status }: { status: string }) {
+  const variants: Record<string, string> = {
+    active: 'bg-[#D71920] text-white',
+    ended: 'bg-[#F5F5F5] text-[#5F5755]',
+  }
+  return (
+    <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold capitalize ${variants[status] || variants.ended}`}>
+      {status}
+    </span>
+  )
+}
+
+function HandoverBadge({ status }: { status: string }) {
+  const variants: Record<string, string> = {
+    submitted: 'bg-[#D71920] text-white',
+    not_submitted: 'bg-[#F5F5F5] text-[#5F5755]',
+    retrieved: 'bg-[#D71920] text-white',
+  }
+  return (
+    <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold capitalize ${variants[status] || variants.not_submitted}`}>
+      {status.replace('_', ' ')}
+    </span>
+  )
+}
+
+function ProgressRing({ percent }: { percent: number }) {
+  const radius = 34
+  const circumference = 2 * Math.PI * radius
+
+  return (
+    <div className="relative grid size-[88px] shrink-0 place-items-center" role="img" aria-label={`${percent}% of handovers submitted`}>
+      <svg className="size-full -rotate-90" viewBox="0 0 80 80" aria-hidden="true">
+        <circle cx="40" cy="40" r={radius} fill="none" stroke="rgba(255,255,255,.25)" strokeWidth="7" />
+        <circle
+          cx="40"
+          cy="40"
+          r={radius}
+          fill="none"
+          stroke="white"
+          strokeWidth="7"
+          strokeLinecap="round"
+          strokeDasharray={circumference}
+          strokeDashoffset={circumference * (1 - percent / 100)}
+        />
+      </svg>
+      <span className="absolute text-lg font-bold text-white">{percent}%</span>
+    </div>
+  )
+}
+
 export default function MentorPage() {
   const router = useRouter()
+  const searchParams = useSearchParams()
   const { user, loading: authLoading } = useAuth()
   const [sessions, setSessions] = useState<Session[]>([])
   const [handovers, setHandovers] = useState<Handover[]>([])
@@ -49,12 +120,25 @@ export default function MentorPage() {
   const [selectedSquad, setSelectedSquad] = useState('')
   const [activeSquads, setActiveSquads] = useState<string[]>([])
   const [starting, setStarting] = useState(false)
+  const [sessionAutoEndEnabled, setSessionAutoEndEnabled] = useState<boolean | null>(null)
+  const [sessionAutoEndError, setSessionAutoEndError] = useState('')
+  const [updatingSessionAutoEnd, setUpdatingSessionAutoEnd] = useState(false)
+  const [sessionAutoEndConfirmation, setSessionAutoEndConfirmation] = useState<boolean | null>(null)
+  const [centeredSessionNotice, setCenteredSessionNotice] = useState<{ title: string; message: string } | null>(null)
+  const [deletingSession, setDeletingSession] = useState(false)
+  const [sessionConfirmation, setSessionConfirmation] = useState<SessionConfirmation | null>(null)
   const [downloadingReport, setDownloadingReport] = useState(false)
   const [reportSessionId, setReportSessionId] = useState<string | null>(null)
-  const [reportFilter, setReportFilter] = useState<'submitted' | 'not_submitted' | 'not_responded' | null>(null)
+  const [reportFilter, setReportFilter] = useState<'submitted' | 'not_submitted' | 'not_responded' | null>('submitted')
   const [activeView, setActiveView] = useState<View>('sessions')
-  const [accountMenuOpen, setAccountMenuOpen] = useState(false)
-  const [notificationsOpen, setNotificationsOpen] = useState(false)
+
+  useEffect(() => {
+    const requestedView = searchParams.get('view')
+    if (requestedView === 'reports' || requestedView === 'squads' || requestedView === 'profile' || requestedView === 'sessions') {
+      setActiveView(requestedView)
+      if (requestedView === 'reports') setReportSessionId(null)
+    }
+  }, [searchParams])
 
   useEffect(() => {
     if (authLoading || !user) return
@@ -103,6 +187,21 @@ export default function MentorPage() {
       setHandovers(hand.handovers ?? [])
       setStudents(studentData.students ?? [])
       setError('')
+      if (prof.profile?.role === 'mentor') {
+        try {
+          const automationRes = await fetch('/api/session-automation', { credentials: 'include', headers })
+          const automation = await automationRes.json()
+          if (!automationRes.ok) throw new Error(automation.error || 'Unable to load session automation setting')
+          setSessionAutoEndEnabled(automation.enabled)
+          setSessionAutoEndError('')
+        } catch (automationError) {
+          setSessionAutoEndEnabled(null)
+          setSessionAutoEndError(automationError instanceof Error ? automationError.message : 'Unable to load session automation setting')
+        }
+      } else {
+        setSessionAutoEndEnabled(null)
+        setSessionAutoEndError('')
+      }
     } catch (err: any) {
       setError(err.message || 'Failed to load data')
     } finally {
@@ -110,8 +209,8 @@ export default function MentorPage() {
     }
   }
 
-  async function startSession() {
-    if (!selectedSquad) return
+  async function startSession(squad: string) {
+    if (!squad) return
     setError('')
     setNotice('')
     setStarting(true)
@@ -125,7 +224,7 @@ export default function MentorPage() {
           Authorization: `Bearer ${token}`,
         },
         credentials: 'include',
-        body: JSON.stringify({ squad: selectedSquad }),
+        body: JSON.stringify({ squad }),
       })
       const result = await response.json().catch(() => ({}))
       if (!response.ok) {
@@ -134,8 +233,8 @@ export default function MentorPage() {
         throw new Error(result.error || 'Unable to start session')
       }
       await loadData(false)
-      setActiveSquads((prev) => [...prev, selectedSquad].sort())
-      setNotice(`Session for Squad ${selectedSquad} started.`)
+      setActiveSquads((prev) => [...prev, squad].sort())
+      setCenteredSessionNotice({ title: 'Session started', message: `The manual session for Squad ${squad} has started successfully.` })
     } catch (startError) {
       setError(startError instanceof Error ? startError.message : 'Unable to start session')
     } finally {
@@ -145,10 +244,6 @@ export default function MentorPage() {
 
   async function endSession(sessionId: string) {
     const session = sessions.find((s) => s.id === sessionId)
-    if (session && user && session.mentor_id !== user.id) {
-      const starterName = session.mentor_name || 'another mentor'
-      if (!window.confirm(`This session was started by ${starterName}. Shall we stop it?`)) return
-    }
     setError('')
     setNotice('')
     try {
@@ -167,9 +262,63 @@ export default function MentorPage() {
       if (!res.ok) throw new Error(result.error || 'Failed to end session')
       await loadData(false)
       setActiveSquads((prev) => prev.filter((s) => s !== session?.squad))
-      setNotice(result.session?.squad ? `Session for Squad ${result.session.squad} ended.` : 'Session ended.')
+      const endedSquad = result.session?.squad || session?.squad
+      setCenteredSessionNotice({ title: 'Session stopped', message: endedSquad ? `The manual session for Squad ${endedSquad} has stopped successfully.` : 'The manual session has stopped successfully.' })
     } catch (endError) {
       setError(endError instanceof Error ? endError.message : 'Failed to end session')
+    }
+  }
+
+  async function toggleSessionAutoEnd() {
+    if (sessionAutoEndEnabled === null || updatingSessionAutoEnd) return
+    setError('')
+    setNotice('')
+    setUpdatingSessionAutoEnd(true)
+    try {
+      const token = await getAccessToken()
+      if (!token) throw new Error('Your sign-in has expired. Please sign in again.')
+      const response = await fetch('/api/session-automation', {
+        method: 'PATCH',
+        headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ enabled: !sessionAutoEndEnabled }),
+      })
+      const result = await response.json()
+      if (!response.ok) throw new Error(result.error || 'Unable to update session automation')
+      setSessionAutoEndEnabled(result.enabled)
+      setSessionAutoEndError('')
+      setSessionAutoEndConfirmation(result.enabled)
+    } catch (automationError) {
+      setError(automationError instanceof Error ? automationError.message : 'Unable to update session automation')
+    } finally {
+      setUpdatingSessionAutoEnd(false)
+    }
+  }
+
+  async function deleteSession(sessionId: string) {
+    setError('')
+    setNotice('')
+    setDeletingSession(true)
+    try {
+      const token = await getAccessToken()
+      if (!token) throw new Error('Your sign-in has expired. Please sign in again.')
+      const res = await fetch('/api/sessions', {
+        method: 'DELETE',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+        credentials: 'include',
+        body: JSON.stringify({ id: sessionId }),
+      })
+      const result = await res.json().catch(() => ({}))
+      if (!res.ok) throw new Error(result.error || 'Failed to delete session')
+      await loadData(false)
+      setReportSessionId((current) => current === sessionId ? null : current)
+      setNotice(`Session for Squad ${result.session.squad} and its handover history were deleted.`)
+    } catch (deleteError) {
+      setError(deleteError instanceof Error ? deleteError.message : 'Failed to delete session')
+    } finally {
+      setDeletingSession(false)
     }
   }
 
@@ -209,13 +358,13 @@ export default function MentorPage() {
 
   if (!user) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-[#EFEEE8] p-6">
-        <div className="max-w-md rounded-xl border border-[#D3CCC7] bg-[#EFEEE8] p-6 text-center">
-          <h2 className="mb-2 text-lg font-bold text-[#000000]">Not signed in</h2>
-          <p className="mb-4 text-sm text-[#000000]">Please sign in to access your dashboard.</p>
+      <div className="min-h-screen flex items-center justify-center bg-[#FFFFFF] p-6">
+        <div className="max-w-md rounded-2xl border border-[#E5E5E5] bg-[#FFFFFF] p-6 text-center">
+          <h2 className="mb-2 text-lg font-bold text-[#171717]">Not signed in</h2>
+          <p className="mb-4 text-sm text-[#171717]">Please sign in to access your dashboard.</p>
           <button
             onClick={() => router.push('/login')}
-            className="w-full py-2 rounded-lg bg-[#EF0606] text-[#000000] font-semibold hover:bg-[#EF0606] transition-colors"
+            className="w-full py-2 rounded-2xl bg-[#D71920] text-white font-semibold hover:bg-[#D71920] transition-colors"
           >
             Go to Sign In
           </button>
@@ -227,437 +376,273 @@ export default function MentorPage() {
   const isMentor = profile?.role === 'mentor'
   const email = user.email ?? ''
   const displayName = profile?.full_name?.trim() || email.split('@')[0]?.replace(/[._-]/g, ' ') || 'Mentor'
-  const activeTitle = navigation.find((item) => item.id === activeView)?.label ?? 'Sessions'
-  const activeSessionCount = sessions.filter((session) => session.status === 'active').length
-  const submittedHandoverCount = handovers.filter((handover) => handover.status === 'submitted').length
   const reportSession = sessions.find((session) => session.id === reportSessionId)
   const reportHandovers = reportSessionId
     ? handovers.filter((handover) => handover.session_id === reportSessionId)
     : handovers.slice(0, 10)
-
-  const sessionSquadStudents = reportSession
+  const reportStudents = reportSession
     ? students.filter((student) => student.squad === reportSession.squad)
     : []
-  const submittedStudentIds = new Set(
-    reportHandovers.filter((handover) => handover.status === 'submitted').map((handover) => handover.student_id)
-  )
-  const notSubmittedStudentIds = new Set(
-    reportHandovers.filter((handover) => handover.status !== 'submitted').map((handover) => handover.student_id)
-  )
-  const respondedStudentIds = new Set(reportHandovers.map((handover) => handover.student_id))
-  const submittedStudents = sessionSquadStudents.filter((student) => submittedStudentIds.has(student.id))
-  const notSubmittedStudents = sessionSquadStudents.filter((student) => notSubmittedStudentIds.has(student.id))
-  const notRespondedStudents = sessionSquadStudents.filter((student) => !respondedStudentIds.has(student.id))
+  const reportHandoversByStudent = new Map(reportHandovers.map((handover) => [handover.student_id, handover]))
+  const submittedStudents = reportStudents.filter((student) => reportHandoversByStudent.get(student.id)?.status === 'submitted')
+  const notSubmittedStudents = reportStudents.filter((student) => reportHandoversByStudent.get(student.id)?.status === 'not_submitted')
+  const notRespondedStudents = reportStudents.filter((student) => {
+    const handover = reportHandoversByStudent.get(student.id)
+    return !handover || handover.status === 'pending'
+  })
+
+  const activeSession = sessions.find((s) => s.status === 'active')
+  const sessionHandovers = activeSession ? handovers.filter((h) => h.session_id === activeSession.id) : []
+  const submittedCount = sessionHandovers.filter((h) => h.status === 'submitted').length
+  const notSubmittedCount = sessionHandovers.filter((h) => h.status === 'not_submitted').length
+  const retrievedCount = sessionHandovers.filter((h) => h.status === 'retrieved').length
+  const completionPercent = sessionHandovers.length > 0 ? Math.round((submittedCount / sessionHandovers.length) * 100) : 0
 
   return (
-    <div className="mx-auto min-h-screen w-full max-w-md bg-[#EFEEE8] text-[#000000] lg:max-w-none">
-      <aside className="fixed inset-y-0 left-0 z-30 hidden w-56 flex-col border-r border-[#262626] bg-[#000000] px-5 py-5 text-[#EFEEE8] lg:flex">
-        <a href="#sessions" onClick={() => setActiveView('sessions')} className="mb-9 flex items-center gap-2.5 px-0.5">
-          <span className="grid size-7 place-items-center rounded-md bg-[#EF0606] text-[#000000]">
-            <svg width="15" height="15" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 12h6m-6 0v7m0-7 4 4m-4-4 4-4m12 4h-6m6 0v-7m0 7-4-4m4 4-4 4" /></svg>
-          </span>
-          <span className="text-lg font-bold tracking-tight text-[#EFEEE8]">phosub</span>
-        </a>
-
-        <p className="mb-3 px-2 text-xs font-bold uppercase tracking-[0.16em] text-[#D3CCC7]">Workspace</p>
-        <nav aria-label="Mentor workspace" className="space-y-1.5">
-          {navigation.map(({ id, label, icon: Icon }) => (
-            <button
-              key={id}
-              type="button"
-              onClick={() => {
-                setActiveView(id)
-                if (id === 'reports') setReportSessionId(null)
-              }}
-              aria-current={activeView === id ? 'page' : undefined}
-              className={`flex h-11 w-full items-center gap-3 rounded-lg px-3 text-left text-sm transition-colors ${activeView === id ? 'bg-[#EF0606] font-semibold text-[#000000]' : 'text-[#EFEEE8] hover:bg-[#202020] hover:text-white'}`}
-            >
-              <Icon size={17} strokeWidth={1.8} />
-              {label}
-            </button>
-          ))}
-        </nav>
-
-        <div className="mt-auto">
-          <div className="rounded-lg bg-[#181818] px-3 py-3">
-            <p className="text-xs font-semibold">Mentor workspace</p>
-            <p className="mt-1 truncate text-xs text-[#D3CCC7]">Connected workspace</p>
-          </div>
-          <button
-            type="button"
-            onClick={() => createSupabaseClient().auth.signOut().then(() => router.replace('/login'))}
-            className="mt-4 flex h-10 w-full items-center gap-2 rounded-lg px-3 text-sm text-[#EFEEE8] hover:bg-[#202020] hover:text-white"
-          >
-            <LogOut size={16} /> Sign out
-          </button>
-        </div>
-      </aside>
-
-      <div className="min-h-screen w-full lg:pl-56">
-        <header className="sticky top-0 z-20 border-b border-[#262626] bg-[#000000]/95 px-4 text-[#EFEEE8] backdrop-blur-md lg:flex lg:h-16 lg:items-center lg:justify-between lg:border-[#000000] lg:bg-[#000000] lg:px-6 lg:text-[#EFEEE8]">
-          <div className="mx-auto flex h-16 max-w-md items-center justify-between lg:hidden">
-            <div className="flex min-w-0 items-center gap-3">
-              <ProfileAvatar avatarUrl={profile?.avatar_url} name={displayName} />
-              <span className="min-w-0">
-                <span className="block text-xs text-[#D3CCC7]">Good morning,</span>
-                <span className="block truncate text-sm font-semibold">{displayName}</span>
-              </span>
-            </div>
-            <div className="flex items-center gap-2">
-              <div className="relative">
-                <button
-                  type="button"
-                  aria-label="Notifications"
-                  aria-expanded={notificationsOpen}
-                  onClick={() => {
-                    setNotificationsOpen(!notificationsOpen)
-                    setAccountMenuOpen(false)
-                  }}
-                  className="relative grid size-10 place-items-center rounded-full border border-[#303030] bg-[#181818] text-[#EFEEE8] transition-all duration-200 active:scale-95"
-                >
-                  <Bell size={18} strokeWidth={1.7} />
-                  <span className="absolute right-2 top-2 size-2 rounded-full bg-[#EF0606] ring-2 ring-[#181818]" />
-                </button>
-                {notificationsOpen && (
-                  <div className="absolute right-0 top-12 z-40 w-64 rounded-xl border border-[#303030] bg-[#000000] p-4 text-sm text-[#EFEEE8] shadow-lg">
-                    <p className="font-semibold">Notifications</p>
-                    <p className="mt-1 text-[#D3CCC7]">You’re all caught up.</p>
-                  </div>
-                )}
-              </div>
-              <div className="relative">
-                <button
-                  type="button"
-                  aria-label="Account"
-                  aria-expanded={accountMenuOpen}
-                  onClick={() => {
-                    setAccountMenuOpen(!accountMenuOpen)
-                    setNotificationsOpen(false)
-                  }}
-                  className="grid size-10 place-items-center rounded-full border border-[#303030] bg-[#181818] text-[#EFEEE8] transition-all duration-200 active:scale-95"
-                >
-                  <UserRound size={18} strokeWidth={1.7} />
-                </button>
-                {accountMenuOpen && (
-                  <div className="absolute right-0 top-12 z-40 w-64 rounded-xl border border-[#303030] bg-[#000000] p-3 text-[#EFEEE8] shadow-lg">
-                    <p className="truncate px-2 py-1 text-xs text-[#D3CCC7]">{email}</p>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setActiveView('profile')
-                        setAccountMenuOpen(false)
-                      }}
-                      className="mt-1 flex min-h-10 w-full items-center gap-2 rounded-md px-2 text-left text-sm hover:bg-[#202020]"
-                    ><UserRound size={16} /> My Profile</button>
-                    <button
-                      type="button"
-                      onClick={() => createSupabaseClient().auth.signOut().then(() => router.replace('/login'))}
-                      className="mt-1 flex min-h-10 w-full items-center gap-2 rounded-md px-2 text-left text-sm hover:bg-[#202020]"
-                    ><LogOut size={16} /> Sign out</button>
-                  </div>
-                )}
-              </div>
-            </div>
-          </div>
-          <div className="hidden items-center gap-2 text-sm text-[#D3CCC7] lg:flex">
-            <span className="font-medium text-[#EFEEE8]">Mentor workspace</span>
-            <span aria-hidden="true">/</span>
-            <span className="font-medium text-[#EFEEE8]">{activeTitle}</span>
-          </div>
-          <div className="hidden items-center gap-3 lg:flex">
-            <div className="relative">
-              <button
-                type="button"
-                aria-label="Notifications"
-                aria-expanded={notificationsOpen}
-                onClick={() => {
-                  setNotificationsOpen(!notificationsOpen)
-                  setAccountMenuOpen(false)
-                }}
-                className="relative grid size-10 place-items-center rounded-lg text-[#D3CCC7] hover:bg-[#000000] hover:text-[#EFEEE8]"
-              >
-                <Bell size={18} strokeWidth={1.7} />
-                <span className="absolute right-2 top-2 size-2 rounded-full bg-[#EF0606]" />
-              </button>
-              {notificationsOpen && (
-                <div className="absolute right-0 top-11 z-40 w-64 rounded-lg border border-[#000000] bg-[#000000] p-4 text-sm text-[#EFEEE8]">
-                  <p className="font-semibold">Notifications</p>
-                  <p className="mt-1 text-[#D3CCC7]">You’re all caught up.</p>
-                </div>
-              )}
-            </div>
-            <div className="relative border-l border-[#000000] pl-3">
-              <button
-                type="button"
-                aria-expanded={accountMenuOpen}
-                onClick={() => {
-                  setAccountMenuOpen(!accountMenuOpen)
-                  setNotificationsOpen(false)
-                }}
-                className="flex items-center gap-2 text-left text-[#EFEEE8]"
-              >
-                <ProfileAvatar avatarUrl={profile?.avatar_url} name={displayName} />
-                <span className="hidden sm:block">
-                  <span className="block max-w-40 truncate text-xs font-semibold">{displayName}</span>
-                  <span className="block text-[11px] text-[#000000]">mentor</span>
-                </span>
-                <ChevronDown size={15} className="text-[#D3CCC7]" />
-              </button>
-              {accountMenuOpen && (
-                <div className="absolute right-0 top-11 z-40 w-64 rounded-lg border border-[#000000] bg-[#000000] p-3 text-[#EFEEE8]">
-                  <p className="truncate px-2 py-1 text-xs text-[#D3CCC7]">{email}</p>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setActiveView('profile')
-                      setAccountMenuOpen(false)
-                    }}
-                    className="mt-1 flex min-h-10 w-full items-center gap-2 rounded-md px-2 text-left text-sm hover:bg-[#000000]"
-                  ><UserRound size={16} /> My Profile</button>
-                  <button
-                    type="button"
-                    onClick={() => createSupabaseClient().auth.signOut().then(() => router.replace('/login'))}
-                    className="mt-1 flex min-h-10 w-full items-center gap-2 rounded-md px-2 text-left text-sm hover:bg-[#000000]"
-                  ><LogOut size={16} /> Sign out</button>
-                </div>
-              )}
-            </div>
-          </div>
-        </header>
-
-        <main className="mx-auto w-full max-w-md px-4 pb-[calc(6rem+env(safe-area-inset-bottom))] pt-5 sm:px-5 sm:pt-8 lg:max-w-[1200px] lg:px-10 lg:pb-12">
+    <div className="dashboard-web-stage min-h-screen bg-[#F8F5F4] text-[#171717]">
+      <div className="dashboard-web-frame">
+      <DashboardSidebar
+        items={navigation}
+        activeId={activeView}
+        label="Mentor workspace"
+        onSelect={(id) => {
+          const view = id as View
+          setActiveView(view)
+          if (view === 'reports') setReportSessionId(null)
+        }}
+        onSignOut={() => createSupabaseClient().auth.signOut().then(() => router.replace('/login'))}
+      />
+      <div className="dashboard-web-content min-w-0">
+      <TopBar
+        name={displayName}
+        avatarUrl={profile?.avatar_url}
+        onProfileClick={() => setActiveView('profile')}
+      />
+      <main className="dashboard-web-main mx-auto w-full max-w-[1200px] px-4 pb-[calc(6rem+env(safe-area-inset-bottom))] pt-6 sm:px-8 sm:pt-8 lg:max-w-none lg:px-8 xl:px-10">
           {notice && (
-            <div className="fixed inset-0 z-[100] flex items-center justify-center">
-              <div className="absolute inset-0 bg-[#000000]/40 backdrop-blur-sm" />
-              <div className="relative bg-[#EFEEE8] text-[#000000] rounded-xl border-2 border-[#EF0606] px-8 py-6 shadow-2xl flex flex-col items-center gap-4">
-                <p className="text-lg font-bold">{notice}</p>
-                <button
-                  type="button"
-                  onClick={() => setNotice('')}
-                  className="px-6 py-2 rounded-lg bg-[#EF0606] text-sm font-bold text-[#000000] hover:bg-[#EF0606] transition-all shadow-lg"
-                >
-                  OK
-                </button>
-              </div>
+            <div role="status" aria-live="polite" className="mb-5 flex items-center justify-between gap-4 rounded-2xl border border-[#B9D8C1] bg-[#EDF7EF] px-4 py-3 text-sm text-[#285C36] shadow-sm">
+              <span className="flex min-w-0 items-center gap-2.5">
+                <CheckCircle2 size={18} className="shrink-0" aria-hidden="true" />
+                <span>{notice}</span>
+              </span>
+              <button type="button" aria-label="Dismiss confirmation" onClick={() => setNotice('')} className="grid size-8 shrink-0 place-items-center rounded-full text-[#285C36] transition-colors hover:bg-[#DCEFE0]">
+                <X size={16} aria-hidden="true" />
+              </button>
             </div>
           )}
           {error && (
-            <div className="fixed inset-0 z-[100] flex items-center justify-center">
-              <div className="absolute inset-0 bg-[#000000]/40 backdrop-blur-sm" />
-              <div className="relative bg-[#EFEEE8] text-[#000000] rounded-xl border-2 border-[#D3CCC7] px-8 py-6 shadow-2xl flex flex-col items-center gap-4">
-                <p className="text-lg font-bold">{error}</p>
-                <button
-                  type="button"
-                  onClick={() => setError('')}
-                  className="px-6 py-2 rounded-lg bg-[#EF0606] text-sm font-bold text-[#000000] hover:bg-[#EF0606] transition-all shadow-lg"
-                >
-                  OK
-                </button>
-                {error.toLowerCase().includes('sign in again') && (
-                  <button type="button" onClick={() => router.replace('/login')} className="mt-3 text-sm font-semibold underline underline-offset-2">Sign in</button>
-                )}
-              </div>
+            <div role="alert" className="mb-5 flex items-center justify-between gap-3 rounded-2xl border border-[#E5E5E5] bg-[#FFFFFF] px-4 py-3 text-sm text-[#171717]">
+              <span>{error}</span>
+              {error.toLowerCase().includes('sign in again') && (
+                <button type="button" onClick={() => router.replace('/login')} className="shrink-0 font-semibold underline underline-offset-2">Sign in</button>
+              )}
             </div>
           )}
           {!isMentor ? (
-            <div className="rounded-lg border border-[#D3CCC7] bg-[#EFEEE8] p-6 text-base text-[#000000]">Your account is not registered as a mentor.</div>
+            <div className="rounded-2xl border border-[#E5E5E5] bg-[#FFFFFF] p-6 text-base text-[#171717]">Your account is not registered as a mentor.</div>
           ) : activeView === 'sessions' ? (
             <>
-              <div className="mb-5">
-                <p className="mb-1 text-xs font-semibold uppercase tracking-[0.12em] text-[#000000]">Mentor workspace</p>
-                <h1 className="text-2xl font-bold leading-tight tracking-tight">Session dashboard</h1>
-                <p className="mt-2 text-sm text-[#000000]">Start a session for one squad. Only students in that squad can submit phones.</p>
+              <div className="mb-6 flex flex-wrap items-end justify-between gap-3">
+                <div>
+                  <h1 className="max-w-xl text-[30px] font-semibold leading-tight tracking-tight sm:text-4xl">Let’s make today productive</h1>
+                </div>
+                <p className="inline-flex items-center gap-2 pb-1 text-sm font-medium text-[#5F5755]">
+                  <CalendarDays size={16} className="text-[#D71920]" />
+                  {new Date().toLocaleDateString(undefined, { weekday: 'short', month: 'long', day: 'numeric' })}
+                </p>
               </div>
 
-              <div className="mb-5 grid grid-cols-3 gap-2.5">
-                {[
-                  { label: 'Active', value: activeSessionCount, icon: Play },
-                  { label: 'Students', value: students.length, icon: UsersRound },
-                  { label: 'Submitted', value: submittedHandoverCount, icon: Check },
-                ].map(({ label, value, icon: Icon }) => (
-                  <div key={label} className="min-w-0 rounded-2xl border border-[#D3CCC7] bg-white p-3 shadow-sm">
-                    <span className="mb-3 grid size-8 place-items-center rounded-xl bg-[#EFEEE8] text-[#000000]">
-                      <Icon size={16} aria-hidden="true" />
+              <div className="grid gap-4 xl:grid-cols-[1.25fr_0.75fr]">
+                <section aria-labelledby="today-progress-title" className="dashboard-float-card overflow-hidden rounded-2xl bg-gradient-to-br from-[#D71920] to-[#A70F19] p-5 text-white shadow-sm sm:p-6">
+                  <div className="flex items-center justify-between gap-4">
+                    <div>
+                      <p className="text-sm font-medium text-white/75">Today’s progress</p>
+                      <h2 id="today-progress-title" className="mt-1 text-xl font-semibold">{activeSession ? `Squad ${activeSession.squad} session` : 'Ready when you are'}</h2>
+                    </div>
+                    <span className="rounded-full border border-white/25 bg-white/10 px-3 py-1 text-xs font-semibold">
+                      {activeSession ? 'In progress' : 'No active session'}
                     </span>
-                    <p className="text-[10px] font-medium text-[#000000]">{label}</p>
-                    <p className="mt-0.5 text-lg font-bold">{value}</p>
                   </div>
-                ))}
+                  <div className="mt-6 flex flex-wrap items-center gap-6 sm:gap-8">
+                    <ProgressRing percent={completionPercent} />
+                    <div className="grid min-w-[190px] flex-1 grid-cols-3 gap-3">
+                      <div className="border-l border-white/25 pl-3">
+                        <p className="text-2xl font-semibold">{sessionHandovers.length}</p>
+                        <p className="mt-1 text-xs text-white/75">Total</p>
+                      </div>
+                      <div className="border-l border-white/25 pl-3">
+                        <p className="text-2xl font-semibold">{submittedCount}</p>
+                        <p className="mt-1 text-xs text-white/75">Submitted</p>
+                      </div>
+                      <div className="border-l border-white/25 pl-3">
+                        <p className="text-2xl font-semibold">{notSubmittedCount}</p>
+                        <p className="mt-1 text-xs text-white/75">Pending</p>
+                      </div>
+                    </div>
+                  </div>
+                  {retrievedCount > 0 && <p className="mt-4 text-xs text-white/75">{retrievedCount} phone{retrievedCount === 1 ? '' : 's'} retrieved</p>}
+                </section>
+
+                <section aria-labelledby="start-session-title" className="dashboard-float-card rounded-2xl border border-[#E9E0DE] bg-white p-5 sm:p-6">
+                  <h2 id="start-session-title" className="text-lg font-semibold">Start a session</h2>
+                  <p className="mt-1 text-sm text-[#5F5755]">Choose the squad you are teaching today.</p>
+                  <div className="mt-4 grid grid-cols-3 gap-2" role="group" aria-label="Choose squad">
+                    {squads.map((squad) => (
+                      <button
+                        key={squad}
+                        type="button"
+                        aria-pressed={selectedSquad === squad}
+                        onClick={() => {
+                          setSelectedSquad(squad)
+                          setError('')
+                        }}
+                        className={`min-h-11 rounded-xl border px-2 text-sm transition-colors ${selectedSquad === squad ? 'border-[#D71920] bg-[#FCEBED] font-semibold text-[#B5121B]' : 'border-[#E9E0DE] bg-white text-[#525252] hover:border-[#D71920]/50'}`}
+                      >Squad {squad}</button>
+                    ))}
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setSessionConfirmation({ action: 'start', squad: selectedSquad })}
+                    disabled={!selectedSquad || starting}
+                    className="mt-4 inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-xl bg-[#D71920] px-4 text-sm font-semibold text-white transition-colors hover:bg-[#B5121B] disabled:cursor-not-allowed disabled:opacity-50"
+                  >
+                    <Play size={16} /> {starting ? 'Starting...' : 'Start session'}
+                  </button>
+                </section>
               </div>
 
-              <section aria-labelledby="start-session-title" className="w-full rounded-3xl border border-[#D3CCC7] bg-white p-4 shadow-sm sm:p-6">
-                <h2 id="start-session-title" className="text-lg font-bold">Start a session</h2>
-                <p className="mt-1.5 text-sm text-[#000000]">Choose the squad you are teaching today.</p>
-                <div className="mt-4 grid grid-cols-3 gap-2" role="group" aria-label="Choose squad">
-                  {squads.map((squad) => (
-                    <button
-                      key={squad}
-                      type="button"
-                      aria-pressed={selectedSquad === squad}
-                      onClick={() => {
-                        setSelectedSquad(squad)
-                        setError('')
-                      }}
-                      className={`min-h-12 w-full rounded-2xl border px-2 text-xs transition-all duration-200 ease-out active:scale-95 motion-reduce:transition-none sm:text-sm ${selectedSquad === squad ? 'scale-[1.03] border-[#EF0606] bg-[#EF0606] font-semibold text-[#000000] shadow-[0_6px_16px_rgba(239,6,6,0.2)]' : activeSquads.includes(squad) ? 'border-[#EF0606] bg-[#EF0606]/10 font-semibold text-[#EF0606]' : 'border-[#D3CCC7] bg-[#EFEEE8] text-[#000000] hover:-translate-y-0.5 hover:border-[#EF0606]/60 hover:bg-white'}`}
-                    >Squad {squad}</button>
-                  ))}
-                </div>
-                {(() => {
-                  const activeSessionForSquad = sessions.find((s) => s.squad === selectedSquad && s.status === 'active')
-                  return (
-                    <button
-                      type="button"
-                      onClick={activeSessionForSquad ? () => endSession(activeSessionForSquad.id) : startSession}
-                      disabled={!selectedSquad || starting}
-                      className="mt-4 inline-flex min-h-12 w-full items-center justify-center gap-2 rounded-2xl bg-[#EF0606] px-4 text-sm font-semibold text-[#000000] transition-all duration-200 active:scale-95 disabled:cursor-not-allowed disabled:opacity-50"
-                    >
-                      <Play size={16} />
-                      {starting ? 'Starting...' : activeSessionForSquad ? `Stop session for Squad ${selectedSquad}` : `Start session for Squad ${selectedSquad}`}
-                    </button>
-                  )
-                })()}
-              </section>
-              <section className="mt-7">
-                <div className="mb-3 flex items-end justify-between gap-3">
+              <section className="mt-8" aria-labelledby="sessions-title">
+                <div className="mb-4 flex flex-wrap items-end justify-between gap-3">
                   <div>
-                    <p className="text-[11px] font-semibold uppercase tracking-[0.12em] text-[#000000]">Your squads</p>
-                    <h2 className="mt-1 text-lg font-bold">Sessions</h2>
+                    <h2 id="sessions-title" className="text-xl font-semibold">Sessions</h2>
+                    <p className="mt-1 text-sm text-[#5F5755]">Phone handovers across your squads.</p>
+                    {sessionAutoEndError && <p role="alert" className="mt-2 text-sm font-medium text-[#B5121B]">{sessionAutoEndError}</p>}
                   </div>
-                  <span className="text-xs text-[#000000]">{sessions.length} total</span>
+                  <div className="flex shrink-0 items-center gap-2">
+                    <button
+                      type="button"
+                      role="switch"
+                      aria-label="Automatic session schedules"
+                      aria-checked={sessionAutoEndEnabled ?? false}
+                      aria-busy={updatingSessionAutoEnd}
+                      disabled={sessionAutoEndEnabled === null || updatingSessionAutoEnd}
+                      onClick={() => void toggleSessionAutoEnd()}
+                      className="inline-flex min-h-11 items-center gap-3 rounded-full border border-[#CFC6C3] bg-white px-4 text-base font-semibold text-[#211D1C] transition-colors hover:border-[#B5121B] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#D71920] disabled:cursor-wait disabled:opacity-60"
+                    >
+                      <span>{sessionAutoEndEnabled === null ? 'Session auto-end unavailable' : `Session auto-end: ${sessionAutoEndEnabled ? 'On' : 'Off'}`}</span>
+                      <span className={`relative h-5 w-9 rounded-full transition-colors ${sessionAutoEndEnabled ? 'bg-[#D71920]' : 'bg-[#6D6664]'}`} aria-hidden="true">
+                        <span className={`absolute left-0.5 top-0.5 size-4 rounded-full bg-white shadow-sm transition-transform duration-200 ${sessionAutoEndEnabled ? 'translate-x-4' : 'translate-x-0'}`} />
+                      </span>
+                    </button>
+                  </div>
                 </div>
-                <div className="space-y-3 lg:hidden">
-                  {sessions.map((session) => {
-                    const squadSize = students.filter((student) => student.squad === session.squad).length
-                    const submittedCount = handovers.filter((handover) => handover.session_id === session.id && handover.status === 'submitted').length
-                    const completion = squadSize ? Math.round((submittedCount / squadSize) * 100) : 0
-                    return (
-                    <article key={session.id} className="rounded-2xl border border-[#D3CCC7] bg-white p-4 shadow-sm">
-                      <div className="flex items-start justify-between gap-3">
-                        <div className="min-w-0">
-                          <p className="text-[11px] font-medium text-[#000000]">{session.name}</p>
-                          <h3 className="mt-0.5 text-base font-bold">Squad {session.squad}</h3>
+                <div className="grid gap-3 xl:grid-cols-2">
+                  {sessions.map((session) => (
+                    <article key={session.id} className="dashboard-float-card rounded-2xl border border-[#E9E0DE] bg-white p-4 shadow-[0_2px_8px_rgba(80,30,30,0.04)] sm:p-5">
+                      <div className="flex items-start gap-3">
+                        <span className={`mt-0.5 grid size-10 shrink-0 place-items-center rounded-full ${session.status === 'active' ? 'bg-[#FCEBED] text-[#D71920]' : 'bg-[#F5F2F1] text-[#5F5755]'}`}>
+                          <UsersRound size={18} />
+                        </span>
+                        <div className="min-w-0 flex-1">
+                          <div className="flex flex-wrap items-center justify-between gap-2">
+                            <h3 className="text-base font-semibold">Squad {session.squad}</h3>
+                            <div className="flex items-center gap-2">
+                              <SessionBadge status={session.status} />
+                              <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold ${isAutomatedSession(session) ? 'bg-[#EDF7EF] text-[#285C36]' : 'bg-[#F5F5F5] text-[#5F5755]'}`}>
+                                {isAutomatedSession(session) ? 'Automated' : 'Manual'}
+                              </span>
+                              {session.status === 'ended' && (
+                                <button
+                                  type="button"
+                                  title={`Delete session for Squad ${session.squad}`}
+                                  aria-label={`Delete session for Squad ${session.squad}`}
+                                  onClick={() => setSessionConfirmation({ action: 'delete', sessionId: session.id, squad: session.squad })}
+                                  className="grid size-8 shrink-0 place-items-center rounded-lg border border-[#E9E0DE] text-[#7C3336] transition-colors hover:border-[#D71920] hover:bg-[#FCEBED] hover:text-[#B5121B] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#D71920]"
+                                >
+                                  <X size={15} aria-hidden="true" />
+                                </button>
+                              )}
+                            </div>
+                          </div>
+                          <p className="mt-1 inline-flex items-center gap-1.5 text-xs text-[#5F5755]">
+                            <Clock3 size={13} /> Date: {formatSessionDate(session.started_at)}
+                          </p>
+                          <p className="mt-1 text-xs text-[#5F5755]">
+                            Time: {formatSessionTime(session.started_at)} - {session.ended_at ? formatSessionTime(session.ended_at) : 'In progress'}
+                          </p>
                         </div>
-                        <span className={`shrink-0 rounded-full px-2.5 py-1 text-xs font-semibold capitalize ${session.status === 'active' ? 'bg-[#EF0606]/10 text-[#000000]' : 'bg-[#EFEEE8] text-[#000000]'}`}>{session.status}</span>
                       </div>
-                      <div className="mt-3 flex items-center gap-2 text-xs text-[#000000]">
-                        <Clock size={14} aria-hidden="true" />
-                        Started {new Date(session.started_at).toLocaleString(undefined, { dateStyle: 'medium', timeStyle: 'short' })}
-                      </div>
-                      <div className="mt-4">
-                        <div className="mb-1.5 flex items-center justify-between gap-2 text-[11px]">
-                          <span className="text-[#000000]">{submittedCount} of {squadSize} phones submitted</span>
-                          <span className="font-semibold">{completion}%</span>
-                        </div>
-                        <div role="progressbar" aria-label={`Squad ${session.squad} handover completion`} aria-valuemin={0} aria-valuemax={100} aria-valuenow={completion} className="h-1.5 overflow-hidden rounded-full bg-[#EFEEE8]">
-                          <div className="h-full rounded-full bg-[#EF0606] transition-all duration-200" style={{ width: `${completion}%` }} />
-                        </div>
-                      </div>
-                      <div className="mt-4 grid grid-cols-2 gap-2">
+                      <div className="mt-4 flex flex-wrap gap-2 border-t border-[#F0E9E7] pt-3">
                         <button
                           type="button"
                           onClick={() => {
                             setReportSessionId(session.id)
                             setActiveView('reports')
                           }}
-                          className="inline-flex min-h-11 items-center justify-center rounded-xl border border-[#D3CCC7] bg-[#EFEEE8] px-3 text-xs font-semibold text-[#000000] transition-all duration-200 active:scale-95"
+                          className="inline-flex min-h-10 items-center justify-center rounded-xl border border-[#E9E0DE] px-3 text-sm font-medium text-[#525252] transition-colors hover:border-[#D71920] hover:text-[#B5121B]"
                         >View report</button>
                         {session.status === 'active' && (
                           <button
                             type="button"
-                            onClick={() => endSession(session.id)}
-                            className="inline-flex min-h-11 items-center justify-center rounded-xl bg-[#EF0606] px-3 text-xs font-semibold text-[#000000] transition-all duration-200 active:scale-95"
+                            onClick={() => setSessionConfirmation({
+                              action: 'end',
+                              sessionId: session.id,
+                              squad: session.squad,
+                              starterName: session.mentor_id !== user.id ? session.mentor_name : undefined,
+                            })}
+                            className="inline-flex min-h-10 items-center justify-center rounded-xl bg-[#FCEBED] px-3 text-sm font-semibold text-[#B5121B] transition-colors hover:bg-[#F7DADD]"
                           >End session</button>
+                        )}
+                        {session.status === 'active' && session.mentor_id !== user.id && (
+                          <p className="self-center text-sm text-[#5F5755]">Started by another mentor</p>
                         )}
                       </div>
                     </article>
-                    )
-                  })}
-                  {sessions.length === 0 && <p className="rounded-lg border border-dashed border-[#D3CCC7] px-4 py-8 text-center text-sm text-[#000000]">No sessions yet.</p>}
-                </div>
-                <div className="hidden overflow-hidden rounded-lg border border-[#D3CCC7] bg-[#EFEEE8] lg:block">
-                  <div className="overflow-x-auto">
-                    <table className="w-full min-w-[720px] text-left text-sm">
-                      <thead className="bg-[#EFEEE8] text-xs text-[#000000]"><tr><th className="px-5 py-4 font-medium">Squad</th><th className="px-5 py-4 font-medium">Status</th><th className="px-5 py-4 font-medium">Started</th><th className="px-5 py-4 font-medium">Submitted</th><th className="px-5 py-4 font-medium">Actions</th></tr></thead>
-                      <tbody>
-                        {sessions.map((session) => {
-                          const squadSize = students.filter((student) => student.squad === session.squad).length
-                          const submittedCount = handovers.filter((handover) => handover.session_id === session.id && handover.status === 'submitted').length
-                          const completion = squadSize ? Math.round((submittedCount / squadSize) * 100) : 0
-                          return (
-                            <tr key={session.id} className="border-t border-[#D3CCC7]">
-                              <td className="px-5 py-4 font-semibold">Squad {session.squad}</td>
-                              <td className="px-5 py-4"><span className={`rounded-full px-2.5 py-1 text-xs font-semibold ${session.status === 'active' ? 'bg-[#EFEEE8] text-[#000000]' : 'bg-[#D3CCC7] text-[#000000]'}`}>{session.status}</span></td>
-                              <td className="px-5 py-4 text-[#000000]">{new Date(session.started_at).toLocaleString(undefined, { hour12: true })}</td>
-                              <td className="whitespace-nowrap px-5 py-4 text-sm">{submittedCount} of {squadSize} ({completion}%)</td>
-                              <td className="whitespace-nowrap px-5 py-4">
-                                <div className="flex items-center gap-2">
-                                  <button
-                                    type="button"
-                                    onClick={() => {
-                                      setReportSessionId(session.id)
-                                      setActiveView('reports')
-                                    }}
-                                    className="inline-flex min-h-10 min-w-28 items-center justify-center rounded-md bg-[#EF0606] px-3 text-sm font-medium text-[#000000] hover:bg-[#EF0606] transition-colors"
-                                  >View report</button>
-                                  {session.status === 'active' && (
-                                    <button
-                                      type="button"
-                                      onClick={() => endSession(session.id)}
-                                      className="inline-flex min-h-10 items-center justify-center rounded-md border border-[#EF0606] px-3 text-sm font-medium text-[#EF0606] transition-colors hover:bg-[#EF0606]/10"
-                                    >End session</button>
-                                  )}
-                                </div>
-                              </td>
-                            </tr>
-                          )
-                        })}
-                        {sessions.length === 0 && <tr><td colSpan={5} className="px-5 py-10 text-center text-sm text-[#000000]">No sessions yet.</td></tr>}
-                      </tbody>
-                    </table>
-                  </div>
+                  ))}
+                  {sessions.length === 0 && <p className="dashboard-float-card rounded-2xl border border-dashed border-[#D9CECB] bg-white px-4 py-10 text-center text-sm text-[#5F5755] xl:col-span-2">No sessions yet. Choose a squad above to get started.</p>}
                 </div>
               </section>
             </>
           ) : activeView === 'squads' ? (
             <section>
-              <p className="mb-2 text-xs font-bold uppercase tracking-[0.16em] text-[#000000]">Mentor workspace</p>
+              <p className="mb-2 text-xs font-bold uppercase tracking-[0.16em] text-[#171717]">Mentor workspace</p>
               <h1 className="text-3xl font-bold">Squads</h1>
-              <p className="mb-6 mt-2 text-sm text-[#000000]">Choose a squad when starting a handover session.</p>
+              <p className="mb-6 mt-2 text-sm text-[#171717]">Choose a squad when starting a handover session.</p>
               <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
                 {squads.map((squad) => (
-                  <button key={squad} type="button" onClick={() => { setSelectedSquad(squad); setActiveView('sessions') }} className="min-h-32 rounded-lg border border-[#D3CCC7] bg-[#EFEEE8] p-5 text-left transition-all duration-200 ease-out hover:-translate-y-0.5 hover:border-[#EF0606]/60 hover:bg-white active:scale-[0.98] motion-reduce:transition-none">
-                    <UsersRound size={20} className="mb-4 text-[#000000]" />
+                  <button key={squad} type="button" onClick={() => { setSelectedSquad(squad); setActiveView('sessions') }} className="dashboard-float-card min-h-32 rounded-2xl border border-[#E5E5E5] bg-[#FFFFFF] p-5 text-left transition-colors hover:border-[#E5E5E5]">
+                    <UsersRound size={20} className="mb-4 text-[#171717]" />
                     <span className="block text-base font-semibold">Squad {squad}</span>
-                    <span className="mt-1.5 block text-sm text-[#000000]">{sessions.filter((session) => session.squad === squad && session.status === 'active').length} active sessions</span>
-                    <span className="mt-1 block text-sm text-[#000000]">{students.filter((student) => student.squad === squad).length} registered accounts</span>
+                    <span className="mt-1.5 block text-sm text-[#171717]">{sessions.filter((session) => session.squad === squad && session.status === 'active').length} active sessions</span>
+                    <span className="mt-1 block text-sm text-[#171717]">{students.filter((student) => student.squad === squad).length} registered accounts</span>
                   </button>
                 ))}
               </div>
               <section className="mt-10" aria-labelledby="student-accounts-title">
                 <h2 id="student-accounts-title" className="text-xl font-bold">Registered student accounts</h2>
-                <p className="mb-5 mt-1.5 text-sm text-[#000000]">Students who have completed profile setup in Phosub.</p>
+                <p className="mb-5 mt-1.5 text-sm text-[#171717]">Students who have completed profile setup in Phosub.</p>
                 <div className="grid gap-4 xl:grid-cols-3">
                   {squads.map((squad) => {
                     const squadStudents = students.filter((student) => student.squad === squad)
                     return (
-                      <section key={squad} className="rounded-lg border border-[#D3CCC7] bg-[#EFEEE8] p-4 sm:p-5" aria-label={`Registered students in Squad ${squad}`}>
+                      <section key={squad} className="dashboard-float-card rounded-2xl border border-[#E5E5E5] bg-[#FFFFFF] p-4 sm:p-5" aria-label={`Registered students in Squad ${squad}`}>
                         <div className="mb-3 flex items-center justify-between gap-3">
                           <h3 className="text-base font-semibold">Squad {squad}</h3>
-                          <span className="rounded-full bg-[#D3CCC7] px-2.5 py-1 text-xs font-semibold text-[#000000]">{squadStudents.length}</span>
+                          <span className="rounded-full bg-[#E5E5E5] px-2.5 py-1 text-xs font-semibold text-[#171717]">{squadStudents.length}</span>
                         </div>
                         {squadStudents.length ? (
-                          <ul className="divide-y divide-[#D3CCC7]">
+                          <ul className="divide-y divide-[#E5E5E5]">
                             {squadStudents.map((student) => (
                               <li key={student.id} className="py-3 first:pt-1 last:pb-1">
                                 <p className="text-sm font-medium">{student.full_name}</p>
-                                <time dateTime={student.created_at} className="mt-1 block text-xs text-[#000000]">
+                                <time dateTime={student.created_at} className="mt-1 block text-xs text-[#171717]">
                                   Account created {new Date(student.created_at).toLocaleDateString()}
                                 </time>
                               </li>
                             ))}
                           </ul>
                         ) : (
-                          <p className="py-3 text-sm text-[#000000]">No student profiles yet.</p>
+                          <p className="py-3 text-sm text-[#171717]">No student profiles yet.</p>
                         )}
                       </section>
                     )
@@ -667,14 +652,9 @@ export default function MentorPage() {
             </section>
           ) : activeView === 'reports' ? (
             <section>
-              <div className="mb-6 flex items-start justify-between gap-4">
-                <div>
-                  <p className="mb-2 text-xs font-bold uppercase tracking-[0.16em] text-[#000000]">Mentor workspace</p>
-                  <h1 className="text-2xl font-bold sm:text-3xl">{reportSession ? `${reportSession.name} report` : 'Recent handovers'}</h1>
-                  <p className="mt-2 text-sm text-[#000000]">
-                    {reportSession ? `Squad ${reportSession.squad} handover statuses for this session.` : 'A record of recent student phone handovers.'}
-                  </p>
-                </div>
+              <p className="mb-2 text-xs font-bold uppercase tracking-[0.16em] text-[#171717]">Mentor workspace</p>
+              <div className="flex items-start justify-between gap-4">
+                <h1 className="text-3xl font-bold">{reportSession ? `${reportSession.name} report` : 'Recent handovers'}</h1>
                 {reportSession?.status === 'ended' && (
                   <button
                     type="button"
@@ -683,12 +663,45 @@ export default function MentorPage() {
                     aria-busy={downloadingReport}
                     disabled={downloadingReport}
                     onClick={() => void downloadSessionReport(reportSession)}
-                    className="mt-1 grid size-11 shrink-0 place-items-center rounded-md border border-[#D3CCC7] bg-[#EFEEE8] text-[#000000] transition-colors hover:bg-[#D3CCC7] disabled:cursor-wait disabled:opacity-60"
+                    className="grid size-11 shrink-0 place-items-center rounded-xl border border-[#E9E0DE] bg-white text-[#525252] shadow-sm transition-colors hover:border-[#D71920] hover:text-[#B5121B] disabled:cursor-wait disabled:opacity-60"
                   >
                     <FileSpreadsheet size={19} aria-hidden="true" />
                   </button>
                 )}
               </div>
+              <p className="mb-6 mt-2 text-sm text-[#171717]">
+                {reportSession ? `Squad ${reportSession.squad} handover statuses for this session.` : 'A record of recent student phone handovers.'}
+              </p>
+              {!reportSession && (
+                <>
+                  <div className="space-y-3 lg:hidden">
+                    {reportHandovers.map((handover) => (
+                      <article key={handover.id} className="dashboard-float-card rounded-2xl border border-[#E5E5E5] bg-[#FFFFFF] p-4">
+                        <div className="flex items-start justify-between gap-3">
+                          <h2 className="text-base font-semibold">{handover.student?.full_name || 'Student'}</h2>
+                          <span className="shrink-0 rounded-full bg-[#E5E5E5] px-2.5 py-1 text-xs font-semibold capitalize text-[#171717]">{handover.status.replace('_', ' ')}</span>
+                        </div>
+                        <p className="mt-3 text-sm text-[#171717]">{handover.reason || 'No reason provided'}</p>
+                        <p className="mt-2 text-xs text-[#171717]">Updated {new Date(handover.updated_at).toLocaleString('en-IN', { timeZone: 'Asia/Kolkata', hour12: true })}</p>
+                      </article>
+                    ))}
+                    {reportHandovers.length === 0 && <p className="rounded-2xl border border-dashed border-[#E5E5E5] px-4 py-8 text-center text-sm text-[#171717]">No handovers to report yet.</p>}
+                  </div>
+                  <div className="dashboard-float-card hidden overflow-hidden rounded-2xl border border-[#E5E5E5] bg-[#FFFFFF] lg:block">
+                    <div className="overflow-x-auto">
+                      <table className="w-full min-w-[680px] text-left text-sm">
+                        <thead className="bg-[#FFFFFF] text-xs text-[#171717]"><tr><th className="px-5 py-4 font-medium">Student</th><th className="px-5 py-4 font-medium">Status</th><th className="px-5 py-4 font-medium">Reason</th><th className="px-5 py-4 font-medium">Updated</th></tr></thead>
+                        <tbody>
+                          {reportHandovers.map((handover) => (
+                            <tr key={handover.id} className="border-t border-[#E5E5E5]"><td className="px-5 py-4 font-semibold">{handover.student?.full_name || 'Student'}</td><td className="px-5 py-4 capitalize">{handover.status.replace('_', ' ')}</td><td className="px-5 py-4 text-[#171717]">{handover.reason || '—'}</td><td className="px-5 py-4 text-[#171717]">{new Date(handover.updated_at).toLocaleString('en-IN', { timeZone: 'Asia/Kolkata', hour12: true })}</td></tr>
+                          ))}
+                          {reportHandovers.length === 0 && <tr><td colSpan={4} className="px-5 py-10 text-center text-sm text-[#171717]">No handovers to report yet.</td></tr>}
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+                </>
+              )}
 
               {reportSession ? (
                 <>
@@ -722,7 +735,7 @@ export default function MentorPage() {
                       onClick={() => setReportFilter('not_responded')}
                       className={`flex min-h-[72px] min-w-0 flex-col items-center justify-center gap-1 rounded-2xl border px-2 py-2 text-center text-xs font-semibold transition-all duration-200 active:scale-95 sm:min-h-11 sm:min-w-[140px] sm:flex-row sm:px-4 sm:text-sm ${reportFilter === 'not_responded' ? 'bg-[#EF0606] border-[#EF0606] text-[#000000]' : 'border-[#D3CCC7] bg-white text-[#000000] hover:border-[#D3CCC7]'}`}
                     >
-                      <Clock size={15} strokeWidth={2} />
+                      <Clock3 size={15} strokeWidth={2} />
                       <span className="leading-tight">Not Responded</span>
                       <span className="inline-flex items-center rounded-full bg-[#000000] px-2 py-0.5 text-[10px] text-[#EFEEE8] sm:ml-1">{notRespondedStudents.length}</span>
                     </button>
@@ -817,7 +830,7 @@ export default function MentorPage() {
                             </div>
                             <div className="min-w-0">
                               <dt className="text-[11px] text-[#000000]">Updated</dt>
-                              <dd className="text-xs">{new Date(handover.updated_at).toLocaleString(undefined, { dateStyle: 'medium', timeStyle: 'short' })}</dd>
+                              <dd className="text-xs">{new Date(handover.updated_at).toLocaleString('en-IN', { timeZone: 'Asia/Kolkata', dateStyle: 'medium', timeStyle: 'short', hour12: true })}</dd>
                             </div>
                             <div className="col-span-2 min-w-0">
                               <dt className="text-[11px] text-[#000000]">Reason</dt>
@@ -855,7 +868,7 @@ export default function MentorPage() {
                                 <td className="px-5 py-4">{handover.phone_model || '—'}</td>
                                 <td className="px-5 py-4">{handover.reason || '—'}</td>
                                 <td className="whitespace-nowrap px-5 py-4 text-[#000000]">
-                                  {new Date(handover.updated_at).toLocaleString(undefined, { hour12: true })}
+                                  {new Date(handover.updated_at).toLocaleString('en-IN', { timeZone: 'Asia/Kolkata', hour12: true })}
                                 </td>
                               </tr>
                             )
@@ -871,48 +884,155 @@ export default function MentorPage() {
               )}
             </section>
           ) : (
-            <section>
-              <p className="mb-2 text-xs font-bold uppercase tracking-[0.16em] text-[#000000]">Mentor workspace</p>
+            <section className="mx-auto w-full max-w-2xl">
+              <p className="mb-2 text-xs font-bold uppercase tracking-[0.16em] text-[#171717]">Mentor workspace</p>
               <h1 className="text-3xl font-bold">Profile</h1>
-              <div className="mt-6 max-w-2xl rounded-lg border border-[#D3CCC7] bg-[#EFEEE8] p-5 sm:p-6">
-                <div className="mb-6 border-b border-[#D3CCC7] pb-6">
+              <div className="dashboard-float-card mt-6 rounded-2xl border border-[#E5E5E5] bg-[#FFFFFF] p-5 sm:p-6">
+                <div className="mb-6 border-b border-[#E5E5E5] pb-6">
                   <ProfilePhotoEditor
                     avatarUrl={profile?.avatar_url}
                     name={displayName}
                     onUploaded={(avatarUrl) => setProfile((current) => current ? { ...current, avatar_url: avatarUrl } : current)}
                   />
                 </div>
-                <p className="text-xs text-[#000000]">Name</p>
+                <p className="text-xs text-[#171717]">Name</p>
                 <p className="mt-1.5 text-base font-semibold capitalize">{displayName}</p>
-                <p className="mt-5 text-xs text-[#000000]">Email</p>
+                <p className="mt-5 text-xs text-[#171717]">Email</p>
                 <p className="mt-1.5 break-all text-base font-medium">{email}</p>
-                <p className="mt-5 text-xs text-[#000000]">Role</p>
+                <p className="mt-5 text-xs text-[#171717]">Role</p>
                 <p className="mt-1.5 text-base font-medium">Mentor</p>
+                <button
+                  type="button"
+                  onClick={() => createSupabaseClient().auth.signOut().then(() => router.replace('/login'))}
+                  className="mt-6 inline-flex min-h-11 items-center gap-2 rounded-xl border border-[#E9E0DE] px-4 text-sm font-semibold text-[#525252] transition-colors hover:border-[#D71920] hover:text-[#B5121B]"
+                >
+                  <LogOut size={16} /> Sign out
+                </button>
               </div>
             </section>
           )}
+          <DashboardFooter />
         </main>
-        <nav aria-label="Mentor workspace" className="fixed inset-x-0 bottom-0 z-40 mx-auto max-w-md border-t border-[#262626] bg-[#000000]/95 pb-[env(safe-area-inset-bottom)] shadow-[0_-8px_24px_rgba(0,0,0,0.3)] backdrop-blur-md lg:hidden">
-          <div className="grid h-[4.25rem] grid-cols-4 items-center gap-1 px-3">
-            {navigation.map(({ id, label, icon: Icon }) => (
-              <button
-                key={id}
-                type="button"
-                title={label}
-                aria-label={label}
-                aria-current={activeView === id ? 'page' : undefined}
-                onClick={() => {
-                  setActiveView(id)
-                  if (id === 'reports') setReportSessionId(null)
-                }}
-                className={`flex h-full min-w-0 flex-col items-center justify-center gap-1 rounded-xl transition-all duration-200 active:scale-95 ${activeView === id ? 'bg-[#EF0606] font-semibold text-[#000000]' : 'text-[#EFEEE8] hover:bg-[#202020]'}`}
+      </div>
+          {sessionAutoEndConfirmation !== null && (
+            <div className="fixed inset-0 z-[70] flex items-center justify-center bg-[#211D1C]/45 p-4 backdrop-blur-sm">
+              <section
+                role="dialog"
+                aria-modal="true"
+                aria-labelledby="session-auto-end-title"
+                aria-describedby="session-auto-end-description"
+                className="w-full max-w-[420px] rounded-[26px] border border-white/90 bg-white/95 p-6 shadow-[0_24px_70px_rgba(27,20,19,0.28)] backdrop-blur-xl sm:p-7"
               >
-                <Icon size={19} strokeWidth={1.9} />
-                <span className="text-[10px] font-medium leading-none">{label}</span>
-              </button>
-            ))}
-          </div>
-        </nav>
+                <div className="flex items-start gap-4">
+                  <span className="grid size-11 shrink-0 place-items-center rounded-full bg-[#EDF7EF] text-[#285C36]">
+                    <CheckCircle2 size={21} aria-hidden="true" />
+                  </span>
+                  <div className="min-w-0 pt-0.5">
+                    <h2 id="session-auto-end-title" className="text-lg font-semibold text-[#211D1C]">
+                      Session auto-end {sessionAutoEndConfirmation ? 'turned on' : 'turned off'}
+                    </h2>
+                    <p id="session-auto-end-description" className="mt-2 text-sm leading-6 text-[#6D6664]">
+                      {sessionAutoEndConfirmation
+                        ? 'Automatic session schedules are enabled. Manage each squad\'s daily start and stop windows from the Automation workspace.'
+                        : 'Automatic session schedules are disabled. Configured sessions will not start or stop automatically.'}
+                    </p>
+                  </div>
+                </div>
+                <div className="mt-7 flex justify-end">
+                  <button
+                    type="button"
+                    autoFocus
+                    onClick={() => setSessionAutoEndConfirmation(null)}
+                    className="min-h-11 min-w-20 rounded-xl bg-[#D71920] px-5 text-sm font-semibold text-white transition-colors hover:bg-[#B5121B]"
+                  >OK</button>
+                </div>
+              </section>
+            </div>
+          )}
+          {centeredSessionNotice && (
+            <div className="fixed inset-0 z-[70] flex items-center justify-center bg-[#211D1C]/45 p-4 backdrop-blur-sm">
+              <section role="alertdialog" aria-modal="true" aria-labelledby="centered-session-notice-title" aria-describedby="centered-session-notice-description" className="w-full max-w-[420px] rounded-[26px] border border-white/90 bg-white/95 p-6 shadow-[0_24px_70px_rgba(27,20,19,0.28)] backdrop-blur-xl sm:p-7">
+                <div className="flex items-start gap-4">
+                  <span className="grid size-11 shrink-0 place-items-center rounded-full bg-[#EDF7EF] text-[#285C36]"><CheckCircle2 size={21} aria-hidden="true" /></span>
+                  <div className="min-w-0 pt-0.5">
+                    <h2 id="centered-session-notice-title" className="text-lg font-semibold text-[#211D1C]">{centeredSessionNotice.title}</h2>
+                    <p id="centered-session-notice-description" className="mt-2 text-sm leading-6 text-[#6D6664]">{centeredSessionNotice.message}</p>
+                  </div>
+                </div>
+                <div className="mt-7 flex justify-end"><button type="button" autoFocus onClick={() => setCenteredSessionNotice(null)} className="min-h-11 min-w-20 rounded-xl bg-[#D71920] px-5 text-sm font-semibold text-white transition-colors hover:bg-[#B5121B]">OK</button></div>
+              </section>
+            </div>
+          )}
+      {sessionConfirmation && (
+        <div
+          className="fixed inset-0 z-[70] flex items-center justify-center bg-[#211D1C]/45 p-4 backdrop-blur-sm"
+          onMouseDown={(event) => {
+            if (event.target === event.currentTarget) setSessionConfirmation(null)
+          }}
+        >
+          <section
+            role="alertdialog"
+            aria-modal="true"
+            aria-labelledby="session-confirmation-title"
+            aria-describedby="session-confirmation-description"
+            onKeyDown={(event) => {
+              if (event.key === 'Escape') setSessionConfirmation(null)
+            }}
+            className="w-full max-w-[420px] rounded-[26px] border border-white/90 bg-white/95 p-6 shadow-[0_24px_70px_rgba(27,20,19,0.28)] backdrop-blur-xl sm:p-7"
+          >
+            <div className="flex items-start gap-4">
+              <span className="grid size-11 shrink-0 place-items-center rounded-full bg-[#FCEBED] text-[#B5121B]">
+                <CircleHelp size={21} strokeWidth={1.8} aria-hidden="true" />
+              </span>
+              <div className="min-w-0 pt-0.5">
+                <h2 id="session-confirmation-title" className="text-lg font-semibold text-[#211D1C]">
+                  {sessionConfirmation.action === 'start' ? 'Start this session?' : sessionConfirmation.action === 'delete' ? 'Delete this session?' : 'End this session?'}
+                </h2>
+                <p id="session-confirmation-description" className="mt-2 text-sm leading-6 text-[#6D6664]">
+                  {sessionConfirmation.action === 'start'
+                    ? `Start a phone handover session for Squad ${sessionConfirmation.squad}?`
+                    : sessionConfirmation.action === 'delete'
+                      ? `Permanently delete the ended session for Squad ${sessionConfirmation.squad}, including all handover data and history? This cannot be undone.`
+                      : `End the phone handover session for Squad ${sessionConfirmation.squad}?`}
+                </p>
+                {sessionConfirmation.action === 'end' && sessionConfirmation.starterName && (
+                  <p className="mt-2 text-xs text-[#5F5755]">Started by {sessionConfirmation.starterName}</p>
+                )}
+              </div>
+            </div>
+            <div className="mt-7 flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
+              <button
+                type="button"
+                autoFocus
+                onClick={() => setSessionConfirmation(null)}
+                className="min-h-11 rounded-xl border border-[#E9E0DE] px-4 text-sm font-semibold text-[#5D5553] transition-colors hover:bg-[#F8F5F4]"
+              >Cancel</button>
+              <button
+                type="button"
+                disabled={starting || deletingSession}
+                onClick={() => {
+                  const confirmation = sessionConfirmation
+                  setSessionConfirmation(null)
+                  if (confirmation.action === 'start') void startSession(confirmation.squad)
+                  else if (confirmation.action === 'delete') void deleteSession(confirmation.sessionId)
+                  else void endSession(confirmation.sessionId)
+                }}
+                className="min-h-11 rounded-xl bg-[#D71920] px-4 text-sm font-semibold text-white transition-colors hover:bg-[#B5121B] disabled:cursor-not-allowed disabled:opacity-60"
+              >{sessionConfirmation.action === 'start' ? 'Start session' : sessionConfirmation.action === 'delete' ? deletingSession ? 'Deleting...' : 'Delete session' : 'End session'}</button>
+            </div>
+          </section>
+        </div>
+      )}
+      <BottomNav
+        items={navigation}
+        activeId={activeView}
+        label="Mentor navigation"
+        onSelect={(id) => {
+          const view = id as View
+          setActiveView(view)
+          if (view === 'reports') setReportSessionId(null)
+        }}
+      />
       </div>
     </div>
   )

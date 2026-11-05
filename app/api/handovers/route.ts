@@ -67,7 +67,7 @@ export async function GET(request: Request) {
   if (history) {
     const { data, error } = await admin
       .from('handovers')
-      .select('id, student_id, session_id, status, reason, phone_model, updated_at, sessions(id, squad, name, status, started_at, ended_at)')
+      .select('id, student_id, session_id, status, reason, phone_model, updated_at, sessions(id, squad, name, status, started_at, ended_at, automation_schedule_id)')
       .eq('student_id', userId)
       .order('updated_at', { ascending: false })
     if (error) {

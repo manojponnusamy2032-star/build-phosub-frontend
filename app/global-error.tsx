@@ -12,16 +12,16 @@ export default function GlobalError({
   const router = useRouter()
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-[#EFEEE8] p-6">
-      <div className="max-w-md rounded-xl border border-[#D3CCC7] bg-[#EFEEE8] p-6 text-center">
-        <h2 className="mb-2 text-lg font-bold text-[#000000]">Application Error</h2>
-        <p className="mb-4 text-sm text-[#000000]">{error.message}</p>
+    <div className="min-h-screen flex items-center justify-center bg-[#FFFFFF] p-6">
+      <div className="max-w-md rounded-xl border border-[#E5E5E5] bg-[#FFFFFF] p-6 text-center">
+        <h2 className="mb-2 text-lg font-bold text-[#171717]">Application Error</h2>
+        <p className="mb-4 text-sm text-[#171717]">{error.message}</p>
         <button
           onClick={() => {
             reset()
             router.push('/login')
           }}
-          className="w-full py-2 rounded-lg bg-[#EF0606] text-[#000000] font-semibold hover:bg-[#EF0606] transition-colors"
+          className="w-full py-2 rounded-lg bg-[#D71920] text-white font-semibold hover:bg-[#D71920] transition-colors"
         >
           Go to Sign In
         </button>
