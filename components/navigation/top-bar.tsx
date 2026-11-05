@@ -81,9 +81,11 @@ export function DashboardSidebar({ items = STUDENT_NAV, activeId, onSelect, onSi
       <p className="mb-3 px-2 text-[10px] font-bold uppercase tracking-[0.16em] text-[#5F5755]">Workspace</p>
       <nav aria-label={label} className="space-y-1">
         {items.map(({ id, href, label: itemLabel, icon: Icon }) => {
-          const active = href
-            ? href === '/student' ? pathname === '/student' : pathname === href || pathname.startsWith(`${href}/`)
-            : activeId === id
+          const active = activeId !== undefined
+            ? activeId === id
+            : href
+              ? href === '/student' ? pathname === '/student' : pathname === href || pathname.startsWith(`${href}/`)
+              : false
           const className = cn(
             'flex min-h-11 w-full items-center gap-3 rounded-xl px-3 text-left text-sm font-medium transition-colors',
             active ? 'bg-[#FCEBED] text-[#B5121B]' : 'text-[#525252] hover:bg-[#F8F5F4] hover:text-[#171717]'
@@ -116,6 +118,7 @@ interface BottomNavProps {
 
 export function BottomNav({ items = STUDENT_NAV, activeId, onSelect, label = 'Primary navigation', className }: BottomNavProps = {}) {
   const pathname = usePathname()
+  const compactItems = items.length >= 5
 
   return (
     <nav
@@ -127,17 +130,21 @@ export function BottomNav({ items = STUDENT_NAV, activeId, onSelect, label = 'Pr
     >
       <div className="mx-auto flex h-[62px] w-full items-center justify-center gap-1 sm:gap-2">
         {items.map(({ id, href, label: itemLabel, icon: Icon }) => {
-          const active = href
-            ? href === '/student' ? pathname === '/student' : pathname === href || pathname.startsWith(`${href}/`)
-            : activeId === id
+          const active = activeId !== undefined
+            ? activeId === id
+            : href
+              ? href === '/student' ? pathname === '/student' : pathname === href || pathname.startsWith(`${href}/`)
+              : false
           const itemClass = cn(
             'flex h-11 shrink-0 items-center justify-center rounded-full font-medium transition-colors',
-            active ? 'flex-row gap-2 bg-[#D71920] px-3 text-white' : 'min-w-[56px] flex-col gap-0.5 px-2 text-[#5F5755] hover:bg-[#F8F5F4] hover:text-[#171717]'
+            active
+              ? compactItems ? 'min-w-[56px] flex-col gap-0.5 bg-[#D71920] px-2 text-white' : 'flex-row gap-2 bg-[#D71920] px-3 text-white'
+              : 'min-w-[56px] flex-col gap-0.5 px-2 text-[#5F5755] hover:bg-[#F8F5F4] hover:text-[#171717]'
           )
           const content = (
             <>
               <Icon size={18} strokeWidth={1.9} />
-              <span className={cn('max-w-full truncate', active ? 'text-[11px]' : 'text-[10px]')}>{itemLabel}</span>
+              <span className={cn('max-w-full truncate', active && !compactItems ? 'text-[11px]' : 'text-[10px]')}>{itemLabel}</span>
             </>
           )
 

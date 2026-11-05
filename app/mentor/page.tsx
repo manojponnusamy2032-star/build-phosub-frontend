@@ -26,20 +26,33 @@ import { ProfilePhotoEditor } from '@/components/profile-photo'
 import { BottomNav, DashboardSidebar, TopBar } from '@/components/navigation/top-bar'
 import { DashboardFooter } from '@/components/site-footer'
 
-type Session = { id: string; squad: string; name: string; status: string; started_at: string; mentor_id: string; mentor_name?: string }
+type Session = { id: string; squad: string; name: string; status: string; started_at: string; ended_at: string | null; mentor_id: string; automation_schedule_id: string | null; mentor_name?: string }
 type Handover = { id: string; student_id: string; session_id: string; status: string; reason: string | null; phone_model: string | null; updated_at: string; student?: { full_name: string } }
 type StudentAccount = { id: string; full_name: string; squad: string | null; created_at: string }
-type View = 'sessions' | 'reports' | 'squads' | 'profile'
+type View = 'sessions' | 'reports' | 'squads' | 'automation' | 'profile'
 type SessionConfirmation =
   | { action: 'start'; squad: string }
   | { action: 'end'; sessionId: string; squad: string; starterName?: string }
   | { action: 'delete'; sessionId: string; squad: string }
 
+function isAutomatedSession(session: Session) {
+  return Boolean(session.automation_schedule_id) || session.name.toLowerCase().includes('automated')
+}
+
+function formatSessionDate(value: string) {
+  return new Date(value).toLocaleDateString('en-IN', { timeZone: 'Asia/Kolkata', day: 'numeric', month: 'short', year: 'numeric' })
+}
+
+function formatSessionTime(value: string) {
+  return new Date(value).toLocaleTimeString('en-IN', { timeZone: 'Asia/Kolkata', hour: 'numeric', minute: '2-digit', hour12: true })
+}
+
 const squads = ['138', '139', '183']
-const navigation: { id: View; label: string; icon: LucideIcon }[] = [
+const navigation: { id: View; label: string; icon: LucideIcon; href?: string }[] = [
   { id: 'sessions', label: 'Sessions', icon: ClipboardCheck },
   { id: 'reports', label: 'Reports', icon: ChartNoAxesColumn },
   { id: 'squads', label: 'Squads', icon: UsersRound },
+  { id: 'automation', label: 'Automation', icon: CalendarDays, href: '/mentor/automation' },
   { id: 'profile', label: 'Profile', icon: UserRound },
 ]
 
@@ -110,6 +123,7 @@ export default function MentorPage() {
   const [sessionAutoEndError, setSessionAutoEndError] = useState('')
   const [updatingSessionAutoEnd, setUpdatingSessionAutoEnd] = useState(false)
   const [sessionAutoEndConfirmation, setSessionAutoEndConfirmation] = useState<boolean | null>(null)
+  const [centeredSessionNotice, setCenteredSessionNotice] = useState<{ title: string; message: string } | null>(null)
   const [deletingSession, setDeletingSession] = useState(false)
   const [sessionConfirmation, setSessionConfirmation] = useState<SessionConfirmation | null>(null)
   const [downloadingReport, setDownloadingReport] = useState(false)
@@ -211,7 +225,7 @@ export default function MentorPage() {
       }
       await loadData(false)
       setActiveSquads((prev) => [...prev, squad].sort())
-      setNotice(`Session for Squad ${squad} started successfully.`)
+      setCenteredSessionNotice({ title: 'Session started', message: `The manual session for Squad ${squad} has started successfully.` })
     } catch (startError) {
       setError(startError instanceof Error ? startError.message : 'Unable to start session')
     } finally {
@@ -239,7 +253,8 @@ export default function MentorPage() {
       if (!res.ok) throw new Error(result.error || 'Failed to end session')
       await loadData(false)
       setActiveSquads((prev) => prev.filter((s) => s !== session?.squad))
-      setNotice(result.session?.squad ? `Session for Squad ${result.session.squad} ended successfully.` : 'Session ended successfully.')
+      const endedSquad = result.session?.squad || session?.squad
+      setCenteredSessionNotice({ title: 'Session stopped', message: endedSquad ? `The manual session for Squad ${endedSquad} has stopped successfully.` : 'The manual session has stopped successfully.' })
     } catch (endError) {
       setError(endError instanceof Error ? endError.message : 'Failed to end session')
     }
@@ -498,7 +513,7 @@ export default function MentorPage() {
                     <button
                       type="button"
                       role="switch"
-                      aria-label="Automatic session ending for squads 138 and 139"
+                      aria-label="Automatic session schedules"
                       aria-checked={sessionAutoEndEnabled ?? false}
                       aria-busy={updatingSessionAutoEnd}
                       disabled={sessionAutoEndEnabled === null || updatingSessionAutoEnd}
@@ -524,6 +539,9 @@ export default function MentorPage() {
                             <h3 className="text-base font-semibold">Squad {session.squad}</h3>
                             <div className="flex items-center gap-2">
                               <SessionBadge status={session.status} />
+                              <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold ${isAutomatedSession(session) ? 'bg-[#EDF7EF] text-[#285C36]' : 'bg-[#F5F5F5] text-[#5F5755]'}`}>
+                                {isAutomatedSession(session) ? 'Automated' : 'Manual'}
+                              </span>
                               {session.status === 'ended' && (
                                 <button
                                   type="button"
@@ -538,7 +556,10 @@ export default function MentorPage() {
                             </div>
                           </div>
                           <p className="mt-1 inline-flex items-center gap-1.5 text-xs text-[#5F5755]">
-                            <Clock3 size={13} /> {new Date(session.started_at).toLocaleString(undefined, { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' })}
+                            <Clock3 size={13} /> Date: {formatSessionDate(session.started_at)}
+                          </p>
+                          <p className="mt-1 text-xs text-[#5F5755]">
+                            Time: {formatSessionTime(session.started_at)} - {session.ended_at ? formatSessionTime(session.ended_at) : 'In progress'}
                           </p>
                         </div>
                       </div>
@@ -652,7 +673,7 @@ export default function MentorPage() {
                           <span className="shrink-0 rounded-full bg-[#E5E5E5] px-2.5 py-1 text-xs font-semibold capitalize text-[#171717]">{handover.status.replace('_', ' ')}</span>
                         </div>
                         <p className="mt-3 text-sm text-[#171717]">{handover.reason || 'No reason provided'}</p>
-                        <p className="mt-2 text-xs text-[#171717]">Updated {new Date(handover.updated_at).toLocaleString()}</p>
+                        <p className="mt-2 text-xs text-[#171717]">Updated {new Date(handover.updated_at).toLocaleString('en-IN', { timeZone: 'Asia/Kolkata', hour12: true })}</p>
                       </article>
                     ))}
                     {reportHandovers.length === 0 && <p className="rounded-2xl border border-dashed border-[#E5E5E5] px-4 py-8 text-center text-sm text-[#171717]">No handovers to report yet.</p>}
@@ -663,7 +684,7 @@ export default function MentorPage() {
                         <thead className="bg-[#FFFFFF] text-xs text-[#171717]"><tr><th className="px-5 py-4 font-medium">Student</th><th className="px-5 py-4 font-medium">Status</th><th className="px-5 py-4 font-medium">Reason</th><th className="px-5 py-4 font-medium">Updated</th></tr></thead>
                         <tbody>
                           {reportHandovers.map((handover) => (
-                            <tr key={handover.id} className="border-t border-[#E5E5E5]"><td className="px-5 py-4 font-semibold">{handover.student?.full_name || 'Student'}</td><td className="px-5 py-4 capitalize">{handover.status.replace('_', ' ')}</td><td className="px-5 py-4 text-[#171717]">{handover.reason || '—'}</td><td className="px-5 py-4 text-[#171717]">{new Date(handover.updated_at).toLocaleString()}</td></tr>
+                            <tr key={handover.id} className="border-t border-[#E5E5E5]"><td className="px-5 py-4 font-semibold">{handover.student?.full_name || 'Student'}</td><td className="px-5 py-4 capitalize">{handover.status.replace('_', ' ')}</td><td className="px-5 py-4 text-[#171717]">{handover.reason || '—'}</td><td className="px-5 py-4 text-[#171717]">{new Date(handover.updated_at).toLocaleString('en-IN', { timeZone: 'Asia/Kolkata', hour12: true })}</td></tr>
                           ))}
                           {reportHandovers.length === 0 && <tr><td colSpan={4} className="px-5 py-10 text-center text-sm text-[#171717]">No handovers to report yet.</td></tr>}
                         </tbody>
@@ -800,7 +821,7 @@ export default function MentorPage() {
                             </div>
                             <div className="min-w-0">
                               <dt className="text-[11px] text-[#000000]">Updated</dt>
-                              <dd className="text-xs">{new Date(handover.updated_at).toLocaleString(undefined, { dateStyle: 'medium', timeStyle: 'short' })}</dd>
+                              <dd className="text-xs">{new Date(handover.updated_at).toLocaleString('en-IN', { timeZone: 'Asia/Kolkata', dateStyle: 'medium', timeStyle: 'short', hour12: true })}</dd>
                             </div>
                             <div className="col-span-2 min-w-0">
                               <dt className="text-[11px] text-[#000000]">Reason</dt>
@@ -838,7 +859,7 @@ export default function MentorPage() {
                                 <td className="px-5 py-4">{handover.phone_model || '—'}</td>
                                 <td className="px-5 py-4">{handover.reason || '—'}</td>
                                 <td className="whitespace-nowrap px-5 py-4 text-[#000000]">
-                                  {new Date(handover.updated_at).toLocaleString(undefined, { hour12: true })}
+                                  {new Date(handover.updated_at).toLocaleString('en-IN', { timeZone: 'Asia/Kolkata', hour12: true })}
                                 </td>
                               </tr>
                             )
@@ -903,8 +924,8 @@ export default function MentorPage() {
                     </h2>
                     <p id="session-auto-end-description" className="mt-2 text-sm leading-6 text-[#6D6664]">
                       {sessionAutoEndConfirmation
-                        ? 'Automatic session ending is on for squads 138 and 139. Daily cutoff times are 8:50 AM, 9:40 AM, 10:45 AM, 11:35 AM, 12:25 PM, 2:00 PM, and 2:50 PM IST.'
-                        : 'Automatic session ending is off for squads 138 and 139. Sessions will no longer end automatically at the scheduled cutoff times.'}
+                        ? 'Automatic session schedules are enabled. Manage each squad\'s daily start and stop windows from the Automation workspace.'
+                        : 'Automatic session schedules are disabled. Configured sessions will not start or stop automatically.'}
                     </p>
                   </div>
                 </div>
@@ -916,6 +937,20 @@ export default function MentorPage() {
                     className="min-h-11 min-w-20 rounded-xl bg-[#D71920] px-5 text-sm font-semibold text-white transition-colors hover:bg-[#B5121B]"
                   >OK</button>
                 </div>
+              </section>
+            </div>
+          )}
+          {centeredSessionNotice && (
+            <div className="fixed inset-0 z-[70] flex items-center justify-center bg-[#211D1C]/45 p-4 backdrop-blur-sm">
+              <section role="alertdialog" aria-modal="true" aria-labelledby="centered-session-notice-title" aria-describedby="centered-session-notice-description" className="w-full max-w-[420px] rounded-[26px] border border-white/90 bg-white/95 p-6 shadow-[0_24px_70px_rgba(27,20,19,0.28)] backdrop-blur-xl sm:p-7">
+                <div className="flex items-start gap-4">
+                  <span className="grid size-11 shrink-0 place-items-center rounded-full bg-[#EDF7EF] text-[#285C36]"><CheckCircle2 size={21} aria-hidden="true" /></span>
+                  <div className="min-w-0 pt-0.5">
+                    <h2 id="centered-session-notice-title" className="text-lg font-semibold text-[#211D1C]">{centeredSessionNotice.title}</h2>
+                    <p id="centered-session-notice-description" className="mt-2 text-sm leading-6 text-[#6D6664]">{centeredSessionNotice.message}</p>
+                  </div>
+                </div>
+                <div className="mt-7 flex justify-end"><button type="button" autoFocus onClick={() => setCenteredSessionNotice(null)} className="min-h-11 min-w-20 rounded-xl bg-[#D71920] px-5 text-sm font-semibold text-white transition-colors hover:bg-[#B5121B]">OK</button></div>
               </section>
             </div>
           )}

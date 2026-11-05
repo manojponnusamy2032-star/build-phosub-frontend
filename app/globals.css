@@ -138,7 +138,7 @@ select.field { appearance: auto; }
   width: min(100%, 400px);
   flex-direction: column;
   align-items: center;
-  padding: 38px 32px 32px;
+  padding: 34px 32px 30px;
   border: 1px solid rgba(255, 255, 255, 0.88);
   border-radius: 28px;
   background: rgba(255, 255, 255, 0.76);
@@ -200,16 +200,14 @@ select.field { appearance: auto; }
   animation: loading-pulse 1.5s ease-in-out infinite;
 }
 
-.loading-copy { margin-top: 23px; }
-.loading-eyebrow { color: #B5121B; font-size: 10px; font-weight: 750; letter-spacing: 0.16em; }
-.loading-copy h1 { margin: 10px 0 0; color: #211d1c; font-size: 19px; font-weight: 650; }
-.loading-copy p { margin: 7px 0 0; color: #77716f; font-size: 13px; }
+.loading-copy { margin-top: 18px; }
+.loading-label { margin: 0; color: #211d1c; font-size: 14px; font-weight: 650; letter-spacing: 0.01em; }
 
 .loading-progress {
   position: relative;
   width: min(100%, 220px);
   height: 4px;
-  margin-top: 26px;
+  margin-top: 20px;
   overflow: hidden;
   border-radius: 999px;
   background: #eee8e6;

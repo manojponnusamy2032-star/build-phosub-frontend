@@ -155,6 +155,33 @@ alter table public.session_auto_end_settings enable row level security;
 revoke all on public.session_auto_end_settings from anon, authenticated;
 grant select, update on public.session_auto_end_settings to service_role;
 
+create table if not exists public.session_automation_schedules (
+  id uuid primary key default gen_random_uuid(),
+  squad text not null check (squad in ('138', '139', '183')),
+  start_time time not null,
+  stop_time time not null,
+  enabled boolean not null default true,
+  created_by uuid not null references public.profiles(id) on delete cascade,
+  last_started_on date,
+  last_ended_on date,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now(),
+  recurrence text not null default 'daily' check (recurrence in ('today', 'daily', 'selected')),
+  selected_days integer[] not null default '{}' check (selected_days <@ array[0, 1, 2, 3, 4, 5, 6]),
+  run_date date,
+  constraint session_automation_schedule_order check (start_time < stop_time)
+);
+
+alter table public.sessions
+  add column if not exists automation_schedule_id uuid references public.session_automation_schedules(id) on delete set null;
+
+create index if not exists session_automation_schedules_squad_idx
+  on public.session_automation_schedules (squad, start_time);
+
+alter table public.session_automation_schedules enable row level security;
+revoke all on public.session_automation_schedules from anon, authenticated;
+grant select, insert, update, delete on public.session_automation_schedules to service_role;
+
 create or replace function public.auto_end_scheduled_sessions()
 returns void
 language plpgsql
@@ -163,7 +190,10 @@ set search_path = public, pg_temp
 as $$
 declare
   local_now timestamp without time zone := statement_timestamp() at time zone 'Asia/Kolkata';
-  cutoff_local timestamp without time zone;
+  schedule_record record;
+  start_local timestamp without time zone;
+  stop_local timestamp without time zone;
+  schedule_applies boolean;
 begin
   if not exists (
     select 1
@@ -173,31 +203,69 @@ begin
     return;
   end if;
 
-  select local_now::date + cutoffs.stop_time
-  into cutoff_local
-  from (values
-    (time '08:50'),
-    (time '09:40'),
-    (time '10:45'),
-    (time '11:35'),
-    (time '12:25'),
-    (time '14:00'),
-    (time '14:50')
-  ) as cutoffs(stop_time)
-  where cutoffs.stop_time <= local_now::time
-  order by cutoffs.stop_time desc
-  limit 1;
-
-  if cutoff_local is null then
-    cutoff_local := (local_now::date - 1) + time '14:50';
+  if not pg_try_advisory_xact_lock(hashtext('phosub-session-automation')) then
+    return;
   end if;
 
-  update public.sessions
-  set status = 'ended',
-      ended_at = cutoff_local at time zone 'Asia/Kolkata'
-  where status = 'active'
-    and squad in ('138', '139')
-    and started_at <= cutoff_local at time zone 'Asia/Kolkata';
+  for schedule_record in
+    select * from public.session_automation_schedules
+    where enabled
+    order by squad, start_time
+    for update
+  loop
+    schedule_applies := schedule_record.recurrence = 'daily'
+      or (schedule_record.recurrence = 'today' and schedule_record.run_date = local_now::date)
+      or (schedule_record.recurrence = 'selected' and extract(dow from local_now)::integer = any(schedule_record.selected_days));
+
+    if not schedule_applies then
+      continue;
+    end if;
+
+    start_local := local_now::date + schedule_record.start_time;
+    stop_local := local_now::date + schedule_record.stop_time;
+
+    if local_now >= stop_local and (schedule_record.last_ended_on is null or schedule_record.last_ended_on < local_now::date) then
+      update public.sessions
+      set status = 'ended', ended_at = stop_local at time zone 'Asia/Kolkata'
+      where status = 'active'
+        and squad = schedule_record.squad
+        and started_at < stop_local at time zone 'Asia/Kolkata';
+
+      update public.session_automation_schedules
+      set last_ended_on = local_now::date, updated_at = now()
+      where id = schedule_record.id;
+    end if;
+  end loop;
+
+  for schedule_record in
+    select * from public.session_automation_schedules
+    where enabled
+    order by squad, start_time
+    for update
+  loop
+    schedule_applies := schedule_record.recurrence = 'daily'
+      or (schedule_record.recurrence = 'today' and schedule_record.run_date = local_now::date)
+      or (schedule_record.recurrence = 'selected' and extract(dow from local_now)::integer = any(schedule_record.selected_days));
+
+    if not schedule_applies then
+      continue;
+    end if;
+
+    start_local := local_now::date + schedule_record.start_time;
+    stop_local := local_now::date + schedule_record.stop_time;
+
+    if local_now >= start_local
+      and local_now < stop_local
+      and (schedule_record.last_started_on is null or schedule_record.last_started_on < local_now::date)
+      and not exists (select 1 from public.sessions where squad = schedule_record.squad and status = 'active') then
+      insert into public.sessions (mentor_id, squad, name, started_at, automation_schedule_id)
+      values (schedule_record.created_by, schedule_record.squad, 'Squad ' || schedule_record.squad || ' automated phone handover', start_local at time zone 'Asia/Kolkata', schedule_record.id);
+
+      update public.session_automation_schedules
+      set last_started_on = local_now::date, updated_at = now()
+      where id = schedule_record.id;
+    end if;
+  end loop;
 end;
 $$;
 

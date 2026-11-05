@@ -91,9 +91,7 @@ export function LoadingSpinner() {
           <span className="loading-emblem-spark" />
         </div>
         <div className="loading-copy">
-          <span className="loading-eyebrow">PHOSUB WORKSPACE</span>
-          <h1>Preparing your workspace</h1>
-          <p>Getting everything ready for you.</p>
+          <p className="loading-label">Loading</p>
         </div>
         <div className="loading-progress" aria-hidden="true">
           <span />

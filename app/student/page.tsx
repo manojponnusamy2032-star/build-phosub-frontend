@@ -195,7 +195,7 @@ export default function StudentPage() {
                 </div>
                 <div className="rounded-2xl border border-[#E5E5E5] bg-[#FFFFFF] p-4">
                   <p className="text-xs text-[#171717]">Started</p>
-                  <p className="font-medium">{new Date(session.started_at).toLocaleString()}</p>
+                  <p className="font-medium">{new Date(session.started_at).toLocaleString('en-IN', { timeZone: 'Asia/Kolkata', hour12: true })}</p>
                 </div>
               </div>
             ) : (
@@ -380,7 +380,7 @@ export default function StudentPage() {
                         <td className="px-4 py-3 font-semibold">{h.status}</td>
                         <td className="px-4 py-3">{h.phone_model || '—'}</td>
                         <td className="px-4 py-3 text-[#171717]">{h.reason || '—'}</td>
-                        <td className="px-4 py-3 text-[#171717]">{new Date(h.updated_at).toLocaleString()}</td>
+                        <td className="px-4 py-3 text-[#171717]">{new Date(h.updated_at).toLocaleString('en-IN', { timeZone: 'Asia/Kolkata', hour12: true })}</td>
                       </tr>
                     ))}
                   </tbody>
