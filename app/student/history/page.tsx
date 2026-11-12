@@ -30,6 +30,7 @@ function sessionOf(handover: Handover): SessionInfo | null {
 
 export default function StudentHistoryPage() {
   const { user, loading: authLoading } = useAuth()
+  const [sessions, setSessions] = useState<SessionInfo[]>([])
   const [handovers, setHandovers] = useState<Handover[]>([])
   const [events, setEvents] = useState<HandoverEvent[]>([])
   const [loading, setLoading] = useState(true)
@@ -44,11 +45,20 @@ export default function StudentHistoryPage() {
     try {
       const token = await getAccessToken()
       const headers: Record<string, string> = token ? { Authorization: `Bearer ${token}` } : {}
-      const res = await fetch('/api/handovers?history=1', { credentials: 'include', headers })
-      const data = await res.json().catch(() => ({}))
-      if (!res.ok) throw new Error(data.error || 'Unable to load history')
-      setHandovers(data.handovers ?? [])
-      setEvents(data.events ?? [])
+      const [handoversResponse, sessionsResponse] = await Promise.all([
+        fetch('/api/handovers?history=1', { credentials: 'include', headers }),
+        fetch('/api/sessions?history=1', { credentials: 'include', headers }),
+      ])
+      const [handoversData, sessionsData] = await Promise.all([
+        handoversResponse.json().catch(() => ({})),
+        sessionsResponse.json().catch(() => ({})),
+      ])
+      if (!handoversResponse.ok || !sessionsResponse.ok) {
+        throw new Error(handoversData.error || sessionsData.error || 'Unable to load history')
+      }
+      setSessions(sessionsData.sessions ?? [])
+      setHandovers(handoversData.handovers ?? [])
+      setEvents(handoversData.events ?? [])
     } catch (loadError) {
       setError(loadError instanceof Error ? loadError.message : 'Failed to load history')
     } finally {
@@ -156,7 +166,30 @@ export default function StudentHistoryPage() {
       </div>
 
       <div className="mb-8 rounded-xl border border-[#E5E5E5] bg-[#FFFFFF] p-6">
-        <h2 className="mb-4 text-lg font-bold">Sessions &amp; Handovers</h2>
+        <h2 className="mb-4 text-lg font-bold">Session History</h2>
+        {sessions.length === 0 ? (
+          <p className="text-sm text-[#171717]">No sessions found.</p>
+        ) : (
+          <div className="divide-y divide-[#D3CCC7]">
+            {sessions.map((session) => (
+              <article key={session.id} className="flex flex-wrap items-center justify-between gap-3 py-3 first:pt-0 last:pb-0">
+                <div className="min-w-0">
+                  <h3 className="break-words text-sm font-semibold">{session.name}</h3>
+                  <p className="mt-1 text-xs text-[#5F5755]">
+                    Squad {session.squad} · {session.status} · {new Date(session.started_at).toLocaleString('en-IN', { timeZone: 'Asia/Kolkata', dateStyle: 'medium', timeStyle: 'short', hour12: true })}
+                  </p>
+                </div>
+                <span className={`inline-flex shrink-0 rounded-full px-2.5 py-1 text-xs font-semibold ${session.automation_schedule_id ? 'bg-[#EDF7EF] text-[#285C36]' : 'bg-[#F5F5F5] text-[#5F5755]'}`}>
+                  {session.automation_schedule_id ? 'Automated session' : 'Manual session'}
+                </span>
+              </article>
+            ))}
+          </div>
+        )}
+      </div>
+
+      <div className="mb-8 rounded-xl border border-[#E5E5E5] bg-[#FFFFFF] p-6">
+        <h2 className="mb-4 text-lg font-bold">Handovers</h2>
         {filteredHandovers.length === 0 ? (
           <div className="rounded-lg border border-dashed border-[#E5E5E5] bg-[#FFFFFF] p-6 text-center">
             <p className="font-semibold text-[#171717]">No handover records found.</p>

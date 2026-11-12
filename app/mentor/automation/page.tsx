@@ -12,8 +12,9 @@ import { DashboardFooter } from '@/components/site-footer'
 const squads = ['138', '139', '183']
 const weekDays = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday']
 const hourOptions = Array.from({ length: 12 }, (_, index) => { const value = String(index + 1); return { value, label: value } })
-const minuteOptions = Array.from({ length: 12 }, (_, index) => { const value = String(index * 5).padStart(2, '0'); return { value, label: `:${value}` } })
+const minuteOptions = Array.from({ length: 60 }, (_, index) => { const value = String(index).padStart(2, '0'); return { value, label: value } })
 const periodOptions = [{ value: 'AM', label: 'AM' }, { value: 'PM', label: 'PM' }]
+const wheelRowHeight = 36
 const navigation = [
   { id: 'sessions', href: '/mentor', label: 'Sessions', icon: ClipboardCheck },
   { id: 'reports', href: '/mentor?view=reports', label: 'Reports', icon: ChartNoAxesColumn },
@@ -63,27 +64,79 @@ function toTwentyFourHour(hour: string, minute: string, period: string) {
   return `${String(hours).padStart(2, '0')}:${minute}`
 }
 
-function DarkPicker({ ariaLabel, value, options, onChange }: { ariaLabel: string; value: string; options: { value: string; label: string }[]; onChange: (value: string) => void }) {
-  const [open, setOpen] = useState(false)
-  const pickerRef = useRef<HTMLDivElement>(null)
-  const selectedOption = options.find((option) => option.value === value)
+function WheelColumn({ ariaLabel, value, options, onChange }: { ariaLabel: string; value: string; options: { value: string; label: string }[]; onChange: (value: string) => void }) {
+  const wheelRef = useRef<HTMLDivElement>(null)
+  const scrollTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const selectedIndex = Math.max(0, options.findIndex((option) => option.value === value))
+  const [centerIndex, setCenterIndex] = useState(selectedIndex)
+  const listId = `time-wheel-${ariaLabel.toLowerCase().replace(/[^a-z0-9]+/g, '-')}`
 
   useEffect(() => {
-    if (!open) return
-    const closePicker = (event: MouseEvent) => {
-      if (!pickerRef.current?.contains(event.target as Node)) setOpen(false)
+    setCenterIndex(selectedIndex)
+    if (wheelRef.current) wheelRef.current.scrollTop = selectedIndex * wheelRowHeight
+  }, [selectedIndex])
+
+  useEffect(() => () => {
+    if (scrollTimer.current) clearTimeout(scrollTimer.current)
+  }, [])
+
+  function chooseIndex(index: number) {
+    const boundedIndex = Math.max(0, Math.min(options.length - 1, index))
+    setCenterIndex(boundedIndex)
+    if (wheelRef.current) wheelRef.current.scrollTop = boundedIndex * wheelRowHeight
+    onChange(options[boundedIndex].value)
+  }
+
+  function handleScroll() {
+    const wheel = wheelRef.current
+    if (!wheel) return
+    const index = Math.max(0, Math.min(options.length - 1, Math.round(wheel.scrollTop / wheelRowHeight)))
+    setCenterIndex(index)
+    if (scrollTimer.current) clearTimeout(scrollTimer.current)
+    scrollTimer.current = setTimeout(() => onChange(options[index].value), 120)
+  }
+
+  function handleKeyDown(event: React.KeyboardEvent<HTMLDivElement>) {
+    let nextIndex: number | null = null
+    if (event.key === 'ArrowDown') nextIndex = centerIndex + 1
+    if (event.key === 'ArrowUp') nextIndex = centerIndex - 1
+    if (event.key === 'PageDown') nextIndex = centerIndex + 5
+    if (event.key === 'PageUp') nextIndex = centerIndex - 5
+    if (event.key === 'Home') nextIndex = 0
+    if (event.key === 'End') nextIndex = options.length - 1
+    if (nextIndex !== null) {
+      event.preventDefault()
+      chooseIndex(nextIndex)
     }
-    document.addEventListener('mousedown', closePicker)
-    return () => document.removeEventListener('mousedown', closePicker)
-  }, [open])
+  }
 
   return (
-    <div ref={pickerRef} className="relative min-w-0">
-      <button type="button" aria-label={ariaLabel} aria-haspopup="listbox" aria-expanded={open} onClick={() => setOpen((current) => !current)} className="flex h-11 w-full items-center justify-between rounded-xl border border-white/20 bg-white/10 px-2.5 text-left text-sm text-white outline-none transition-colors hover:border-[#FFD9D9] focus:border-[#FFD9D9]">
-        <span className="truncate">{selectedOption?.label}</span>
-        <ChevronDown size={14} className={`shrink-0 transition-transform ${open ? 'rotate-180' : ''}`} />
-      </button>
-      {open && <div role="listbox" aria-label={ariaLabel} className="absolute inset-x-0 top-[calc(100%+6px)] z-30 max-h-56 touch-pan-y overflow-y-auto overscroll-contain rounded-xl border border-white/20 bg-[#302B2A] p-1 shadow-[0_16px_30px_rgba(0,0,0,0.3)]">{options.map((option) => <button key={option.value} type="button" role="option" aria-selected={value === option.value} onClick={() => { onChange(option.value); setOpen(false) }} className={`block min-h-11 w-full rounded-lg px-2.5 py-2 text-left text-sm transition-colors ${value === option.value ? 'bg-[#F7DADD] font-semibold text-[#8F1D24]' : 'text-[#F4E9E7] hover:bg-white/10'}`}>{option.label}</button>)}</div>}
+    <div
+      ref={wheelRef}
+      id={listId}
+      role="listbox"
+      aria-label={ariaLabel}
+      aria-activedescendant={`${listId}-option-${options[centerIndex]?.value}`}
+      tabIndex={0}
+      onScroll={handleScroll}
+      onKeyDown={handleKeyDown}
+      className="relative z-0 h-full min-w-0 snap-y snap-mandatory overflow-y-auto overscroll-contain text-center outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[#D71920]"
+      style={{ scrollbarWidth: 'none', maskImage: 'linear-gradient(to bottom, transparent, #000 22%, #000 78%, transparent)', WebkitMaskImage: 'linear-gradient(to bottom, transparent, #000 22%, #000 78%, transparent)' }}
+    >
+      <div aria-hidden="true" className="h-[72px]" />
+      {options.map((option, index) => (
+        <div
+          key={option.value}
+          id={`${listId}-option-${option.value}`}
+          role="option"
+          aria-selected={centerIndex === index}
+          onClick={() => chooseIndex(index)}
+          className={`grid h-9 cursor-pointer snap-center place-items-center text-sm transition-colors ${centerIndex === index ? 'font-bold text-[#211D1C]' : 'text-[#A9A2A0]'}`}
+        >
+          {option.label}
+        </div>
+      ))}
+      <div aria-hidden="true" className="h-[72px]" />
     </div>
   )
 }
@@ -153,10 +206,15 @@ function TimePicker({ label, value, onChange }: { label: string; value: string; 
   return (
     <fieldset className="min-w-0">
       <legend className="text-xs font-semibold text-[#F4E9E7]">{label}</legend>
-      <div className="mt-1.5 grid grid-cols-[1fr_1fr_auto] gap-1.5">
-        <DarkPicker ariaLabel={`${label} hour`} value={parts.hour} options={hourOptions} onChange={(hour) => update('hour', hour)} />
-        <DarkPicker ariaLabel={`${label} minute`} value={parts.minute} options={minuteOptions} onChange={(minute) => update('minute', minute)} />
-        <DarkPicker ariaLabel={`${label} AM or PM`} value={parts.period} options={periodOptions} onChange={(period) => update('period', period)} />
+      <div className="mt-1.5 rounded-xl border border-[#E9E0DE] bg-[#F8F5F4] p-1.5">
+        <div className="relative grid h-[180px] grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)_auto_minmax(0,1fr)] items-stretch overflow-hidden rounded-lg bg-white">
+          <div aria-hidden="true" className="pointer-events-none absolute inset-x-1 top-[72px] z-10 h-9 rounded-lg border-y border-[#F2C9CB] bg-[#FFF1F2]/60" />
+          <WheelColumn ariaLabel={`${label} hour`} value={parts.hour} options={hourOptions} onChange={(hour) => update('hour', hour)} />
+          <span aria-hidden="true" className="relative z-20 grid place-items-center text-lg font-bold text-[#211D1C]">:</span>
+          <WheelColumn ariaLabel={`${label} minute`} value={parts.minute} options={minuteOptions} onChange={(minute) => update('minute', minute)} />
+          <span aria-hidden="true" className="relative z-20 grid place-items-center px-1 text-xs font-semibold text-[#A9A2A0]"> </span>
+          <WheelColumn ariaLabel={`${label} AM or PM`} value={parts.period} options={periodOptions} onChange={(period) => update('period', period)} />
+        </div>
       </div>
     </fieldset>
   )

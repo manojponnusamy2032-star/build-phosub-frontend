@@ -65,7 +65,14 @@ export default function StudentPage() {
 
   useEffect(() => {
     if (authLoading || !user) return
-    loadData()
+    void loadData()
+    const refreshTimer = window.setInterval(() => void loadData(false), 5000)
+    const refreshOnFocus = () => void loadData(false)
+    window.addEventListener('focus', refreshOnFocus)
+    return () => {
+      window.clearInterval(refreshTimer)
+      window.removeEventListener('focus', refreshOnFocus)
+    }
   }, [user, authLoading])
 
   useEffect(() => {

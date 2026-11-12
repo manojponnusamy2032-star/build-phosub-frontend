@@ -195,18 +195,15 @@ declare
   stop_local timestamp without time zone;
   schedule_applies boolean;
 begin
-  if not exists (
-    select 1
-    from public.session_auto_end_settings
-    where id and enabled
-  ) then
-    return;
-  end if;
-
   if not pg_try_advisory_xact_lock(hashtext('phosub-session-automation')) then
     return;
   end if;
 
+  if exists (
+    select 1
+    from public.session_auto_end_settings
+    where id and enabled
+  ) then
   for schedule_record in
     select * from public.session_automation_schedules
     where enabled
@@ -236,6 +233,7 @@ begin
       where id = schedule_record.id;
     end if;
   end loop;
+  end if;
 
   for schedule_record in
     select * from public.session_automation_schedules
