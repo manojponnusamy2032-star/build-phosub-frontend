@@ -13,11 +13,21 @@ export async function GET(request: Request) {
 
   const { createAdminClient } = await import('@/lib/supabase/admin')
   const admin = createAdminClient()
+  const { data: profile, error: profileError } = await admin
+    .from('profiles')
+    .select('role')
+    .eq('id', userId)
+    .maybeSingle()
+  if (profileError) {
+    console.error('Unable to verify report access', { code: profileError.code })
+    return NextResponse.json({ error: 'Unable to verify mentor access' }, { status: 500 })
+  }
+  if (profile?.role !== 'mentor') return NextResponse.json({ error: 'Only mentors can download session reports' }, { status: 403 })
+
   const { data: session, error: sessionError } = await admin
     .from('sessions')
     .select('id, squad, name, status, started_at, ended_at')
     .eq('id', sessionId)
-    .eq('mentor_id', userId)
     .maybeSingle()
   if (sessionError) {
     console.error('Unable to load session for report export', { code: sessionError.code })
